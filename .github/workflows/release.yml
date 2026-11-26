@@ -202,7 +202,12 @@ jobs:
           mkdir -p "$stage"
           ditto out/app/Vexdom.app "$stage/Vexdom.app"
           ln -s /Applications "$stage/Applications"
-          hdiutil create -volname Vexdom -srcfolder "$stage" -ov -format UDZO "out/$name"
+          # Hosted macOS runners fail this now and then with "Resource busy"; a retry clears it.
+          for attempt in 1 2 3 4 5; do
+            hdiutil create -volname Vexdom -srcfolder "$stage" -ov -format UDZO "out/$name" && break
+            [ "$attempt" = 5 ] && exit 1
+            sleep $((attempt * 5))
+          done
           cd out
           shasum -a 256 "$name" > "$name.sha256"
 
