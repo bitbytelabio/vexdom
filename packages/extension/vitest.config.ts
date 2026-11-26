@@ -36,6 +36,9 @@ export default defineConfig({
         test: {
           name: 'dom',
           environment: 'happy-dom',
+          // Happy DOM 21 stopped creating iframe documents by default (SSRF hardening); the
+          // snapshot frame tests need same-origin frames, and the fixtures are our own markup.
+          environmentOptions: { happyDOM: { settings: { enableIframePageLoading: true } } },
           setupFiles: ['src/lib/test/load-core.ts'],
           include: ['src/lib/actions/page/**/*.test.ts', 'src/lib/handsfree/host.test.ts', 'src/lib/cues/host.test.ts'],
         },
