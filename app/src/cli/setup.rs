@@ -296,7 +296,18 @@ fn code_lines(mode: &str, code: Option<&str>) -> Vec<String> {
     }
 }
 
-async fn print_store_steps(row: &BrowserRow, opened: bool, mode: &str, code: Option<&str>) {
+/// What to say when the release has no signed Firefox add-on (no AMO keys, or Mozilla is still
+/// signing): no link to a file that answers 404.
+fn print_no_signed_addon() {
+    println!("  Vexdom {VERSION} has no signed Firefox add-on yet. Newer releases may have one:");
+    println!("    {}\n", browsers::releases_page());
+}
+
+fn print_store_steps(row: &BrowserRow, opened: bool, mode: &str, code: Option<&str>) {
+    let Some(url) = row.store_url.as_deref() else {
+        print_no_signed_addon();
+        return;
+    };
     println!(
         "{}",
         if opened {
@@ -305,16 +316,7 @@ async fn print_store_steps(row: &BrowserRow, opened: bool, mode: &str, code: Opt
             format!("  Open this page in {}:", row.label)
         }
     );
-    println!("    {}\n", row.store_url.as_deref().unwrap_or(""));
-    if row.id == "firefox" && browsers::signed_addon_attached(VERSION).await == Some(false) {
-        println!(
-            "  That file is not attached to the {VERSION} release yet: Mozilla may still be signing it."
-        );
-        println!(
-            "  Give it a few minutes, or take the newest one from {}\n",
-            browsers::releases_page()
-        );
-    }
+    println!("    {url}\n");
     if row
         .sessions
         .iter()
@@ -407,12 +409,17 @@ fn print_plan(
     let firefox = rows
         .iter()
         .find(|row| row.id == "firefox")
-        .and_then(|row| row.store_url.clone())
-        .unwrap_or_default();
+        .and_then(|row| row.store_url.clone());
     println!("    {}", unpacked.join(", "));
     println!("      load it unpacked: \"vexdom setup --unpacked\" writes the folder and says how");
     println!("    Firefox");
-    println!("      {firefox}\n");
+    match firefox {
+        Some(url) => println!("      {url}\n"),
+        None => println!(
+            "      no signed add-on in {VERSION} yet; newer releases: {}\n",
+            browsers::releases_page()
+        ),
+    }
     let lines = code_lines(mode, code);
     println!("  Then click Vexdom in the toolbar. {}", lines[0]);
     for line in &lines[1..] {
@@ -563,7 +570,14 @@ pub fn setup(argv: &[String]) -> ExitCode {
         let since = vexdom_core::log::iso_now();
         let located: Vec<Located> = browsers::locate_browsers();
         let sessions = browsers::sessions(&bridge).await.unwrap_or_default();
-        let rows = browsers::browser_rows(&sessions, &located, VERSION);
+        let mut rows = browsers::browser_rows(&sessions, &located, VERSION);
+        // Mozilla signs after the release exists, and a release built without AMO keys has no
+        // add-on at all: drop the link rather than print or open a 404. Unreachable keeps it.
+        if browsers::signed_addon_attached(VERSION).await == Some(false) {
+            for row in rows.iter_mut().filter(|row| row.id == "firefox") {
+                row.store_url = None;
+            }
+        }
         let mode = pairing_mode(&bridge).await;
 
         if !json {
@@ -689,7 +703,7 @@ pub fn setup(argv: &[String]) -> ExitCode {
         if unpacked {
             print_unpacked_steps(&dir, row, &mode, code_text);
         } else if let Some(row) = row {
-            print_store_steps(row, opened, &mode, code_text).await;
+            print_store_steps(row, opened, &mode, code_text);
         }
         let Some((_, expires_at)) = code else {
             return ExitCode::SUCCESS;

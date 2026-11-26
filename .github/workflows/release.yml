@@ -42,7 +42,7 @@ jobs:
       AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
       AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - uses: oven-sh/setup-bun@v2
         with:
@@ -61,7 +61,7 @@ jobs:
           curl -fsSL "https://github.com/WebAssembly/binaryen/releases/download/$v/binaryen-$v-x86_64-linux.tar.gz" | tar xz -C "$RUNNER_TEMP"
           echo "$RUNNER_TEMP/binaryen-$v/bin" >> "$GITHUB_PATH"
 
-      - uses: taiki-e/cache-cargo-install-action@v2
+      - uses: taiki-e/cache-cargo-install-action@v3
         with:
           tool: boltffi_cli@0.32.1
 
@@ -107,12 +107,12 @@ jobs:
           {"addons":{"vexdom@nguyenthdat.github.io":{"updates":[{"version":"$VERSION","update_link":"https://github.com/nguyenthdat/vexdom/releases/download/v$VERSION/vexdom-$VERSION-firefox.xpi"}]}}}
           EOF
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: chrome-mv3
           path: packages/extension/dist/chrome-mv3
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: firefox
           path: packages/extension/dist/release
@@ -137,7 +137,7 @@ jobs:
       TARGET: ${{ matrix.target }}
       VERSION: ${{ needs.extension.outputs.version }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Toolchain
         run: |
@@ -155,7 +155,7 @@ jobs:
             .
             desktop
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: chrome-mv3
           path: stage-extension/chrome-mv3
@@ -206,7 +206,7 @@ jobs:
           cd out
           shasum -a 256 "$name" > "$name.sha256"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: bridge-${{ matrix.target }}
           path: |
@@ -221,9 +221,9 @@ jobs:
     needs: [extension, bridge]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           path: artifacts
 
