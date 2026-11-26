@@ -16,14 +16,18 @@ That meeting point is the Bridge. It holds the links to every paired browser tha
 and serves them to the side panel's agent runs, the CLI, any number of MCP clients and
 `Vexdom.app`:
 
-```
-You ──type or speak──> Extension ──WebSocket (Cap'n Proto)──> vexdom daemon ──starts──> claude
-                          ▲                                        ▲                     │
-                          └────────────── page actions ────────────┘◄── vexdom mcp ◄─────┘
+```mermaid
+flowchart LR
+    you(["You"]) -- "type or speak" --> ext["Extension"]
+    ext <-- "WebSocket (Cap'n Proto)<br/>page actions" --> daemon{{"vexdom daemon"}}
+    daemon -- starts --> claude["claude"]
+    claude --> agentmcp["vexdom mcp"]
+    agentmcp -- "control socket" --> daemon
 
-MCP client ──stdio──> vexdom mcp ──control socket──> the same daemon ──> the same browser
-vexdom click … ───────────────────control socket──> the same daemon
-Vexdom.app ───────────────────────control socket──> the same daemon
+    client(["MCP client"]) -- stdio --> mcp["vexdom mcp"]
+    mcp -- "control socket" --> daemon
+    cli(["vexdom click …"]) -- "control socket" --> daemon
+    app(["Vexdom.app"]) -- "control socket" --> daemon
 ```
 
 Everything binds to `127.0.0.1`. Nothing listens on a public interface, and there is no cloud

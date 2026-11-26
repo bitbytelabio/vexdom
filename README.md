@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/assets/readme-banner.png" alt="vexdom: your real browser, driven by agents" width="100%">
+</p>
+
 # vexdom
 
 Your real, signed-in browser, driven by an agent: from a side panel running Claude Code, from the
@@ -8,13 +12,17 @@ One Rust binary, `vexdom`, is the Bridge the browser extension connects to, the 
 an MCP server. The extension acts on your tabs and hosts the side panel. Everything binds to
 `127.0.0.1`: no account, no cloud, no telemetry.
 
-```
-You ──type or speak──> Extension ──local WebSocket──> Vexdom Bridge ──spawns──> claude
-                           ▲                                                 │
-                           └────────────────── page actions ─────────────────┘
+```mermaid
+flowchart LR
+    you(["You"]) -- "type or speak" --> ext["Extension<br/>side panel + tabs"]
+    mcp(["Any MCP client"]) -- stdio --> mcpcmd["vexdom mcp"]
+    term(["Your terminal"]) --> cli["vexdom snapshot<br/>click @e5 · read"]
 
-Any MCP client ──stdio──> vexdom mcp ──> the same Bridge ──> the same browser
-Your terminal  ──────────> vexdom snapshot / click @e5 / read ──> the same browser
+    ext <-- "page actions over<br/>local WebSocket" --> bridge{{"Vexdom Bridge<br/>127.0.0.1"}}
+    mcpcmd --> bridge
+    cli --> bridge
+    bridge <-- "spawns · page actions" --> claude["claude"]
+    ext --> browser[("Your signed-in browser")]
 ```
 
 ## Install
