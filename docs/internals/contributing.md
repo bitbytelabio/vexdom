@@ -100,6 +100,31 @@ unpacked extensions by itself.
 
 ---
 
+## Cutting a release
+
+[release.yml](../../.github/workflows/release.yml) runs on a `v*` tag and publishes everything
+`install.sh`, `vexdom update` and Firefox's update check read.
+
+1. **Bump the version** in `Cargo.toml` (`[workspace.package]`), `desktop/Cargo.toml` and
+   `packages/extension/package.json`; the job fails when the tag and `package.json` disagree. Then
+   `cargo metadata --format-version 1 >/dev/null`, at the root and in `desktop/`, updates both
+   `Cargo.lock` files; commit them with the bump.
+2. **Tag and push** once CI is green on `main`: `git tag -s vX.Y.Z -m vX.Y.Z && git push origin vX.Y.Z`.
+
+Repository secrets (Settings → Secrets and variables → Actions):
+
+| Secret | What it is | Without it |
+| --- | --- | --- |
+| `MINISIGN_SECRET_KEY` | The passwordless minisign secret key file, verified against `crates/vexdom-update/assets/minisign.pub` | The release fails |
+| `AMO_JWT_ISSUER`, `AMO_JWT_SECRET` | addons.mozilla.org → Developer Hub → [Manage API Keys](https://addons.mozilla.org/developers/addon/api/key/): the JWT issuer and secret | The release ships with a warning, without the Firefox add-on and `updates.json` |
+
+The Firefox add-on is signed on AMO's **unlisted** channel: Mozilla signs it but does not list it,
+and installed copies update from `updates.json` on the latest release (the `update_url` in
+[wxt.config.ts](../../packages/extension/wxt.config.ts)). The first signed version creates the
+add-on id `vexdom@nguyenthdat.github.io` on the account the keys belong to.
+
+---
+
 ## Signing a Firefox build by hand
 
 The release workflow signs tagged builds through addons.mozilla.org. By hand, only to check a change
