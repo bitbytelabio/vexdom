@@ -11,7 +11,7 @@
 # crates/vexdom-update/assets/minisign.pub (ADR-031).
 #
 # Secrets: AMO_JWT_ISSUER and AMO_JWT_SECRET (addons.mozilla.org API keys) sign the add-on;
-# MINISIGN_SECRET_KEY (the passwordless minisign secret key file's content) signs SHA256SUMS.
+# without them the release ships with a warning and no Firefox add-on. MINISIGN_SECRET_KEY (the passwordless minisign secret key file's content) signs SHA256SUMS.
 
 name: Release
 
@@ -38,6 +38,9 @@ jobs:
         working-directory: packages/extension
     outputs:
       version: ${{ steps.version.outputs.version }}
+    env:
+      AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+      AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
     steps:
       - uses: actions/checkout@v5
 
@@ -84,10 +87,13 @@ jobs:
           bun run build:firefox
           bun run lint:firefox
 
+      - name: No AMO keys, no Firefox add-on
+        if: env.AMO_JWT_ISSUER == '' || env.AMO_JWT_SECRET == ''
+        run: echo "::warning::AMO_JWT_ISSUER / AMO_JWT_SECRET are not set; this release has no signed Firefox add-on"
+
       - name: Sign the Firefox add-on (unlisted)
+        if: env.AMO_JWT_ISSUER != '' && env.AMO_JWT_SECRET != ''
         env:
-          AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
-          AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           bun --bun node_modules/.bin/web-ext sign --source-dir dist/firefox-mv2 --channel unlisted --artifacts-dir dist/signed \
@@ -110,6 +116,7 @@ jobs:
         with:
           name: firefox
           path: packages/extension/dist/release
+          if-no-files-found: ignore
 
   bridge:
     needs: extension
@@ -226,8 +233,8 @@ jobs:
           cp artifacts/bridge-*/*.tar.gz artifacts/bridge-*/*.tar.gz.sha256 \
             artifacts/bridge-*/*.zip artifacts/bridge-*/*.zip.sha256 \
             artifacts/bridge-*/*.dmg artifacts/bridge-*/*.dmg.sha256 \
-            artifacts/firefox/*.xpi artifacts/firefox/updates.json \
             scripts/install.sh out/
+          if [ -d artifacts/firefox ]; then cp artifacts/firefox/*.xpi artifacts/firefox/updates.json out/; fi
           # One line per published file (`<hex>  <name>`, byte-sorted), written outside out/ so the
           # glob never sees it; `vexdom update` checks an asset against its line here.
           cd out
