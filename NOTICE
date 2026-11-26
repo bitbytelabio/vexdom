@@ -1,0 +1,37 @@
+vexdom
+Copyright 2026 BITBYTELAB
+
+This product is a fork of Browsentic (https://github.com/imshaikot/browsentic),
+Copyright the Browsentic authors, licensed under the Apache License, Version 2.0.
+Browsentic versions up to 0.7.15 were released under the MIT License.
+vexdom is not affiliated with or endorsed by the Browsentic project.
+
+This product includes software derived from agent-browser
+(https://github.com/vercel-labs/agent-browser), version 0.45.0 (commit f0a9835),
+Copyright 2025 Vercel Inc., licensed under the Apache License, Version 2.0.
+The derived files are in crates/vexdom-snapshot/, crates/vexdom-daemon/src/markdown.rs,
+crates/vexdom-daemon/src/contact_sheet.rs, crates/vexdom-daemon/src/react/,
+crates/vexdom-daemon/src/devtools.rs (vitals report), crates/vexdom-daemon/src/recording_video.rs
+(ffmpeg arguments), crates/vexdom-daemon/src/webmcp.rs, app/src/read_url.rs,
+app/src/cli/curl_cookies.rs, app/src/cli/page.rs (batch semantics), app/src/cli/doctor.rs,
+app/src/cli/flows.rs (output formats), app/src/cli/plugins.rs, crates/vexdom-core/src/plugins.rs,
+crates/vexdom-daemon/src/flow/, crates/vexdom-daemon/src/auth_vault.rs,
+crates/vexdom-snapshot/src/webmcp_text.rs, the playbooks under crates/vexdom-core/assets/skills/
+{dogfood,derive-client,webmcp-gen,slack},
+packages/extension/src/lib/bridge/vendor/react/scripts.ts,
+packages/extension/src/lib/bridge/vendor/recording-cursor.js, and the ports in
+packages/extension/src/lib/bridge/{keys,network-route,har}.ts, and were modified by the vexdom
+authors.
+
+This product includes React DevTools' installHook.js (https://github.com/facebook/react),
+Copyright (c) Meta Platforms, Inc. and affiliates, licensed under the MIT License, in
+packages/extension/src/lib/bridge/vendor/react/installHook.js (unmodified).
+
+This product includes software derived from Playwright
+(https://github.com/microsoft/playwright), version 1.65.1,
+Copyright (c) Microsoft Corporation, licensed under the Apache License, Version 2.0.
+Playwright contains code derived from the Puppeteer project
+(https://github.com/puppeteer/puppeteer), available under the Apache License, Version 2.0.
+The derived files are src/lib/actions/page/ax/roleUtils.ts and src/lib/actions/page/ax/domUtils.ts,
+modified by the vexdom authors; src/lib/actions/page/ax/cssTokenizer.ts is Playwright's CC0 copy of
+parse-css by Tab Atkins Jr.

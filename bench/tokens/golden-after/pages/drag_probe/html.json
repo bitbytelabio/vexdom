@@ -1,0 +1,5 @@
+{
+  "url": "file:///agent-browser/cli/src/native/test_fixtures/drag_probe.html",
+  "title": "Drag Probe",
+  "html": "<html lang=\"en\"><head>\n  <meta charset=\"utf-8\">\n  <title>Drag Probe</title>\n  \n</head>\n<body>\n  <div id=\"pad\">\n    <div id=\"target\">drag me</div>\n  </div>\n  <pre id=\"log\"></pre>\n  \n\n\n</body></html>"
+}

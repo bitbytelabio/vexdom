@@ -1,0 +1,155 @@
+[
+  {
+    "name": "snapshot",
+    "title": "Look at the page",
+    "description": "See the active tab: its accessibility tree with a ref (e5) per element (as: tree, default; only what changed after the first call), its text as markdown (as: markdown; with url, fetched over HTTP without touching any tab), or a screenshot (as: image).",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "as": {
+          "type": "string",
+          "enum": [
+            "tree",
+            "markdown",
+            "image"
+          ]
+        },
+        "interactive": {
+          "type": "boolean",
+          "description": "tree: only elements to act on (default true)."
+        },
+        "compact": {
+          "type": "boolean"
+        },
+        "depth": {
+          "type": "integer"
+        },
+        "selector": {
+          "type": "string",
+          "description": "tree: CSS selector of the subtree to read."
+        },
+        "urls": {
+          "type": "boolean",
+          "description": "tree: show link targets."
+        },
+        "full": {
+          "type": "boolean",
+          "description": "tree: the whole tree, not a delta."
+        },
+        "outline": {
+          "type": "boolean",
+          "description": "markdown: headings only, with line numbers."
+        },
+        "filter": {
+          "type": "string",
+          "description": "markdown: keep sections mentioning this text."
+        },
+        "maxChars": {
+          "type": "integer"
+        },
+        "url": {
+          "type": "string",
+          "description": "markdown: fetch this page over HTTP instead of reading the tab."
+        },
+        "raw": {
+          "type": "boolean",
+          "description": "markdown with url: the body as served."
+        },
+        "requireMd": {
+          "type": "boolean",
+          "description": "markdown with url: fail unless the site serves markdown."
+        },
+        "llms": {
+          "type": "string",
+          "enum": [
+            "index",
+            "full"
+          ],
+          "description": "markdown with url: the site's llms.txt or llms-full.txt."
+        },
+        "target": {
+          "type": [
+            "string",
+            "object"
+          ],
+          "description": "markdown or image: one element."
+        },
+        "fullPage": {
+          "type": "boolean"
+        },
+        "annotate": {
+          "type": "boolean"
+        },
+        "ifChanged": {
+          "type": "boolean"
+        },
+        "save": {
+          "type": "boolean",
+          "description": "image: also keep a file and report savedTo."
+        },
+        "format": {
+          "type": "string",
+          "enum": [
+            "png",
+            "jpeg"
+          ]
+        },
+        "quality": {
+          "type": "integer"
+        },
+        "tabId": {
+          "type": "integer"
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "act",
+    "title": "Act in the browser",
+    "description": "Run one browser action — {\"do\":\"<action>\", ...its input} — or several in order — {\"batch\":[{\"do\":...},...], \"bail\":true}. Action names and inputs come from guide. Element inputs take a ref (\"e5\") or a locator.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "do": {
+          "type": "string"
+        },
+        "batch": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "bail": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "annotations": {
+      "readOnlyHint": false,
+      "destructiveHint": true,
+      "openWorldHint": true
+    }
+  },
+  {
+    "name": "guide",
+    "title": "Browser actions and playbooks",
+    "description": "Without a topic: whether a browser is connected, every action you can run with act, by group, and the playbooks. With a topic: one action's description and input, a group's guide, or a playbook.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "topic": {
+          "type": "string"
+        }
+      }
+    },
+    "annotations": {
+      "readOnlyHint": true,
+      "openWorldHint": false
+    }
+  }
+]

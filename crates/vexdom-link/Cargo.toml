@@ -1,0 +1,24 @@
+[package]
+name = "vexdom-link"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+description = "Cap'n Proto RPC over a WebSocket's binary frames, and the control-socket client (ADR-018, ADR-025)"
+
+[dependencies]
+bytes = { workspace = true }
+capnp = { workspace = true }
+capnp-rpc = { workspace = true }
+futures = { workspace = true }
+tokio = { workspace = true }
+tokio-tungstenite = { workspace = true, features = ["connect"] }
+vexdom-schema = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["rt"] }
+
+[lints]
+workspace = true

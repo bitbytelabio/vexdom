@@ -1,0 +1,6 @@
+# The Rust port's toolchain (docs/internals/decisions.md ADR-022). At the repository root because
+# rust-anything runs cargo from the caller's cwd, and rustup looks for this file from there up.
+[toolchain]
+channel = "1.100.0"
+components = ["rustfmt", "clippy"]
+profile = "minimal"

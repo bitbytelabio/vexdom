@@ -1,0 +1,106 @@
+{
+  "method": "text: ceil(chars / 4); image: ceil(width / 28) * ceil(height / 28)",
+  "catalog": {
+    "tools": {
+      "chars": 61070,
+      "tokens": 15268
+    },
+    "instructions": {
+      "chars": 1931,
+      "tokens": 483
+    }
+  },
+  "fixtures": {
+    "firefox_forms": {
+      "getPageInfo": {
+        "chars": 1704,
+        "tokens": 426
+      },
+      "extractText": {
+        "chars": 398,
+        "tokens": 100
+      }
+    },
+    "firefox_probe": {
+      "getPageInfo": {
+        "chars": 1329,
+        "tokens": 333
+      },
+      "extractText": {
+        "chars": 401,
+        "tokens": 101
+      }
+    },
+    "drag_probe": {
+      "getPageInfo": {
+        "chars": 665,
+        "tokens": 167
+      },
+      "extractText": {
+        "chars": 330,
+        "tokens": 83
+      }
+    },
+    "webmcp_probe": {
+      "getPageInfo": {
+        "chars": 740,
+        "tokens": 185
+      },
+      "extractText": {
+        "chars": 327,
+        "tokens": 82
+      }
+    },
+    "snapshot_diff_probe": {
+      "getPageInfo": {
+        "chars": 989,
+        "tokens": 248
+      },
+      "extractText": {
+        "chars": 368,
+        "tokens": 92
+      }
+    },
+    "wikipedia-rust": {
+      "getPageInfo": {
+        "chars": 13952,
+        "tokens": 3488
+      },
+      "extractText": {
+        "chars": 20650,
+        "tokens": 5163
+      }
+    },
+    "hacker-news": {
+      "getPageInfo": {
+        "chars": 6306,
+        "tokens": 1577
+      },
+      "extractText": {
+        "chars": 4603,
+        "tokens": 1151
+      }
+    },
+    "docs-rs-tokio": {
+      "getPageInfo": {
+        "chars": 7944,
+        "tokens": 1986
+      },
+      "extractText": {
+        "chars": 17616,
+        "tokens": 4404
+      }
+    }
+  },
+  "screenshot": {
+    "image": {
+      "width": 1280,
+      "height": 800,
+      "tokens": 1334
+    },
+    "text": {
+      "chars": 164,
+      "tokens": 41
+    }
+  }
+}

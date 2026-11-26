@@ -1,0 +1,3 @@
+# node-shebang bins (wxt, vitest, tsc, web-ext) run on Bun: no Node needed
+[run]
+bun = true

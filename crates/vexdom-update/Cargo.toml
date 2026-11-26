@@ -1,0 +1,20 @@
+[package]
+name = "vexdom-update"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+publish.workspace = true
+description = "Signed self-update: the latest release, minisign-verified downloads, and installing them in place (ADR-031)"
+
+[dependencies]
+flate2 = { workspace = true }
+minisign-verify = { workspace = true }
+reqwest = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+tar = { workspace = true }
+
+
+[lints]
+workspace = true

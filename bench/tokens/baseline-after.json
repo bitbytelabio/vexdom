@@ -1,0 +1,130 @@
+{
+  "catalog": {
+    "tools": {
+      "chars": 2784,
+      "tokens": 696
+    },
+    "instructions": {
+      "chars": 2170,
+      "tokens": 543
+    }
+  },
+  "fixtures": {
+    "firefox_forms": {
+      "snapshot": {
+        "chars": 503,
+        "tokens": 126
+      },
+      "read": {
+        "chars": 145,
+        "tokens": 37
+      },
+      "outline": {
+        "chars": 79,
+        "tokens": 20
+      }
+    },
+    "firefox_probe": {
+      "snapshot": {
+        "chars": 435,
+        "tokens": 109
+      },
+      "read": {
+        "chars": 157,
+        "tokens": 40
+      },
+      "outline": {
+        "chars": 97,
+        "tokens": 25
+      }
+    },
+    "drag_probe": {
+      "snapshot": {
+        "chars": 116,
+        "tokens": 29
+      },
+      "read": {
+        "chars": 96,
+        "tokens": 24
+      },
+      "outline": {
+        "chars": 79,
+        "tokens": 20
+      }
+    },
+    "webmcp_probe": {
+      "snapshot": {
+        "chars": 109,
+        "tokens": 28
+      },
+      "read": {
+        "chars": 83,
+        "tokens": 21
+      },
+      "outline": {
+        "chars": 79,
+        "tokens": 20
+      }
+    },
+    "snapshot_diff_probe": {
+      "snapshot": {
+        "chars": 188,
+        "tokens": 47
+      },
+      "read": {
+        "chars": 123,
+        "tokens": 31
+      },
+      "outline": {
+        "chars": 79,
+        "tokens": 20
+      },
+      "delta": {
+        "chars": 202,
+        "tokens": 51
+      }
+    },
+    "wikipedia-rust": {
+      "snapshot": {
+        "chars": 20213,
+        "tokens": 5054
+      },
+      "read": {
+        "chars": 20212,
+        "tokens": 5053
+      },
+      "outline": {
+        "chars": 1578,
+        "tokens": 395
+      }
+    },
+    "hacker-news": {
+      "snapshot": {
+        "chars": 20212,
+        "tokens": 5053
+      },
+      "read": {
+        "chars": 4105,
+        "tokens": 1027
+      },
+      "outline": {
+        "chars": 79,
+        "tokens": 20
+      }
+    },
+    "docs-rs-tokio": {
+      "snapshot": {
+        "chars": 5693,
+        "tokens": 1424
+      },
+      "read": {
+        "chars": 19051,
+        "tokens": 4763
+      },
+      "outline": {
+        "chars": 857,
+        "tokens": 215
+      }
+    }
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "v": 1,
+  "docKey": "controls-doc",
+  "url": "https://x.test/form",
+  "title": "Controls",
+  "nodes": [
+    { "id": 1, "r": "RootWebArea", "n": "Controls", "c": [1, 2, 3, 4, 6, 8, 11, 13, 14, 15, 16] },
+    { "id": 2, "r": "slider", "n": "Volume", "v": 50, "s": { "focused": true } },
+    { "id": 3, "r": "button", "n": "Menu", "s": { "expanded": false } },
+    { "id": 4, "r": "checkbox", "n": "Partial", "s": { "checked": "mixed" } },
+    {
+      "id": 5,
+      "r": "generic",
+      "k": {
+        "hasCursorPointer": true,
+        "text": " Express shipping ",
+        "hiddenInputType": "radio",
+        "hiddenInputChecked": "true"
+      },
+      "c": [5]
+    },
+    { "r": "StaticText", "n": "Express shipping" },
+    {
+      "id": 6,
+      "r": "link",
+      "n": "Docs",
+      "v": "https://x.test/docs",
+      "u": "https://x.test/docs",
+      "k": { "hasCursorPointer": true, "text": "Docs", "isNative": true },
+      "c": [7]
+    },
+    { "r": "StaticText", "n": "Docs" },
+    { "r": "paragraph", "c": [9, 10] },
+    { "r": "StaticText", "n": "Hello " },
+    { "r": "StaticText", "n": "world" },
+    { "id": 8, "r": "generic", "c": [12] },
+    { "id": 9, "r": "button", "n": "Inner" },
+    { "id": 10, "r": "textbox", "n": "Password" },
+    { "id": 11, "r": "heading", "s": { "level": 2 } },
+    { "id": 12, "r": "Iframe" },
+    { "r": "button", "n": "No id" }
+  ],
+  "frames": []
+}

@@ -1,0 +1,115 @@
+{
+  "v": 1,
+  "docKey": "3dc32e89-a26a-4685-8323-676833c0a36c",
+  "url": "file:///agent-browser/cli/src/native/test_fixtures/firefox_forms.html",
+  "title": "Firefox forms",
+  "viewport": {
+    "w": 1280,
+    "h": 800,
+    "scrollX": 0,
+    "scrollY": 0
+  },
+  "nodes": [
+    {
+      "r": "RootWebArea",
+      "n": "Firefox forms",
+      "c": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13
+      ]
+    },
+    {
+      "id": 1,
+      "r": "textbox",
+      "n": "Issues",
+      "v": "is:issue is:open"
+    },
+    {
+      "id": 2,
+      "r": "textbox",
+      "n": "Editor"
+    },
+    {
+      "id": 3,
+      "r": "textbox",
+      "n": "Literal"
+    },
+    {
+      "id": 4,
+      "r": "textbox",
+      "n": "Guarded"
+    },
+    {
+      "id": 5,
+      "r": "textbox",
+      "n": "Password"
+    },
+    {
+      "id": 6,
+      "r": "textbox",
+      "n": "Notes"
+    },
+    {
+      "id": 7,
+      "r": "textbox",
+      "n": "Email"
+    },
+    {
+      "id": 8,
+      "r": "spinbutton",
+      "n": "Number"
+    },
+    {
+      "id": 9,
+      "r": "textbox",
+      "v": "nested",
+      "sh": true
+    },
+    {
+      "id": 10,
+      "r": "textbox",
+      "sh": true,
+      "h": "id:shadow-input"
+    },
+    {
+      "id": 11,
+      "r": "button",
+      "n": "source"
+    },
+    {
+      "id": 12,
+      "r": "button",
+      "n": "target"
+    },
+    {
+      "id": 13,
+      "r": "Iframe",
+      "n": "Cross origin forms"
+    }
+  ],
+  "frames": [
+    {
+      "node": 13,
+      "probe": "b8a41288-d479-46b1-a942-d185b6fba750",
+      "title": "Cross origin forms",
+      "sameOrigin": false
+    }
+  ],
+  "stats": {
+    "elements": 26,
+    "nodes": 14,
+    "ms": 3.1,
+    "truncated": false
+  }
+}

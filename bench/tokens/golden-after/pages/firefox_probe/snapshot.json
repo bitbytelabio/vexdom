@@ -1,0 +1,106 @@
+{
+  "v": 1,
+  "docKey": "c6c609a5-3542-446c-98e6-9a3100825d28",
+  "url": "file:///agent-browser/cli/src/native/test_fixtures/firefox_probe.html",
+  "title": "Firefox adapter probe",
+  "viewport": {
+    "w": 1280,
+    "h": 800,
+    "scrollX": 0,
+    "scrollY": 0
+  },
+  "nodes": [
+    {
+      "r": "RootWebArea",
+      "n": "Firefox adapter probe",
+      "c": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11
+      ]
+    },
+    {
+      "id": 1,
+      "r": "heading",
+      "n": "Firefox probe",
+      "s": {
+        "level": 1
+      }
+    },
+    {
+      "id": 2,
+      "r": "textbox",
+      "n": "Name"
+    },
+    {
+      "id": 3,
+      "r": "button",
+      "n": "Go"
+    },
+    {
+      "id": 4,
+      "r": "button",
+      "n": "First"
+    },
+    {
+      "id": 5,
+      "r": "button",
+      "n": "Second"
+    },
+    {
+      "id": 6,
+      "r": "button",
+      "n": "Ask"
+    },
+    {
+      "id": 7,
+      "r": "button",
+      "n": "Alert"
+    },
+    {
+      "id": 8,
+      "r": "link",
+      "n": "Download file",
+      "u": "file:///download.txt"
+    },
+    {
+      "id": 9,
+      "r": "link",
+      "n": "Download inline file",
+      "u": "file:///api"
+    },
+    {
+      "id": 10,
+      "r": "button",
+      "n": "Shadow button",
+      "sh": true
+    },
+    {
+      "id": 11,
+      "r": "Iframe",
+      "n": "Other origin"
+    }
+  ],
+  "frames": [
+    {
+      "node": 11,
+      "probe": "e4d51219-8f25-4b36-9f22-f8e4893de12b",
+      "title": "Other origin",
+      "sameOrigin": false
+    }
+  ],
+  "stats": {
+    "elements": 15,
+    "nodes": 12,
+    "ms": 2.4,
+    "truncated": false
+  }
+}

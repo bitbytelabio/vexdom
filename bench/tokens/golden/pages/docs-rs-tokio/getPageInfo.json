@@ -1,0 +1,339 @@
+{
+  "document": {
+    "url": "https://docs.rs/tokio/latest/tokio/",
+    "title": "tokio - Rust",
+    "description": "A runtime for writing reliable network applications without compromising speed.",
+    "lang": "en"
+  },
+  "viewport": {
+    "width": 1280,
+    "height": 800,
+    "scrollX": 0,
+    "scrollY": 0,
+    "pageWidth": 1280,
+    "pageHeight": 8173
+  },
+  "layout": {
+    "diagram": "page 1280×8173 · viewport 1280×800 @ y=0\n├ navigation “Main navigation” · 1280×31 @ (0,0) · 6 links · 1 fields · selector: body > div:nth-of-type(1) > div > div\n│ └ form · 1280×31 @ (0,0) · 6 links · 1 fields · selector: #nav-search-form\n├ navigation “tokio1.54.1” · 200×768 @ (0,32) · 20 links · selector: #rustdoc_body_wrapper > nav\n│ └ section “Sections” · 175×533 @ (24,173) · 17 links · selector: #rustdoc-toc\n└ main “Crate tokio Copy item path” · 1080×8141 @ (200,32) · 84 links · 2 buttons · selector: #rustdoc_body_wrapper > main\n  └ section “Crate tokio Copy item path” · 960×8091 @ (245,42) · 84 links · 2 buttons · selector: #main-content"
+  },
+  "outline": [
+    {
+      "level": 2,
+      "text": "tokio1.54.1"
+    },
+    {
+      "level": 3,
+      "text": "Sections"
+    },
+    {
+      "level": 3,
+      "text": "Crate Items"
+    },
+    {
+      "level": 3,
+      "text": "Crates"
+    },
+    {
+      "level": 1,
+      "text": "Crate tokio Copy item path"
+    },
+    {
+      "level": 2,
+      "text": "§A Tour of Tokio"
+    },
+    {
+      "level": 4,
+      "text": "§Authoring applications"
+    },
+    {
+      "level": 5,
+      "text": "§Example"
+    },
+    {
+      "level": 4,
+      "text": "§Authoring libraries"
+    },
+    {
+      "level": 5,
+      "text": "§Example"
+    },
+    {
+      "level": 3,
+      "text": "§Working With Tasks"
+    },
+    {
+      "level": 3,
+      "text": "§CPU-bound tasks and blocking code"
+    },
+    {
+      "level": 3,
+      "text": "§Asynchronous IO"
+    },
+    {
+      "level": 2,
+      "text": "§Examples"
+    },
+    {
+      "level": 2,
+      "text": "§Feature flags"
+    },
+    {
+      "level": 3,
+      "text": "§Unstable features"
+    },
+    {
+      "level": 2,
+      "text": "§Supported platforms"
+    },
+    {
+      "level": 3,
+      "text": "§WASM support"
+    },
+    {
+      "level": 4,
+      "text": "§WASI support"
+    },
+    {
+      "level": 4,
+      "text": "§Emscripten support"
+    },
+    {
+      "level": 2,
+      "text": "Re-exports§"
+    },
+    {
+      "level": 2,
+      "text": "Modules§"
+    },
+    {
+      "level": 2,
+      "text": "Macros§"
+    },
+    {
+      "level": 2,
+      "text": "Attribute Macros§"
+    }
+  ],
+  "interactive": {
+    "links": [
+      {
+        "selector": "#nav-search-form > a",
+        "text": "Docs.rs",
+        "href": "https://docs.rs/",
+        "region": "form"
+      },
+      {
+        "selector": "#nav-search-form > ul:nth-of-type(1) > li:nth-of-type(1) > a",
+        "text": "tokio-1.54.1",
+        "href": "https://docs.rs/tokio/latest/tokio/#",
+        "region": "form"
+      },
+      {
+        "selector": "#nav-search-form > ul:nth-of-type(1) > li:nth-of-type(2) > a",
+        "text": "Platform",
+        "href": "https://docs.rs/tokio/latest/tokio/#",
+        "region": "form"
+      },
+      {
+        "selector": "#nav-search-form > ul:nth-of-type(1) > li:nth-of-type(3) > a",
+        "text": "Feature flags",
+        "href": "https://docs.rs/crate/tokio/latest/features",
+        "region": "form"
+      },
+      {
+        "selector": "#nav-search-form > ul:nth-of-type(2) > li > a",
+        "text": "docs.rs",
+        "href": "https://docs.rs/tokio/latest/tokio/#",
+        "region": "form"
+      },
+      {
+        "selector": "#nav-search-form > ul:nth-of-type(3) > li > a",
+        "text": "Rust",
+        "href": "https://docs.rs/tokio/latest/tokio/#",
+        "region": "form"
+      },
+      {
+        "selector": "#rustdoc_body_wrapper > a",
+        "text": "Skip to main content",
+        "href": "https://docs.rs/tokio/latest/tokio/#main-content"
+      },
+      {
+        "selector": "#rustdoc_body_wrapper > nav > div:nth-of-type(1) > h2 > a",
+        "text": "tokio",
+        "href": "https://docs.rs/tokio/latest/tokio/index.html",
+        "region": "navigation “tokio1.54.1”"
+      },
+      {
+        "selector": "#all-types",
+        "text": "All Items",
+        "href": "https://docs.rs/tokio/latest/tokio/all.html",
+        "region": "navigation “tokio1.54.1”"
+      },
+      {
+        "selector": "#rustdoc-toc > h3:nth-of-type(1) > a",
+        "text": "Sections",
+        "href": "https://docs.rs/tokio/latest/tokio/#",
+        "region": "section “Sections”"
+      },
+      {
+        "selector": "#rustdoc-toc > ul:nth-of-type(1) > li:nth-of-type(1) > a",
+        "text": "A Tour of Tokio",
+        "href": "https://docs.rs/tokio/latest/tokio/#a-tour-of-tokio",
+        "region": "section “Sections”"
+      },
+      {
+        "selector": "#rustdoc-toc > ul:nth-of-type(1) > li:nth-of-type(1) > ul > li:nth-of-type(1) > a",
+        "text": "Authoring applications",
+        "href": "https://docs.rs/tokio/latest/tokio/#authoring-applications",
+        "region": "section “Sections”"
+      },
+      {
+        "selector": "#rustdoc-toc > ul:nth-of-type(1) > li:nth-of-type(1) > ul > li:nth-of-type(2) > a",
+        "text": "Authoring libraries",
+        "href": "https://docs.rs/tokio/latest/tokio/#authoring-libraries",
+        "region": "section “Sections”"
+      },
+      {
+        "selector": "#rustdoc-toc > ul:nth-of-type(1) > li:nth-of-type(1) > ul > li:nth-of-type(3) > a",
+        "text": "Working With Tasks",
+        "href": "https://docs.rs/tokio/latest/tokio/#working-with-tasks",
+        "region": "section “Sections”"
+      },
+      {
+        "selector": "#rustdoc-toc > ul:nth-of-type(1) > li:nth-of-type(1) > ul > li:nth-of-type(4) > a",
+        "text": "CPU-bound tasks and blocking code",
+        "href": "https://docs.rs/tokio/latest/tokio/#cpu-bound-tasks-and-blocking-code",
+        "region": "section “Sections”"
+      },
+      {
+        "selector": "#rustdoc-toc > ul:nth-of-type(1) > li:nth-of-type(1) > ul > li:nth-of-type(5) > a",
+        "text": "Asynchronous IO",
+        "href": "https://docs.rs/tokio/latest/tokio/#asynchronous-io",
+        "region": "section “Sections”"
+      },
+      {
+        "selector": "#rustdoc-toc > ul:nth-of-type(1) > li:nth-of-type(2) > a",
+        "text": "Examples",
+        "href": "https://docs.rs/tokio/latest/tokio/#examples",
+        "region": "section “Sections”"
+      },
+      {
+        "selector": "#rustdoc-toc > ul:nth-of-type(1) > li:nth-of-type(3) > a",
+        "text": "Feature flags",
+        "href": "https://docs.rs/tokio/latest/tokio/#feature-flags",
+        "region": "section “Sections”"
+      },
+      {
+        "selector": "#rustdoc-toc > ul:nth-of-type(1) > li:nth-of-type(3) > ul > li > a",
+        "text": "Unstable features",
+        "href": "https://docs.rs/tokio/latest/tokio/#unstable-features",
+        "region": "section “Sections”"
+      },
+      {
+        "selector": "#rustdoc-toc > ul:nth-of-type(1) > li:nth-of-type(4) > a",
+        "text": "Supported platforms",
+        "href": "https://docs.rs/tokio/latest/tokio/#supported-platforms",
+        "region": "section “Sections”"
+      },
+      {
+        "selector": "#rustdoc-toc > ul:nth-of-type(1) > li:nth-of-type(4) > ul > li > a",
+        "text": "WASM support",
+        "href": "https://docs.rs/tokio/latest/tokio/#wasm-support",
+        "region": "section “Sections”"
+      },
+      {
+        "selector": "#rustdoc-toc > h3:nth-of-type(2) > a",
+        "text": "Crate Items",
+        "href": "https://docs.rs/tokio/latest/tokio/#reexports",
+        "region": "section “Sections”"
+      },
+      {
+        "selector": "#rustdoc-toc > ul:nth-of-type(2) > li:nth-of-type(1) > a",
+        "text": "Re-exports",
+        "href": "https://docs.rs/tokio/latest/tokio/#reexports",
+        "region": "section “Sections”"
+      },
+      {
+        "selector": "#rustdoc-toc > ul:nth-of-type(2) > li:nth-of-type(2) > a",
+        "text": "Modules",
+        "href": "https://docs.rs/tokio/latest/tokio/#modules",
+        "region": "section “Sections”"
+      },
+      {
+        "selector": "#rustdoc-toc > ul:nth-of-type(2) > li:nth-of-type(3) > a",
+        "text": "Macros",
+        "href": "https://docs.rs/tokio/latest/tokio/#macros",
+        "region": "section “Sections”"
+      },
+      {
+        "selector": "#rustdoc-toc > ul:nth-of-type(2) > li:nth-of-type(4) > a",
+        "text": "Attribute Macros",
+        "href": "https://docs.rs/tokio/latest/tokio/#attributes",
+        "region": "section “Sections”"
+      },
+      {
+        "selector": "#rustdoc-modnav > ul > li > a",
+        "text": "tokio",
+        "href": "https://docs.rs/tokio/latest/tokio/index.html",
+        "region": "navigation “tokio1.54.1”"
+      },
+      {
+        "selector": "#search-button > a",
+        "text": "Search",
+        "href": "https://docs.rs/tokio/latest/tokio/?search=",
+        "region": "section “Crate tokio Copy item path”"
+      },
+      {
+        "selector": "#main-content > div > rustdoc-toolbar > div:nth-of-type(2) > a",
+        "text": "Settings",
+        "href": "https://docs.rs/tokio/latest/settings.html",
+        "region": "section “Crate tokio Copy item path”"
+      },
+      {
+        "selector": "#main-content > div > rustdoc-toolbar > div:nth-of-type(3) > a",
+        "text": "Help",
+        "href": "https://docs.rs/tokio/latest/help.html",
+        "region": "section “Crate tokio Copy item path”"
+      }
+    ],
+    "buttons": [
+      {
+        "selector": "#copy-path",
+        "text": "Copy item path",
+        "region": "section “Crate tokio Copy item path”"
+      },
+      {
+        "selector": "#toggle-all-docs",
+        "text": "Summary",
+        "region": "section “Crate tokio Copy item path”"
+      }
+    ],
+    "fields": [
+      {
+        "tag": "input",
+        "role": "textbox",
+        "selector": "#nav-search",
+        "text": "Find crate by search query",
+        "state": {
+          "filled": false
+        },
+        "kind": "text",
+        "region": "form"
+      }
+    ],
+    "forms": [
+      {
+        "selector": "#nav-search-form",
+        "action": "/releases/search",
+        "method": "get",
+        "region": "navigation “Main navigation”"
+      }
+    ],
+    "counts": {
+      "links": 111,
+      "buttons": 2,
+      "fields": 1,
+      "forms": 1
+    }
+  }
+}

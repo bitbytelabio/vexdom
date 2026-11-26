@@ -1,0 +1,264 @@
+# Builds and publishes a release when a `v*` tag is pushed (ADR-010, ADR-026): the `vexdom` binary
+# for macOS (arm64, x64) and Linux gnu (x64, arm64), each archive carrying the unpacked Chrome
+# extension beside the binary (`app/src/cli/install.rs` `packaged_extension` looks in
+# `<exe>/../extension/chrome-mv3`), the macOS desktop app as `Vexdom-<version>-<target>.zip`
+# (scripts/bundle-mac.sh: `Vexdom.app` with `vexdom` and the extension inside, signed ad hoc)
+# and as a drag-to-Applications disk image `Vexdom-<version>-<target>.dmg`, plus the signed
+# unlisted Firefox add-on and its updates.json (the `update_url` in
+# packages/extension/wxt.config.ts), and the install script. Every asset keeps its own `.sha256`
+# (install.sh checks those); `SHA256SUMS` lists every asset and `SHA256SUMS.minisig` is its
+# minisign signature, which `vexdom update` and Vexdom.app verify against
+# crates/vexdom-update/assets/minisign.pub (ADR-031).
+#
+# Secrets: AMO_JWT_ISSUER and AMO_JWT_SECRET (addons.mozilla.org API keys) sign the add-on;
+# MINISIGN_SECRET_KEY (the passwordless minisign secret key file's content) signs SHA256SUMS.
+
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  extension:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/extension
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.5
+
+      - name: Rust toolchain
+        run: |
+          # rust-toolchain.toml pins the version; rustup installs it on first use.
+          rustup target add wasm32-unknown-unknown
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends capnproto
+
+      - name: binaryen (wasm-opt)
+        # Ubuntu's binaryen is too old for the flags boltffi passes (--enable-bulk-memory-opt).
+        run: |
+          v=version_133
+          curl -fsSL "https://github.com/WebAssembly/binaryen/releases/download/$v/binaryen-$v-x86_64-linux.tar.gz" | tar xz -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/binaryen-$v/bin" >> "$GITHUB_PATH"
+
+      - uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: boltffi_cli@0.32.1
+
+      # Reuses CI's main-branch cache (same key); a tag never writes its own.
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: linux
+          save-if: false
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: The tag is the package version
+        id: version
+        run: |
+          version=$(jq -r .version package.json)
+          test "v$version" = "$GITHUB_REF_NAME" || { echo "::error::tag $GITHUB_REF_NAME is not v$version"; exit 1; }
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Build
+        run: |
+          bun run build
+          bun run build:firefox
+          bun run lint:firefox
+
+      - name: Sign the Firefox add-on (unlisted)
+        env:
+          AMO_JWT_ISSUER: ${{ secrets.AMO_JWT_ISSUER }}
+          AMO_JWT_SECRET: ${{ secrets.AMO_JWT_SECRET }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          bun --bun node_modules/.bin/web-ext sign --source-dir dist/firefox-mv2 --channel unlisted --artifacts-dir dist/signed \
+            --api-key "$AMO_JWT_ISSUER" --api-secret "$AMO_JWT_SECRET"
+          xpi=$(ls dist/signed/*.xpi)
+          test "$(echo "$xpi" | wc -l)" -eq 1 || { echo "::error::expected one signed xpi, got: $xpi"; exit 1; }
+          mkdir -p dist/release
+          mv "$xpi" "dist/release/vexdom-$VERSION-firefox.xpi"
+          # The name browsers.rs `signed_addon_url` expects, and the update manifest Firefox polls.
+          cat > dist/release/updates.json <<EOF
+          {"addons":{"vexdom@nguyenthdat.github.io":{"updates":[{"version":"$VERSION","update_link":"https://github.com/nguyenthdat/vexdom/releases/download/v$VERSION/vexdom-$VERSION-firefox.xpi"}]}}}
+          EOF
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: chrome-mv3
+          path: packages/extension/dist/chrome-mv3
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: firefox
+          path: packages/extension/dist/release
+
+  bridge:
+    needs: extension
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: aarch64-apple-darwin
+            runs-on: macos-15
+          - target: x86_64-apple-darwin
+            runs-on: macos-15
+          - target: x86_64-unknown-linux-gnu
+            runs-on: ubuntu-latest
+          - target: aarch64-unknown-linux-gnu
+            runs-on: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runs-on }}
+    env:
+      TARGET: ${{ matrix.target }}
+      VERSION: ${{ needs.extension.outputs.version }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Toolchain
+        run: |
+          rustup target add "$TARGET"
+          if [ "$RUNNER_OS" = macOS ]; then
+            brew install capnp
+          else
+            sudo apt-get update && sudo apt-get install -y --no-install-recommends capnproto
+          fi
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.target }}
+          workspaces: |
+            .
+            desktop
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: chrome-mv3
+          path: stage-extension/chrome-mv3
+
+      - name: Build
+        run: cargo build --release --locked -p vexdom --target "$TARGET"
+
+      - name: Package
+        run: |
+          name="vexdom-$VERSION-$TARGET"
+          mkdir -p "out/$name/bin" "out/$name/extension"
+          cp "target/$TARGET/release/vexdom" "out/$name/bin/"
+          cp -R stage-extension/chrome-mv3 "out/$name/extension/"
+          cp LICENSE NOTICE "out/$name/"
+          cd out
+          tar czf "$name.tar.gz" "$name"
+          if command -v sha256sum >/dev/null; then sha256sum "$name.tar.gz"; else shasum -a 256 "$name.tar.gz"; fi > "$name.tar.gz.sha256"
+
+      - name: Build the desktop app
+        if: contains(matrix.target, 'apple-darwin')
+        run: cargo build --release --locked --manifest-path desktop/Cargo.toml --target "$TARGET"
+
+      - name: Bundle Vexdom.app
+        if: contains(matrix.target, 'apple-darwin')
+        run: |
+          scripts/bundle-mac.sh "target/$TARGET/release/vexdom" "desktop/target/$TARGET/release/vexdom-desktop" \
+            stage-extension/chrome-mv3 "$VERSION" out/app
+
+      - name: Archive Vexdom.app
+        if: contains(matrix.target, 'apple-darwin')
+        run: |
+          name="Vexdom-$VERSION-$TARGET.zip"
+          ditto -c -k --keepParent out/app/Vexdom.app "out/$name"
+          cd out
+          shasum -a 256 "$name" > "$name.sha256"
+
+      - name: Disk image of Vexdom.app
+        if: contains(matrix.target, 'apple-darwin')
+        run: |
+          name="Vexdom-$VERSION-$TARGET.dmg"
+          # The window Finder shows: the app beside a link to /Applications to drag it onto.
+          stage=out/dmg
+          rm -rf "$stage"
+          mkdir -p "$stage"
+          ditto out/app/Vexdom.app "$stage/Vexdom.app"
+          ln -s /Applications "$stage/Applications"
+          hdiutil create -volname Vexdom -srcfolder "$stage" -ov -format UDZO "out/$name"
+          cd out
+          shasum -a 256 "$name" > "$name.sha256"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bridge-${{ matrix.target }}
+          path: |
+            out/*.tar.gz
+            out/*.tar.gz.sha256
+            out/*.zip
+            out/*.zip.sha256
+            out/*.dmg
+            out/*.dmg.sha256
+
+  publish:
+    needs: [extension, bridge]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Collect the release assets
+        run: |
+          mkdir -p out
+          cp artifacts/bridge-*/*.tar.gz artifacts/bridge-*/*.tar.gz.sha256 \
+            artifacts/bridge-*/*.zip artifacts/bridge-*/*.zip.sha256 \
+            artifacts/bridge-*/*.dmg artifacts/bridge-*/*.dmg.sha256 \
+            artifacts/firefox/*.xpi artifacts/firefox/updates.json \
+            scripts/install.sh out/
+          # One line per published file (`<hex>  <name>`, byte-sorted), written outside out/ so the
+          # glob never sees it; `vexdom update` checks an asset against its line here.
+          cd out
+          export LC_ALL=C
+          sha256sum -- * > "$RUNNER_TEMP/SHA256SUMS"
+          mv "$RUNNER_TEMP/SHA256SUMS" SHA256SUMS
+
+      - name: Sign SHA256SUMS
+        env:
+          MINISIGN_SECRET_KEY: ${{ secrets.MINISIGN_SECRET_KEY }}
+        run: |
+          if [ -z "$MINISIGN_SECRET_KEY" ]; then
+            echo "::error::secret MINISIGN_SECRET_KEY is empty; store the minisign secret key (generated with minisign -G -W) as that secret"
+            exit 1
+          fi
+          curl -fsSL -o "$RUNNER_TEMP/minisign.tar.gz" \
+            https://github.com/jedisct1/minisign/releases/download/0.12/minisign-0.12-linux.tar.gz
+          tar xzf "$RUNNER_TEMP/minisign.tar.gz" -C "$RUNNER_TEMP"
+          minisign="$RUNNER_TEMP/minisign-linux/x86_64/minisign"
+          umask 077
+          key=$(mktemp "$RUNNER_TEMP/minisign-key.XXXXXX")
+          trap 'rm -f "$key"' EXIT
+          printf '%s\n' "$MINISIGN_SECRET_KEY" > "$key"
+          # The key has no password (-W), so minisign reads nothing from stdin.
+          "$minisign" -S -s "$key" -m out/SHA256SUMS -x out/SHA256SUMS.minisig </dev/null
+          rm -f "$key"
+          # The secret must match the public key `vexdom update` and Vexdom.app verify with.
+          "$minisign" -V -p crates/vexdom-update/assets/minisign.pub -m out/SHA256SUMS -x out/SHA256SUMS.minisig
+
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" --verify-tag --title "$GITHUB_REF_NAME" --generate-notes out/*

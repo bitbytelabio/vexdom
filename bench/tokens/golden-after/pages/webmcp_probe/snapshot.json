@@ -1,0 +1,38 @@
+{
+  "v": 1,
+  "docKey": "7e1efd8c-90aa-4f27-8919-84b47b8e9120",
+  "url": "file:///agent-browser/cli/src/native/test_fixtures/webmcp_probe.html",
+  "title": "WebMCP probe",
+  "viewport": {
+    "w": 1280,
+    "h": 800,
+    "scrollX": 0,
+    "scrollY": 0
+  },
+  "nodes": [
+    {
+      "r": "RootWebArea",
+      "n": "WebMCP probe",
+      "c": [
+        1
+      ]
+    },
+    {
+      "id": 1,
+      "r": "Iframe"
+    }
+  ],
+  "frames": [
+    {
+      "node": 1,
+      "probe": "49f59e34-4340-48f6-9078-acb86d8cde1e",
+      "sameOrigin": false
+    }
+  ],
+  "stats": {
+    "elements": 4,
+    "nodes": 2,
+    "ms": 2.4,
+    "truncated": false
+  }
+}

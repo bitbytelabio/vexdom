@@ -1,0 +1,44 @@
+{
+  "label": "after",
+  "mcp": "target/release/vexdom mcp",
+  "model": "sonnet",
+  "at": "2026-11-25T15:36:28.655Z",
+  "tasks": [
+    {
+      "task": "forms",
+      "prompt": "In the browser tab, type Ada into the Notes field, a@b.c into the Email field and 42 into the Number field, then tell me the value of the Issues field.",
+      "input": 61422,
+      "output": 274,
+      "total": 61696,
+      "turns": 3,
+      "costUsd": 0.09098859999999999,
+      "ms": 7789,
+      "isError": false,
+      "result": "I filled in all three fields: Notes is \"Ada\", Email is \"a@b.c\" and Number is \"42\".\n\nThe Issues field contains `is:issue is:open`."
+    },
+    {
+      "task": "diff",
+      "prompt": "In the browser tab, type Ada Lovelace into the Account name field, click the Primary action button, then follow the Details link and tell me the page URL.",
+      "input": 61214,
+      "output": 335,
+      "total": 61549,
+      "turns": 4,
+      "costUsd": 0.0200752,
+      "ms": 7313,
+      "isError": false,
+      "result": "The page URL after following the Details link is `http://127.0.0.1:18799/snapshot_diff_probe.html#target`.\n\nI typed \"Ada Lovelace\" into the Account name field, clicked Primary action, then clicked Details. The Details link only changed the URL fragment to `#target`, so the page didn't navigate anywhere else."
+    },
+    {
+      "task": "hn",
+      "prompt": "The browser tab shows Hacker News. Give me the titles of the top 5 stories.",
+      "input": 41922,
+      "output": 283,
+      "total": 42205,
+      "turns": 2,
+      "costUsd": 0.021089300000000002,
+      "ms": 6716,
+      "isError": false,
+      "result": "The top 5 stories on the page, in the order Hacker News lists them:\n\n1. Google Releases Cogentic Papers on Integer Factorization, Discrete Logs and More (github.com/google-research)\n2. A few questions for the guy who went snorkeling in a Home Depot retention pond (vox.com)\n3. Windows Loudness Equalization, reverse-engineered and ported to PipeWire (github.com/xoxorwr)\n4. Button Sounds – collection of professionally-recorded button clicks and presses (joshwcomeau.com)\n5. Matrix Multiplication is Θ(n^2.25) [pdf] (github.com/openai)"
+    }
+  ]
+}

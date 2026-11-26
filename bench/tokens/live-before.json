@@ -1,0 +1,44 @@
+{
+  "label": "before",
+  "mcp": "node src/daemon/dist/cli.js mcp",
+  "model": "sonnet",
+  "at": "2026-11-25T14:06:06.665Z",
+  "tasks": [
+    {
+      "task": "forms",
+      "prompt": "In the browser tab, type Ada into the Notes field, a@b.c into the Email field and 42 into the Number field, then tell me the value of the Issues field.",
+      "input": 114076,
+      "output": 581,
+      "total": 114657,
+      "turns": 7,
+      "costUsd": 0.037692199999999995,
+      "ms": 9549,
+      "isError": false,
+      "result": "I filled in the three fields: Notes is \"Ada\", Email is \"a@b.c\" and Number is \"42\". The Issues field contains `is:issue is:open`.\n\nI read that value from a screenshot of the field, because the field's text isn't exposed as page text. Something in the screenshot may overlap the start of the field, so I'm confident of the value but not of how it sits on the page."
+    },
+    {
+      "task": "diff",
+      "prompt": "In the browser tab, type Ada Lovelace into the Account name field, click the Primary action button, then follow the Details link and tell me the page URL.",
+      "input": 141084,
+      "output": 395,
+      "total": 141479,
+      "turns": 6,
+      "costUsd": 0.0304248,
+      "ms": 9918,
+      "isError": false,
+      "result": "I entered \"Ada Lovelace\" in the Account name field, clicked Primary action, and then followed the Details link. The page URL is now:\n\n**http://127.0.0.1:18799/snapshot_diff_probe.html#target**"
+    },
+    {
+      "task": "hn",
+      "prompt": "The browser tab shows Hacker News. Give me the titles of the top 5 stories.",
+      "input": 112121,
+      "output": 477,
+      "total": 112598,
+      "turns": 4,
+      "costUsd": 0.030166000000000002,
+      "ms": 9432,
+      "isError": false,
+      "result": "The top 5 stories on the page, in order:\n\n1. Windows Loudness Equalization, reverse-engineered and ported to PipeWire (github.com/xoxorwr)\n2. Google Releases Cogentic Papers on Integer Factorization, Discrete Logs and More (github.com/google-research)\n3. Button Sounds – collection of professionally-recorded button clicks and presses (joshwcomeau.com)\n4. Matrix Multiplication is Θ(n^2.25) [pdf] (github.com/openai)\n5. The short age of dragon riders (atilloy.com)"
+    }
+  ]
+}

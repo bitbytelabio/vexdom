@@ -1,0 +1,86 @@
+{
+  "document": {
+    "url": "file:///agent-browser/cli/src/native/test_fixtures/firefox_probe.html",
+    "title": "Firefox adapter probe",
+    "lang": "en"
+  },
+  "viewport": {
+    "width": 1280,
+    "height": 800,
+    "scrollX": 0,
+    "scrollY": 0,
+    "pageWidth": 1280,
+    "pageHeight": 800
+  },
+  "layout": {
+    "diagram": "page 1280×800 · viewport 1280×800 @ y=0"
+  },
+  "outline": [
+    {
+      "level": 1,
+      "text": "Firefox probe"
+    }
+  ],
+  "interactive": {
+    "links": [
+      {
+        "selector": "#dl",
+        "text": "Download file",
+        "href": "file:///download.txt"
+      },
+      {
+        "selector": "#dl-inline",
+        "text": "Download inline file",
+        "href": "file:///api"
+      }
+    ],
+    "buttons": [
+      {
+        "selector": "#go",
+        "text": "Go"
+      },
+      {
+        "selector": "#list > button:nth-of-type(1)",
+        "text": "First"
+      },
+      {
+        "selector": "#list > button:nth-of-type(2)",
+        "text": "Second"
+      },
+      {
+        "selector": "#ask",
+        "text": "Ask"
+      },
+      {
+        "selector": "#alert",
+        "text": "Alert"
+      }
+    ],
+    "fields": [
+      {
+        "tag": "input",
+        "role": "textbox",
+        "selector": "#name",
+        "text": "Name",
+        "state": {
+          "filled": false
+        },
+        "kind": "text"
+      }
+    ],
+    "forms": [],
+    "counts": {
+      "links": 2,
+      "buttons": 5,
+      "fields": 1,
+      "forms": 0
+    }
+  },
+  "frames": [
+    {
+      "selector": "body > iframe",
+      "src": "file:///agent-browser/cli/src/native/test_fixtures/__OTHER__/frame.html",
+      "title": "Other origin"
+    }
+  ]
+}

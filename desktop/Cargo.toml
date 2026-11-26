@@ -1,0 +1,36 @@
+[package]
+name = "vexdom-desktop"
+version = "0.9.2"
+edition = "2024"
+license = "Apache-2.0"
+publish = false
+description = "Vexdom's desktop app (P10, ADR-013): the Bridge on and off, browsers, pairing, the agent, notices"
+
+# A workspace of its own, so GPUI never enters the root Cargo.lock or the Linux CI (ADR-026).
+[workspace]
+
+[[bin]]
+name = "vexdom-desktop"
+path = "src/main.rs"
+
+[dependencies]
+capnp = "0.28.2"
+gpui = "0.2.2"
+# Already in GPUI's tree; decodes the menu-bar template.
+image = { version = "0.25", default-features = false, features = ["png"] }
+notify-rust = "4"
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSApplication", "NSImage", "NSResponder"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSBundle", "NSData", "NSError", "NSString"] }
+# "Open at login" (`SMAppService.mainAppService`).
+objc2-service-management = { version = "0.3", default-features = false, features = ["std", "SMAppService", "objc2", "objc2-foundation"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+tokio = { version = "1", features = ["rt", "macros", "time", "process", "sync"] }
+tray-icon = "0.27"
+unicode-segmentation = "1"
+vexdom-client = { path = "../crates/vexdom-client" }
+# State paths, the log, config's theme list.
+vexdom-core = { path = "../crates/vexdom-core" }
+vexdom-schema = { path = "../crates/vexdom-schema" }
+# Checks for, verifies and stages a new Vexdom.app (ADR-031); brings reqwest.
+vexdom-update = { path = "../crates/vexdom-update" }

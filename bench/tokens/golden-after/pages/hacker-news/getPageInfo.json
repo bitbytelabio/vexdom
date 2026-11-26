@@ -1,0 +1,196 @@
+{
+  "document": {
+    "url": "https://news.ycombinator.com/",
+    "title": "Hacker News",
+    "lang": "en"
+  },
+  "viewport": {
+    "width": 1280,
+    "height": 800,
+    "scrollX": 0,
+    "scrollY": 0,
+    "pageWidth": 1280,
+    "pageHeight": 1217
+  },
+  "layout": {
+    "diagram": "page 1280×1217 · viewport 1280×800 @ y=0\n└ form · 1074×21 @ (103,1175) · 1 fields · selector: #hnmain > tbody > tr:nth-of-type(4) > td > center > form"
+  },
+  "outline": [],
+  "interactive": {
+    "links": [
+      {
+        "selector": "#hnmain > tbody > tr:nth-of-type(1) > td > table > tbody > tr > td:nth-of-type(1) > a",
+        "href": "https://news.ycombinator.com/"
+      },
+      {
+        "selector": "#hnmain > tbody > tr:nth-of-type(1) > td > table > tbody > tr > td:nth-of-type(2) > span > b > a",
+        "text": "Hacker News",
+        "href": "https://news.ycombinator.com/news"
+      },
+      {
+        "selector": "#hnmain > tbody > tr:nth-of-type(1) > td > table > tbody > tr > td:nth-of-type(2) > span > a:nth-of-type(1)",
+        "text": "new",
+        "href": "https://news.ycombinator.com/newest"
+      },
+      {
+        "selector": "#hnmain > tbody > tr:nth-of-type(1) > td > table > tbody > tr > td:nth-of-type(2) > span > a:nth-of-type(2)",
+        "text": "past",
+        "href": "https://news.ycombinator.com/front"
+      },
+      {
+        "selector": "#hnmain > tbody > tr:nth-of-type(1) > td > table > tbody > tr > td:nth-of-type(2) > span > a:nth-of-type(3)",
+        "text": "comments",
+        "href": "https://news.ycombinator.com/newcomments"
+      },
+      {
+        "selector": "#hnmain > tbody > tr:nth-of-type(1) > td > table > tbody > tr > td:nth-of-type(2) > span > a:nth-of-type(4)",
+        "text": "ask",
+        "href": "https://news.ycombinator.com/ask"
+      },
+      {
+        "selector": "#hnmain > tbody > tr:nth-of-type(1) > td > table > tbody > tr > td:nth-of-type(2) > span > a:nth-of-type(5)",
+        "text": "show",
+        "href": "https://news.ycombinator.com/show"
+      },
+      {
+        "selector": "#hnmain > tbody > tr:nth-of-type(1) > td > table > tbody > tr > td:nth-of-type(2) > span > a:nth-of-type(6)",
+        "text": "jobs",
+        "href": "https://news.ycombinator.com/jobs"
+      },
+      {
+        "selector": "#hnmain > tbody > tr:nth-of-type(1) > td > table > tbody > tr > td:nth-of-type(2) > span > a:nth-of-type(7)",
+        "text": "submit",
+        "href": "https://news.ycombinator.com/submit"
+      },
+      {
+        "selector": "#hnmain > tbody > tr:nth-of-type(1) > td > table > tbody > tr > td:nth-of-type(3) > span > a",
+        "text": "login",
+        "href": "https://news.ycombinator.com/login?goto=news"
+      },
+      {
+        "selector": "#up_50646108",
+        "href": "https://news.ycombinator.com/vote?id=50646108&how=up&goto=news"
+      },
+      {
+        "selector": "#\\35 0646108 > td:nth-of-type(3) > span > a",
+        "text": "Holy shit holy shit holy shit holy shit: The magnitude of what’s now happening",
+        "href": "https://scottaaronson.blog/?p=10379"
+      },
+      {
+        "selector": "#\\35 0646108 > td:nth-of-type(3) > span > span > a",
+        "text": "scottaaronson.blog",
+        "href": "https://news.ycombinator.com/from?site=scottaaronson.blog"
+      },
+      {
+        "selector": "#bigbox > td > table > tbody > tr:nth-of-type(2) > td:nth-of-type(2) > span > a:nth-of-type(1)",
+        "text": "Kotlopou",
+        "href": "https://news.ycombinator.com/user?id=Kotlopou"
+      },
+      {
+        "selector": "#bigbox > td > table > tbody > tr:nth-of-type(2) > td:nth-of-type(2) > span > span:nth-of-type(2) > a",
+        "text": "12 hours ago",
+        "href": "https://news.ycombinator.com/item?id=50646108"
+      },
+      {
+        "selector": "#bigbox > td > table > tbody > tr:nth-of-type(2) > td:nth-of-type(2) > span > a:nth-of-type(2)",
+        "text": "hide",
+        "href": "https://news.ycombinator.com/hide?id=50646108&goto=news"
+      },
+      {
+        "selector": "#bigbox > td > table > tbody > tr:nth-of-type(2) > td:nth-of-type(2) > span > a:nth-of-type(3)",
+        "text": "1161 comments",
+        "href": "https://news.ycombinator.com/item?id=50646108"
+      },
+      {
+        "selector": "#up_50644817",
+        "href": "https://news.ycombinator.com/vote?id=50644817&how=up&goto=news"
+      },
+      {
+        "selector": "#\\35 0644817 > td:nth-of-type(3) > span > a",
+        "text": "1Password Security Incident",
+        "href": "https://1password.com/blog/update-on-nov-2026-security-incident"
+      },
+      {
+        "selector": "#\\35 0644817 > td:nth-of-type(3) > span > span > a",
+        "text": "1password.com",
+        "href": "https://news.ycombinator.com/from?site=1password.com"
+      },
+      {
+        "selector": "#bigbox > td > table > tbody > tr:nth-of-type(5) > td:nth-of-type(2) > span > a:nth-of-type(1)",
+        "text": "lxhrstn",
+        "href": "https://news.ycombinator.com/user?id=lxhrstn"
+      },
+      {
+        "selector": "#bigbox > td > table > tbody > tr:nth-of-type(5) > td:nth-of-type(2) > span > span:nth-of-type(2) > a",
+        "text": "14 hours ago",
+        "href": "https://news.ycombinator.com/item?id=50644817"
+      },
+      {
+        "selector": "#bigbox > td > table > tbody > tr:nth-of-type(5) > td:nth-of-type(2) > span > a:nth-of-type(2)",
+        "text": "hide",
+        "href": "https://news.ycombinator.com/hide?id=50644817&goto=news"
+      },
+      {
+        "selector": "#bigbox > td > table > tbody > tr:nth-of-type(5) > td:nth-of-type(2) > span > a:nth-of-type(3)",
+        "text": "567 comments",
+        "href": "https://news.ycombinator.com/item?id=50644817"
+      },
+      {
+        "selector": "#up_50651719",
+        "href": "https://news.ycombinator.com/vote?id=50651719&how=up&goto=news"
+      },
+      {
+        "selector": "#\\35 0651719 > td:nth-of-type(3) > span > a",
+        "text": "Lions' Commentary on Unix: Why It Was Secretly Copied for 20 Years",
+        "href": "https://fosscomics.com/posts/17.%20Lions%27%20Commentary%20on%20Unix/"
+      },
+      {
+        "selector": "#\\35 0651719 > td:nth-of-type(3) > span > span > a",
+        "text": "fosscomics.com",
+        "href": "https://news.ycombinator.com/from?site=fosscomics.com"
+      },
+      {
+        "selector": "#bigbox > td > table > tbody > tr:nth-of-type(8) > td:nth-of-type(2) > span > a:nth-of-type(1)",
+        "text": "joonehur",
+        "href": "https://news.ycombinator.com/user?id=joonehur"
+      },
+      {
+        "selector": "#bigbox > td > table > tbody > tr:nth-of-type(8) > td:nth-of-type(2) > span > span:nth-of-type(2) > a",
+        "text": "2 hours ago",
+        "href": "https://news.ycombinator.com/item?id=50651719"
+      },
+      {
+        "selector": "#bigbox > td > table > tbody > tr:nth-of-type(8) > td:nth-of-type(2) > span > a:nth-of-type(2)",
+        "text": "hide",
+        "href": "https://news.ycombinator.com/hide?id=50651719&goto=news"
+      }
+    ],
+    "buttons": [],
+    "fields": [
+      {
+        "tag": "input",
+        "role": "textbox",
+        "selector": "#hnmain > tbody > tr:nth-of-type(4) > td > center > form > input",
+        "text": "q",
+        "state": {
+          "filled": false
+        },
+        "kind": "text",
+        "region": "form"
+      }
+    ],
+    "forms": [
+      {
+        "selector": "#hnmain > tbody > tr:nth-of-type(4) > td > center > form",
+        "action": "//hn.algolia.com/",
+        "method": "get"
+      }
+    ],
+    "counts": {
+      "links": 228,
+      "buttons": 0,
+      "fields": 1,
+      "forms": 1
+    }
+  }
+}

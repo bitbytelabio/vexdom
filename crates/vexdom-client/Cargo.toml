@@ -1,0 +1,22 @@
+[package]
+name = "vexdom-client"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+description = "A control-socket client for the Bridge: the CLI, the MCP server, the native host and the desktop app"
+
+[dependencies]
+capnp = { workspace = true }
+capnp-rpc = { workspace = true }
+serde_json = { workspace = true }
+tokio = { workspace = true }
+vexdom-core = { workspace = true }
+vexdom-daemon = { workspace = true }
+vexdom-link = { workspace = true }
+vexdom-schema = { workspace = true }
+
+[lints]
+workspace = true

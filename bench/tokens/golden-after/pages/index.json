@@ -1,0 +1,50 @@
+[
+  {
+    "fixture": "firefox_forms",
+    "url": "file:///agent-browser/cli/src/native/test_fixtures/firefox_forms.html",
+    "capturedAt": "2026-11-26T07:26:58.963Z",
+    "license": "Apache-2.0 (agent-browser f0a9835)"
+  },
+  {
+    "fixture": "firefox_probe",
+    "url": "file:///agent-browser/cli/src/native/test_fixtures/firefox_probe.html",
+    "capturedAt": "2026-11-26T07:26:59.811Z",
+    "license": "Apache-2.0 (agent-browser f0a9835)"
+  },
+  {
+    "fixture": "drag_probe",
+    "url": "file:///agent-browser/cli/src/native/test_fixtures/drag_probe.html",
+    "capturedAt": "2026-11-26T07:27:00.902Z",
+    "license": "Apache-2.0 (agent-browser f0a9835)"
+  },
+  {
+    "fixture": "webmcp_probe",
+    "url": "file:///agent-browser/cli/src/native/test_fixtures/webmcp_probe.html",
+    "capturedAt": "2026-11-26T07:27:01.996Z",
+    "license": "Apache-2.0 (agent-browser f0a9835)"
+  },
+  {
+    "fixture": "snapshot_diff_probe",
+    "url": "file:///agent-browser/cli/src/native/test_fixtures/snapshot_diff_probe.html",
+    "capturedAt": "2026-11-26T07:27:03.092Z",
+    "license": "Apache-2.0 (agent-browser f0a9835)"
+  },
+  {
+    "fixture": "wikipedia-rust",
+    "url": "https://en.wikipedia.org/wiki/Rust_(programming_language)",
+    "capturedAt": "2026-11-26T07:27:04.469Z",
+    "license": "CC BY-SA 4.0"
+  },
+  {
+    "fixture": "hacker-news",
+    "url": "https://news.ycombinator.com/",
+    "capturedAt": "2026-11-26T07:27:06.184Z",
+    "license": "news.ycombinator.com content"
+  },
+  {
+    "fixture": "docs-rs-tokio",
+    "url": "https://docs.rs/tokio/latest/tokio/",
+    "capturedAt": "2026-11-26T07:27:07.478Z",
+    "license": "MIT"
+  }
+]

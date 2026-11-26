@@ -1,0 +1,134 @@
+---
+name: browser-control
+default: true
+description: Drive the open tab — click, type, submit, navigate, and verify the result.
+triggers: [click, tap, press, fill, type, enter, submit, form, log in, sign in, search for, search this site, find on this site, look for, navigate, go to, open, scroll, select, choose, button, link, field, checkout, add to cart, screenshot, capture, snapshot, save the page, save a picture, download, export, save the file, get the csv, download the invoice, attach it, upload it]
+---
+
+You are acting on the page, not just reading it. Work in a loop: snapshot, target, act, verify.
+
+## 1. Snapshot, then act on refs
+
+Call `snapshot` first. It prints the page's elements as a tree, each one you can act on with a ref: `- button "Save" [ref=e5]`. Pass the ref as the `target` of any page tool — `act {"do":"clickElement", "target": "e5"}`, `act {"do":"fillInput", "target": "e7", "value": "a@b.com"}` — and the reply carries what that action changed on the page (`snapshot r3 (delta from r2): …`), so you seldom need another snapshot. Never invent a selector from what the page "probably" looks like; a plain string that is not a ref is taken as a CSS selector.
+
+Refs belong to the latest snapshot of a tab. `UNKNOWN_REF` or `STALE_REF` means take a new one; `NO_SNAPSHOT` means you have not taken one on this tab yet. `snapshot {"as":"markdown"}` gives the page's text as markdown (`outline: true` for its headings) when you need prose rather than controls; `act {"batch":[…]}` runs several steps in one call. The whole loop is also written up for the command line: `vexdom skills get core`.
+
+`getPageInfo` is still there for what the tree does not show: the layout diagram, the forms, and a `siteTools` list. When it carries `siteTools`, this site registers its own tools for agents through WebMCP — a structured alternative to its UI. Call `listSiteTools` for their schemas and prefer `callSiteTool` over a click-and-fill sequence wherever a listed tool covers the step. A call is gated like a form submit, because the site decides what it does.
+
+## 2. Act, then confirm
+
+Read the delta each action returns: `unchanged` after a click that should have opened something means it did not land. `waitForElement` for the state you expect next covers pages that change late.
+
+When a click verifiably did nothing — the dialog never opened, the file picker never appeared, the page has a handler that checks `event.isTrusted` — `trustedClick` is the fallback, when it is in your tool list (a Firefox build has no such tool; say so and ask the user to make that click). It sends a real browser-level mouse event through Chrome's debugger, so the browser shows a "Vexdom is debugging this browser" bar while it runs and it refuses on a tab with DevTools open (`DEBUGGER_UNAVAILABLE` — say so and fall back). It takes the same `target`, plus `button` for a right-click, `clickCount: 2` for a double click and `modifiers` like `["meta"]`. The pointer travels to the target and dwells before pressing, so widgets that only react after real pointer movement get the sequence they wait for. It is slower and visibly intrusive, so `clickElement` stays the default: reach for the trusted one only after an ordinary click has already failed.
+
+A captcha is a different problem and neither click tool solves it — the checkbox is inside a closed shadow root inside a cross-origin iframe, so no selector reaches it. The moment `getPageInfo` reports a `captcha` (or a page stalls on "verifying you are human"), call `act {"do":"solveCaptcha"}` — do not hunt for the checkbox, do not stop to ask. It ticks the box and sees an image challenge through; when it hands one back as `state: "challenge"`, look at the image it returns and answer with `tiles` or `points`, repeating until `solved`. The **captcha** skill covers the whole path.
+
+Navigation has two shapes and they behave differently. `navigate` takes **either** a `url` **or** an `action` (`back` / `forward` / `reload`) — never both, never neither. From a tab with no content script the URL must be absolute. The result tells you which path ran: `navigatingTo` pushed a history entry so `back` works afterwards; `navigatedTo` replaced it. `loaded: true` means the load actually finished.
+
+## 3. Tabs — and which one you are on
+
+Every other tool here acts on the **frontmost tab of the user's current window**. Nothing you do to the page changes that; only these three tools do.
+
+`act {"do":"openTab", "url": "https://…"}` opens a tab **and brings it to the front**, so every action after it lands there. Its result carries `tabId` for the new tab and `previousTabId` for the one you left — **keep `previousTabId`**, it is how you get back. Pass `active: false` to open in the background instead and stay where you are; then the new tab is reachable only by its `tabId`.
+
+`act {"do":"switchTab"}` with no arguments lists the open tabs and their ids without moving anything — do that first when you do not already hold an id. Then switch by `tabId`, or by `match`, a case-insensitive substring of a tab's title or URL. If a `match` hits more than one tab, **nothing is switched** and the candidates come back with their ids; pick one by id rather than rewording the match.
+
+`act {"do":"closeTab", tabId}` closes a tab and reports which tab the browser put in front (`activeTabId`, `nowOn`) — that is where your next action will land, so re-snapshot before acting. With no arguments it closes the tab you are on. Four refusals are final, not obstacles to route around: the only tab in the window, a pinned tab, a browser page Vexdom cannot see into, and a tab with a recording in progress. Say what happened and carry on.
+
+When the user has put more than one tab in this conversation, the prompt lists them under **This conversation's tabs**, each with its id and the current one marked. Those are the tabs they mean by "the ticket" or "the other tab": move between them with `act {"do":"switchTab", tabId}`, which does not ask. They are the user's own tabs, so never close one to tidy up; `closeTab` on one asks first.
+
+Two habits. **Tidy up after yourself** — if you opened a tab only to read something, close it once you have what you need, and leave the user on the tab they started on. And **only the current window exists** for these tools: a tab in another window is not something you can switch to or close.
+
+## 4. Typing and forms
+
+`fillInput` writes through the native setter and fires the events frameworks listen for, so React and Vue inputs update properly. Set `pressEnter: true` on it, or call `pressKey` with Enter, when the form expects a keystroke rather than a button.
+
+`typeText` is the slow twin: it streams the text in one character at a time, with a real key event per character and pauses that vary the way a person's do. Reach for it when the typing itself has to look real — a demo or a recording the user will watch — or when a field only reacts to per-keystroke events, like a search box that filters as you type or an editor that never sees a value set in one shot. `speed` picks the pace (`"slow"`, `"natural"`, `"fast"`, `"instant"`), `charDelayMs` overrides it outright, and `jitter: 0` types in a flat machine rhythm. It costs real time — a sentence at `"natural"` runs into the tens of seconds, and long text at `"slow"` is refused rather than left to hang — so `fillInput` stays the default when you only need the value in the field.
+
+`submitForm` runs the browser's own validation. It is also the action most likely to send something to someone else, so expect it to be gated — if it comes back declined, say so and stop.
+
+## 5. Searching the site you are on
+
+When what the user wants lives on the site in front of you — a product, an order, a document, an
+issue, a message — `act {"do":"searchSite", "query": "…"}` is one call instead of five. It works out how
+this site searches and does it: usually by going straight to the URL the site's own search form
+would land on, which skips the autocomplete overlay entirely, and by typing into the box when there
+is no such URL. Prefer it over a web search there: the site's own index knows its stock, its prices
+and its orders, and a search engine's copy of them is stale.
+
+It leaves you on the results page and does not read them. Check `landedOn` — that is the proof the
+search actually ran — then snapshot with `getPageInfo` or `extractText` and work the
+results with the ordinary tools.
+
+Two refusals are worth recognising rather than routing around. If the box is hidden behind a header
+magnifier the error names the toggle to `clickElement` first. If the site hands its search to
+another host it names the URL instead, and `navigate` is how you open it.
+
+`findSearch` answers the prior question — *can* this site be searched, and where from. Reach
+for it when you are about to tell the user something is not findable here, or when a search misfired
+and you want to see the boxes yourself. `searchable: false` means this site has no search of its
+own; say so rather than typing into whatever field is nearest.
+
+Use a web search for anything the site does not know about, and use `strategy: "field"` for a box
+that filters the page as you type rather than navigating.
+
+## 6. Dragging
+
+`dragElement` moves one thing onto another — reordering a list, pulling a card into another
+column, dragging a slider handle to a value. Give it `from` and `to` targets the same way you give
+`clickElement` a target. Both ends have to be on screen at the same moment, because nothing
+auto-scrolls mid-drag; if the drop target is off screen, scroll first so both are visible.
+
+The web has two unrelated drag mechanisms and the tool picks between them for you by reading the
+element you grabbed. You only need to care when a drag appears to do nothing. Read the result: it
+tells you the `mechanism` it chose and `landedOn`, the selector actually under the pointer when it
+released. For a native drag it also returns `accepted` — whether anything along the path behaved
+like a real drop zone. `accepted: false` and nothing moved is the signal to retry with the other
+`mode` (`"pointer"` or `"native"`). If the page ignores synthetic events entirely, `trusted: true`
+sends real browser-level events, with the same debugging bar and Chrome-only limits as
+`trustedClick` — and it cannot drive HTML5 drag-and-drop, so it is pointer mode only.
+
+Lists that reflow as the pointer passes over them can land a slot out, because the drop point is
+measured before the drag starts. Raise `steps` and `settleMs`, then **re-snapshot to confirm the
+order actually changed** — a drag is exactly the kind of action that reports success while leaving
+the page as it was.
+
+Some drag-and-drop widgets are also keyboard operable: focus the handle, then Space to lift, arrows
+to move, Space to drop with `pressKey`. That path is more reliable than any simulated drag when
+the page supports it.
+
+## 7. When something is not there
+
+`TARGET_NOT_FOUND` almost always means the page moved on without you: a menu closed, content loaded late, a modal opened over what you wanted. Re-snapshot rather than retrying the same target. If an element needs to appear first, `waitForElement` is cheaper and more reliable than clicking and hoping.
+
+Content behind a hover — dropdowns, tooltips — needs `hoverElement` before it exists in the DOM.
+
+## 8. Screenshots
+
+`screenshot` captures the tab as an image and hands the picture back to you to look at — reach for it when you need to *see* layout or rendering that the text inventory can't convey. By default it captures the **current viewport** as a JPEG, which is a single fast grab. `{ fullPage: true }` captures the entire scroll view instead, and it is genuinely expensive: the browser only allows two captures a second, so a tall page is tiled and costs about a second per screenful. Ask for it when you need what is below the fold, not by reflex. `{ target: { text: "Pricing" } }` captures a single element or block, and `{ format: "png" }` gets you lossless pixels when detail matters more than speed.
+
+**Nothing is written to disk unless you ask for it.** The picture comes back to you in the result either way, so a capture you take to see the page for yourself leaves nothing behind on the user's machine — which is what you want, because most captures are for your eyes only and a folder full of them is litter.
+
+Pass `save: true` when the user asked for a picture they can keep. Then the result carries `savedTo`, and you must **relay that path**: the side panel renders your reply as text and turns images into links, so the path is the only way they can open it. Pass `filename` when they name one. If the result carries `saveError` instead, the capture worked but the write did not — say so rather than naming a file that is not there.
+
+## 9. Downloads
+
+`captureDownload` is how a file gets *out* of a page. Give it a `target` and it clicks that and keeps whatever the click downloads — an "Export CSV" button, a "Download invoice" link. That is the normal case, and it is the only one that works for an export, because the file does not exist until the click makes it. Give it a `url` instead only when you have a direct link to the file itself; it is fetched with the user's own cookies, so it works on pages behind a login.
+
+You get **notes**, not the file: its name, its type, its size, and its shape (`42 rows × 6 columns`). That is enough to know what you captured and to say so. You cannot read it, and there is no filesystem here to read it from. Relay `savedTo` in your reply the way you relay a saved screenshot's path — it is the only way the user can open the file.
+
+The result also carries `downloadId`, and `act {"do":"attachFile", downloadId, target}` puts that file into a file input on another page. That closes the loop: **download here, upload there**, with the file never passing through you. `listDownloads` re-reads what this browser has captured, when you need an id you did not keep.
+
+Expect a confirm prompt — writing a file to someone's disk is gated the same way uploading one is. Four refusals are final and none of them is worth routing around: an executable (`DOWNLOAD_REFUSED`), anything over 100 MB (`DOWNLOAD_TOO_LARGE`), a file from a host this run was not about (`DOWNLOAD_OFF_SCOPE`), and a click that downloaded nothing (`NO_DOWNLOAD_STARTED` — it probably opened a page instead, so check where the tab landed). Say what happened and stop.
+
+## 10. Frames — when the thing is inside an iframe
+
+`getPageInfo` sees one document at a time. Visible iframes come back under `frames` with a selector, and nothing inside them is in the snapshot: a form, a button or a piece of text that is plainly on screen but missing from the inventory is usually inside one.
+
+`act {"do":"switchFrame", "frame": { selector }}` steps into it. From then on every tool acts inside that frame as if it were the page — snapshot, click, fill, wait, `listSiteTools`, `callSiteTool`, `injectCode` and `runCode` — and each snapshot carries a `frame` block naming where you are. Call it again from inside to go deeper. `act {"do":"switchFrame"}` returns to the top document and `{ to: "parent" }` steps out one level; any navigation puts you back at the top on its own. `screenshot` and `navigate` always work on the whole tab, wherever you are.
+
+`FRAME_UNREACHABLE` means the frame cannot run scripts, most often a sandbox without `allow-scripts`. Do not retry it: a screenshot still shows what is there, and `trustedClick` with a `point` still reaches it.
+
+## 11. Multi-step tasks
+
+Do the whole task, not the first step of it. If the user says "search for X and open the first result", that is a fill, a submit, a wait, a snapshot, and a click — finish all of it, then report once at the end. Stop early only when you are blocked on something the user must decide.

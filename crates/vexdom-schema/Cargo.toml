@@ -1,0 +1,18 @@
+[package]
+name = "vexdom-schema"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+description = "The Bridge's Cap'n Proto schema and its generated bindings (ADR-025)"
+
+[dependencies]
+capnp = { workspace = true }
+
+[build-dependencies]
+capnpc = { workspace = true }
+
+[lints]
+workspace = true

@@ -1,0 +1,451 @@
+{
+  "hash": "",
+  "tools": [
+    {
+      "name": "bridge.diff",
+      "description": "What changed on a page. kind snapshot: the accessibility tree against the last snapshot, or against a saved one (baseline); kind screenshot: pixels against a saved image (baseline), with the share of pixels that differ; kind url: two pages' trees (and screenshots with screenshot:true) side by side. Refs are ignored when trees are compared. Baselines are read only from ~/vexdom/captures.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "snapshot",
+              "screenshot",
+              "url"
+            ]
+          },
+          "baseline": {
+            "type": "string",
+            "description": "A saved snapshot text or PNG in ~/vexdom/captures."
+          },
+          "urls": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "selector": {
+            "type": "string",
+            "description": "Only this element (CSS or a ref like @e5)."
+          },
+          "compact": {
+            "type": "boolean"
+          },
+          "depth": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "threshold": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1,
+            "description": "Colour distance below which two pixels count as the same (default 0.1)."
+          },
+          "screenshot": {
+            "type": "boolean",
+            "description": "kind url: compare screenshots too."
+          },
+          "full": {
+            "type": "boolean",
+            "description": "Whole-page screenshots."
+          },
+          "tabId": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      }
+    },
+    {
+      "name": "bridge.state",
+      "description": "Save a tab's cookies and web storage under a name, load them back later (the tab goes to the saved origin first), or list, show, rename and clear saved states. Values read as credentials stay sealed in the file.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "enum": [
+              "save",
+              "load",
+              "list",
+              "show",
+              "rename",
+              "clear",
+              "clean"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "description": "A saved state's name: letters, digits, - and _."
+          },
+          "newName": {
+            "type": "string"
+          },
+          "all": {
+            "type": "boolean",
+            "description": "clear: every saved state."
+          },
+          "olderThanDays": {
+            "type": "number",
+            "minimum": 0,
+            "description": "clean: remove states older than this."
+          },
+          "tabId": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "op"
+        ]
+      }
+    },
+    {
+      "name": "bridge.authSave",
+      "description": "Save a login for a site in Vexdom's encrypted vault on this computer (AES-256-GCM, ~/.vexdom/vault) under a name, so bridge.authLogin can sign in later without the password passing through you again. The selectors are optional; without them the login form is found by itself. No action ever returns the saved password. The first save creates the vault key and says so (keyCreated, notice).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "description": "The login's name: letters, digits, - and _."
+          },
+          "url": {
+            "type": "string",
+            "description": "The login page's address."
+          },
+          "username": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          },
+          "usernameSelector": {
+            "type": "string",
+            "description": "CSS selector of the username field."
+          },
+          "passwordSelector": {
+            "type": "string",
+            "description": "CSS selector of the password field (default input[type=password])."
+          },
+          "submitSelector": {
+            "type": "string",
+            "description": "CSS selector of the submit button."
+          }
+        },
+        "required": [
+          "name",
+          "url",
+          "username",
+          "password"
+        ]
+      }
+    },
+    {
+      "name": "bridge.authLogin",
+      "description": "Sign in with a saved login: open its login page in the tab (unless noNavigate), wait for the username and password fields, fill them, click the submit button, then wait for the next page. The password goes from the vault straight into the field and never appears in a result. With credentialProvider (a configured plugin with the credential.read capability) and item, the login comes from that plugin instead of the vault. With noNavigate the login happens on the page already open, and only when its origin matches the login's URL. Each wait gives up after timeoutMs, so the whole sign-in can take a few times that.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The saved login's name; with credentialProvider, the name the plugin is asked about (defaults to item)."
+          },
+          "noNavigate": {
+            "type": "boolean",
+            "description": "Sign in on the page already open instead of opening the login's URL."
+          },
+          "credentialProvider": {
+            "type": "string",
+            "description": "A configured plugin that supplies the login."
+          },
+          "item": {
+            "type": "string",
+            "description": "The plugin's item to read."
+          },
+          "url": {
+            "type": "string",
+            "description": "A login page to use instead of the saved one."
+          },
+          "usernameSelector": {
+            "type": "string",
+            "description": "CSS selector of the username field, over the saved one."
+          },
+          "passwordSelector": {
+            "type": "string",
+            "description": "CSS selector of the password field, over the saved one."
+          },
+          "submitSelector": {
+            "type": "string",
+            "description": "CSS selector of the submit button, over the saved one."
+          },
+          "timeoutMs": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "How long to wait for each field and the button (default 25000)."
+          },
+          "tabId": {
+            "type": "integer"
+          }
+        }
+      }
+    },
+    {
+      "name": "bridge.authList",
+      "description": "List the saved logins: each one's name, username and login URL, never a password. A login the vault key cannot open is listed with an error.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {}
+      }
+    },
+    {
+      "name": "bridge.authShow",
+      "description": "Show one saved login: its URL, username and the selectors saved with it, never the password.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    },
+    {
+      "name": "bridge.authDelete",
+      "description": "Delete a saved login from the vault.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      }
+    },
+    {
+      "name": "bridge.flowRecord",
+      "description": "Start, stop or check a flow recording on a tab. While it runs, the Bridge logs every page action you take on that tab and the browser records the tab's network traffic; stop it when the task is done, then save it with bridge.flowSave. Starting again on the same tab discards the previous unsaved recording. Status lists every recording with its step, request and unsaved counts.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "op": {
+            "type": "string",
+            "enum": [
+              "start",
+              "stop",
+              "status"
+            ],
+            "default": "status",
+            "description": "start a recording, stop it (the requests are collected then), or list recordings"
+          },
+          "tabId": {
+            "type": "integer",
+            "description": "The tab to record; defaults to the active tab"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "bridge.flowSteps",
+      "description": "List the steps of the tab's flow recording: each step's number, the command it ran, the page it ended on, how many requests it sent, whether it succeeded and whether a save already covers it. Use the numbers as from and to in bridge.flowSave.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "tabId": {
+            "type": "integer",
+            "description": "The recorded tab; defaults to the active tab's recording"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "bridge.flowSave",
+      "description": "Save a range of the tab's recording as a named flow: its first-party JSON requests become a reusable call, values typed into ordinary fields and page-query values become params, and credentials, cookies and anything typed into a secret field are never stored. Without from, the save starts at the last navigation after the previous save. The report lists the saved requests (ids like s1r1), params, writes and gaps (steps that sent no usable request). Works while the recording runs or after it stopped.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "description": "The flow's name: letters, digits, - or _"
+          },
+          "from": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "First step to include"
+          },
+          "to": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Last step to include; defaults to the last step"
+          },
+          "params": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Param name to the value the recording used, so that value becomes {{name}} in the saved requests"
+          },
+          "output": {
+            "type": "string",
+            "description": "The request id (s1r1) whose response the flow answers with; defaults to the largest response that uses a param"
+          },
+          "description": {
+            "type": "string",
+            "description": "What the flow does, shown by bridge.flowList"
+          },
+          "timeoutMs": {
+            "type": "integer",
+            "minimum": 100,
+            "default": 25000,
+            "description": "How long to wait for the page's requests to finish before saving"
+          },
+          "tabId": {
+            "type": "integer",
+            "description": "The recorded tab; defaults to the active tab's recording"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "bridge.flowRun",
+      "description": "Run a saved flow: its requests are sent from the active tab with the page's own fetch (the tab must be on the flow's site), and if that fails the recorded page actions are replayed in the tab. Returns the output response as data, optionally filtered. A request that changes data (a write) is sent only when allowWrite covers it; otherwise the user is asked to approve it first. On failure the error code says why: AUTH_EXPIRED, CREDENTIAL_NOT_SENDABLE, REQUEST_SIGNED, RATE_LIMITED, BLOCKED_BY_SITE, OUTCOME_UNKNOWN or WRITE_APPLIED (do not repeat the write), FLOW_DRIFTED (the site changed; do the task in the page and save the flow again).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "The flow's name, from bridge.flowList"
+          },
+          "params": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Values for the flow's params; a param left out uses its recorded value"
+          },
+          "origin": {
+            "type": "string",
+            "description": "The site, when flows on several sites share the name"
+          },
+          "allowWrite": {
+            "description": "Writes this run may send without asking: \"all\" or a list of write ids from the save report",
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "all"
+                ]
+              },
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            ]
+          },
+          "where": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Keep only list items whose field contains the text (case-insensitive); field names come from the flow's itemFields"
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Keep only these fields of each item (dotted paths allowed)"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Return at most this many items"
+          },
+          "timeoutMs": {
+            "type": "integer",
+            "minimum": 100,
+            "default": 25000,
+            "description": "How long the whole run may take"
+          },
+          "tabId": {
+            "type": "integer",
+            "description": "The tab to send from; defaults to the active tab"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false
+      }
+    },
+    {
+      "name": "bridge.flowList",
+      "description": "List saved flows, optionally only those for one site: each with its params and recorded example values, a JSON Schema of its input, the fields its items have, the page it was recorded on and when a run last verified it.",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "origin": {
+            "type": "string",
+            "description": "A host; flows on the same site (base domain) are listed"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  ],
+  "groups": {
+    "bridge.diff": "state",
+    "bridge.state": "state",
+    "bridge.authSave": "auth",
+    "bridge.authLogin": "auth",
+    "bridge.authList": "auth",
+    "bridge.authShow": "auth",
+    "bridge.authDelete": "auth",
+    "bridge.flowRecord": "flows",
+    "bridge.flowSteps": "flows",
+    "bridge.flowSave": "flows",
+    "bridge.flowRun": "flows",
+    "bridge.flowList": "flows"
+  },
+  "toolGroups": {
+    "flows": {
+      "index": "record a task once and rerun it as direct requests",
+      "skills": [
+        "flows"
+      ]
+    },
+    "auth": {
+      "index": "log in with a saved account",
+      "skills": [
+        "auth"
+      ]
+    },
+    "state": {
+      "index": "compare a page with an earlier snapshot or screenshot, or save and restore a tab's cookies and storage",
+      "skills": [
+        "page-state"
+      ]
+    }
+  },
+  "chromiumOnly": []
+}

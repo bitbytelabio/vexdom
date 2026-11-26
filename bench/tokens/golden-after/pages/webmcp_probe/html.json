@@ -1,0 +1,5 @@
+{
+  "url": "file:///agent-browser/cli/src/native/test_fixtures/webmcp_probe.html",
+  "title": "WebMCP probe",
+  "html": "<html><head>\n    <meta charset=\"utf-8\">\n    <title>WebMCP probe</title>\n  </head>\n  <body>\n    <output id=\"result\">idle</output>\n    <iframe id=\"tool-frame\" src=\"http://127.0.0.1:__PORT__/frame.html\" allow=\"tools\"></iframe>\n    \n  \n\n</body></html>"
+}

@@ -1,0 +1,111 @@
+{
+  "type": "object",
+  "required": [
+    "report"
+  ],
+  "properties": {
+    "report": {
+      "type": "object",
+      "required": [
+        "summary",
+        "pages"
+      ],
+      "properties": {
+        "summary": {
+          "type": "string",
+          "description": "What this site is, in two or three sentences."
+        },
+        "landmarks": {
+          "type": "array",
+          "description": "Durable parts of the interface: the primary nav, a search box, a cookie wall.",
+          "items": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "What it is called, as a person would say it."
+              },
+              "selector": {
+                "type": "string",
+                "description": "A CSS selector that finds it."
+              },
+              "note": {
+                "type": "string",
+                "description": "One line on how it behaves."
+              }
+            }
+          }
+        },
+        "pages": {
+          "type": "array",
+          "description": "Each page visited, once.",
+          "items": {
+            "type": "object",
+            "required": [
+              "path",
+              "title",
+              "purpose"
+            ],
+            "properties": {
+              "path": {
+                "type": "string",
+                "description": "The path on the mapped site, e.g. /pricing."
+              },
+              "title": {
+                "type": "string",
+                "description": "The page title."
+              },
+              "purpose": {
+                "type": "string",
+                "description": "What the page is for, in one short phrase."
+              },
+              "reachedBy": {
+                "type": "string",
+                "description": "How you got there, e.g. \"Pricing\" in the top nav."
+              },
+              "screenshot": {
+                "type": "string",
+                "description": "Filename of a screenshot you took of this page."
+              },
+              "notes": {
+                "type": "string",
+                "description": "Anything else worth recording. Kept out of the prompt."
+              }
+            }
+          }
+        },
+        "links": {
+          "type": "array",
+          "description": "How the pages connect: one entry per link you followed or saw.",
+          "items": {
+            "type": "object",
+            "required": [
+              "from",
+              "to"
+            ],
+            "properties": {
+              "from": {
+                "type": "string",
+                "description": "Path the link is on."
+              },
+              "to": {
+                "type": "string",
+                "description": "Path it leads to."
+              }
+            }
+          }
+        },
+        "quirks": {
+          "type": "array",
+          "description": "Things that would trip up someone driving this site. Observations, never advice.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

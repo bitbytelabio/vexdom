@@ -1,0 +1,566 @@
+{
+  "document": {
+    "url": "https://en.wikipedia.org/wiki/Rust_(programming_language)",
+    "title": "Rust (programming language) - Wikipedia",
+    "lang": "en"
+  },
+  "viewport": {
+    "width": 1280,
+    "height": 800,
+    "scrollX": 0,
+    "scrollY": 0,
+    "pageWidth": 1280,
+    "pageHeight": 34912
+  },
+  "layout": {
+    "diagram": "page 1280×34912 · viewport 1280×800 @ y=0\n├ banner · 1280×66 @ (0,0) · 4 links · 2 buttons · 2 fields · selector: body > div:nth-of-type(2) > header\n│ ├ navigation “Site” · 20×32 @ (44,17) · 1 buttons · 1 fields · selector: body > div:nth-of-type(2) > header > div:nth-of-type(1) > nav\n│ ├ search · 794×32 @ (240,17) · 1 buttons · 1 fields · selector: #p-search\n│ │ └ form · 474×32 @ (266,17) · 1 buttons · 1 fields · selector: #searchform\n│ └ navigation “Personal tools” · 202×16 @ (1034,25) · 3 links · selector: body > div:nth-of-type(2) > header > div:nth-of-type(2) > nav\n├ navigation “Contents” · 208×429 @ (32,136) · 14 links · 6 buttons · selector: #mw-panel-toc\n└ main “Rust (programming language)” · 972×34546 @ (264,90) · 1715 links · 3 buttons · 2 fields · selector: #content\n  ├ banner “Rust (programming language)” · 752×40 @ (264,90) · 1 buttons · 1 fields · selector: #content > header\n  ├ navigation “Namespaces” · 96×32 @ (256,130) · 2 links · selector: #left-navigation > nav\n  ├ navigation “Views” · 213×32 @ (779,130) · 4 links · selector: #right-navigation > nav:nth-of-type(1)\n  ├ navigation “Page tools” · 32×32 @ (992,130) · 1 buttons · 1 fields · selector: #right-navigation > nav:nth-of-type(2)\n  ├ navigation “Appearance” · 196×31 @ (1040,136) · 1 buttons · selector: #content > div:nth-of-type(2) > div > nav:nth-of-type(2)\n  ├ section · 752×588 @ (264,209) · 97 links · selector: #mwAQ\n  ├ section “History” · 752×2744 @ (264,813) · 139 links · selector: #mwdQ\n  │ ├ section “2006–2009: Early years” · 752×626 @ (264,869) · 33 links · selector: #mwdg\n  │ ├ section “2009–2012: Mozilla sponsorship” · 752×314 @ (264,1512) · 16 links · selector: #mwyw\n  │ ├ section “2012–2015: Evolution” · 752×606 @ (264,1842) · 27 links · selector: #mw_w\n  │ ├ section “2015–2020: Servo and early adoption” · 752×522 @ (264,2464) · 33 links · selector: #mwAVw\n  │ └ section “2020–present: Mozilla layoffs and Rust Foundation” · 752×554 @ (264,3003) · 29 links · selector: #mwAbM\n  └ section “Syntax and features” · 752×14069 @ (264,3573) · 216 links · selector: #mwAgI\n    ├ section “Hello World program” · 752×239 @ (264,3757) · 9 links · selector: #mwAhs\n    ├ section “Variables” · 752×1035 @ (264,4012) · 9 links · selector: #mwAjs\n    ├ section “Block expressions and control flow” · 752×2764 @ (264,5062) · 17 links · selector: #mwAvM\n    │ ├ section “if expressions” · 752×658 @ (264,5529) · 4 links · selector: #mwAz0\n    │ ├ section “while loops” · 752×285 @ (264,6202) · 3 links · selector: #mwA_o\n    │ ├ section “for loops and iterators” · 752×492 @ (264,6503) · 4 links · selector: #mwBDM\n    │ └ section “loop and break statements” · 752×815 @ (264,7011) · 2 links · selector: #mwBIo\n    ├ section “Pattern matching” · 752×513 @ (264,7843) · 3 links · selector: #mwBUg\n    ├ section “Types” · 752×1149 @ (264,8371) · 36 links · selector: #mwBcY\n    │ ├ section “Primitive types” · 752×412 @ (264,8701) · 23 links · selector: #mwBeU\n    │ └ section “Compound types” · 752×392 @ (264,9129) · 3 links · selector: #mwBjc\n    ├ section “Ownership and references” · 752×2299 @ (264,9537) · 27 links · selector: #mwBqw\n    │ └ section “Lifetimes” · 752×1280 @ (264,10555) · 12 links · selector: #mwB1g\n    ├ section “User-defined types” · 752×1161 @ (264,11851) · 19 links · selector: #mwCHM\n    │ └ section “Standard library” · 752×898 @ (264,12114) · 9 links · selector: #mwCJo\n    ├ section “Pointers” · 752×178 @ (264,13028) · 4 links · selector: #mwCS0\n    ├ section “Type conversion” · 752×223 @ (264,13222) · 6 links · selector: #mwCUc\n    └ section “Polymorphism” · 752×1975 @ (264,13461) · 26 links · selector: #mwCW8\n      ├ section “Traits” · 752×565 @ (264,13577) · 3 links · selector: #mwCXk\n      └ section “Generic functions” · 752×540 @ (264,14158) · 5 links · selector: #mwCfI"
+  },
+  "outline": [
+    {
+      "level": 2,
+      "text": "Contents"
+    },
+    {
+      "level": 1,
+      "text": "Rust (programming language)"
+    },
+    {
+      "level": 2,
+      "text": "History"
+    },
+    {
+      "level": 3,
+      "text": "2006–2009: Early years"
+    },
+    {
+      "level": 3,
+      "text": "2009–2012: Mozilla sponsorship"
+    },
+    {
+      "level": 3,
+      "text": "2012–2015: Evolution"
+    },
+    {
+      "level": 3,
+      "text": "2015–2020: Servo and early adoption"
+    },
+    {
+      "level": 3,
+      "text": "2020–present: Mozilla layoffs and Rust Foundation"
+    },
+    {
+      "level": 2,
+      "text": "Syntax and features"
+    },
+    {
+      "level": 3,
+      "text": "Hello World program"
+    },
+    {
+      "level": 3,
+      "text": "Variables"
+    },
+    {
+      "level": 3,
+      "text": "Block expressions and control flow"
+    },
+    {
+      "level": 4,
+      "text": "if expressions"
+    },
+    {
+      "level": 4,
+      "text": "while loops"
+    },
+    {
+      "level": 4,
+      "text": "for loops and iterators"
+    },
+    {
+      "level": 4,
+      "text": "loop and break statements"
+    },
+    {
+      "level": 3,
+      "text": "Pattern matching"
+    },
+    {
+      "level": 3,
+      "text": "Types"
+    },
+    {
+      "level": 4,
+      "text": "Primitive types"
+    },
+    {
+      "level": 4,
+      "text": "Compound types"
+    },
+    {
+      "level": 3,
+      "text": "Ownership and references"
+    },
+    {
+      "level": 4,
+      "text": "Lifetimes"
+    },
+    {
+      "level": 3,
+      "text": "User-defined types"
+    },
+    {
+      "level": 4,
+      "text": "Standard library"
+    },
+    {
+      "level": 3,
+      "text": "Pointers"
+    },
+    {
+      "level": 3,
+      "text": "Type conversion"
+    },
+    {
+      "level": 3,
+      "text": "Polymorphism"
+    },
+    {
+      "level": 4,
+      "text": "Traits"
+    },
+    {
+      "level": 4,
+      "text": "Generic functions"
+    },
+    {
+      "level": 4,
+      "text": "Trait objects"
+    },
+    {
+      "level": 3,
+      "text": "Memory management"
+    },
+    {
+      "level": 3,
+      "text": "Unsafe"
+    },
+    {
+      "level": 3,
+      "text": "Macros"
+    },
+    {
+      "level": 4,
+      "text": "Declarative macros"
+    },
+    {
+      "level": 4,
+      "text": "Procedural macros"
+    },
+    {
+      "level": 3,
+      "text": "Interface with C and C++"
+    },
+    {
+      "level": 2,
+      "text": "Safety"
+    },
+    {
+      "level": 2,
+      "text": "Ecosystem"
+    },
+    {
+      "level": 3,
+      "text": "Compiler"
+    },
+    {
+      "level": 3,
+      "text": "Cargo"
+    },
+    {
+      "level": 3,
+      "text": "Rustfmt"
+    },
+    {
+      "level": 3,
+      "text": "Clippy"
+    },
+    {
+      "level": 3,
+      "text": "Versioning system"
+    },
+    {
+      "level": 3,
+      "text": "IDE support"
+    },
+    {
+      "level": 2,
+      "text": "Performance"
+    },
+    {
+      "level": 2,
+      "text": "Adoption"
+    },
+    {
+      "level": 2,
+      "text": "Reception"
+    },
+    {
+      "level": 2,
+      "text": "In academic research"
+    },
+    {
+      "level": 2,
+      "text": "Community"
+    },
+    {
+      "level": 3,
+      "text": "Rust Foundation"
+    },
+    {
+      "level": 3,
+      "text": "Governance teams"
+    },
+    {
+      "level": 2,
+      "text": "See also"
+    },
+    {
+      "level": 2,
+      "text": "Notes"
+    },
+    {
+      "level": 2,
+      "text": "References"
+    },
+    {
+      "level": 3,
+      "text": "Book sources"
+    },
+    {
+      "level": 3,
+      "text": "Others"
+    },
+    {
+      "level": 3,
+      "text": "Further reading"
+    },
+    {
+      "level": 2,
+      "text": "External links"
+    }
+  ],
+  "interactive": {
+    "links": [
+      {
+        "selector": "body > a",
+        "text": "Jump to content",
+        "href": "https://en.wikipedia.org/wiki/Rust_(programming_language)#bodyContent"
+      },
+      {
+        "selector": "body > div:nth-of-type(2) > header > div:nth-of-type(1) > a",
+        "href": "https://en.wikipedia.org/wiki/Main_Page",
+        "region": "banner"
+      },
+      {
+        "selector": "#pt-sitesupport-2 > a",
+        "text": "Donate",
+        "href": "https://donate.wikimedia.org/?wmf_source=donate&wmf_medium=sidebar&wmf_campaign=en.wikipedia.org&uselang=en",
+        "region": "navigation “Personal tools”"
+      },
+      {
+        "selector": "#pt-createaccount-2 > a",
+        "text": "Create account",
+        "href": "https://en.wikipedia.org/w/index.php?title=Special:CreateAccount&returnto=Rust+%28programming+language%29",
+        "region": "navigation “Personal tools”"
+      },
+      {
+        "selector": "#pt-login-2 > a",
+        "text": "Log in",
+        "href": "https://en.wikipedia.org/w/index.php?title=Special:UserLogin&returnto=Rust+%28programming+language%29",
+        "region": "navigation “Personal tools”"
+      },
+      {
+        "selector": "#toc-mw-content-text > a",
+        "text": "(Top)",
+        "href": "https://en.wikipedia.org/wiki/Rust_(programming_language)#",
+        "region": "navigation “Contents”"
+      },
+      {
+        "selector": "#toc-History > a",
+        "text": "1 History",
+        "href": "https://en.wikipedia.org/wiki/Rust_(programming_language)#History",
+        "region": "navigation “Contents”"
+      },
+      {
+        "selector": "#toc-Syntax_and_features > a",
+        "text": "2 Syntax and features",
+        "href": "https://en.wikipedia.org/wiki/Rust_(programming_language)#Syntax_and_features",
+        "region": "navigation “Contents”"
+      },
+      {
+        "selector": "#toc-Safety > a",
+        "text": "3 Safety",
+        "href": "https://en.wikipedia.org/wiki/Rust_(programming_language)#Safety",
+        "region": "navigation “Contents”"
+      },
+      {
+        "selector": "#toc-Ecosystem > a",
+        "text": "4 Ecosystem",
+        "href": "https://en.wikipedia.org/wiki/Rust_(programming_language)#Ecosystem",
+        "region": "navigation “Contents”"
+      },
+      {
+        "selector": "#toc-Performance > a",
+        "text": "5 Performance",
+        "href": "https://en.wikipedia.org/wiki/Rust_(programming_language)#Performance",
+        "region": "navigation “Contents”"
+      },
+      {
+        "selector": "#toc-Adoption > a",
+        "text": "6 Adoption",
+        "href": "https://en.wikipedia.org/wiki/Rust_(programming_language)#Adoption",
+        "region": "navigation “Contents”"
+      },
+      {
+        "selector": "#toc-Reception > a",
+        "text": "7 Reception",
+        "href": "https://en.wikipedia.org/wiki/Rust_(programming_language)#Reception",
+        "region": "navigation “Contents”"
+      },
+      {
+        "selector": "#toc-In_academic_research > a",
+        "text": "8 In academic research",
+        "href": "https://en.wikipedia.org/wiki/Rust_(programming_language)#In_academic_research",
+        "region": "navigation “Contents”"
+      },
+      {
+        "selector": "#toc-Community > a",
+        "text": "9 Community",
+        "href": "https://en.wikipedia.org/wiki/Rust_(programming_language)#Community",
+        "region": "navigation “Contents”"
+      },
+      {
+        "selector": "#toc-See_also > a",
+        "text": "10 See also",
+        "href": "https://en.wikipedia.org/wiki/Rust_(programming_language)#See_also",
+        "region": "navigation “Contents”"
+      },
+      {
+        "selector": "#toc-Notes > a",
+        "text": "11 Notes",
+        "href": "https://en.wikipedia.org/wiki/Rust_(programming_language)#Notes",
+        "region": "navigation “Contents”"
+      },
+      {
+        "selector": "#toc-References > a",
+        "text": "12 References",
+        "href": "https://en.wikipedia.org/wiki/Rust_(programming_language)#References",
+        "region": "navigation “Contents”"
+      },
+      {
+        "selector": "#toc-External_links > a",
+        "text": "13 External links",
+        "href": "https://en.wikipedia.org/wiki/Rust_(programming_language)#External_links",
+        "region": "navigation “Contents”"
+      },
+      {
+        "selector": "#ca-nstab-main > a",
+        "text": "Article",
+        "href": "https://en.wikipedia.org/wiki/Rust_(programming_language)",
+        "region": "navigation “Namespaces”"
+      },
+      {
+        "selector": "#ca-talk > a",
+        "text": "Talk",
+        "href": "https://en.wikipedia.org/wiki/Talk:Rust_(programming_language)",
+        "region": "navigation “Namespaces”"
+      },
+      {
+        "selector": "#ca-view > a",
+        "text": "Read",
+        "href": "https://en.wikipedia.org/wiki/Rust_(programming_language)",
+        "region": "navigation “Views”"
+      },
+      {
+        "selector": "#ca-edit > a",
+        "text": "Edit",
+        "href": "https://en.wikipedia.org/w/index.php?title=Rust_(programming_language)&action=edit",
+        "region": "navigation “Views”"
+      },
+      {
+        "selector": "#ca-history > a",
+        "text": "View history",
+        "href": "https://en.wikipedia.org/w/index.php?title=Rust_(programming_language)&action=history",
+        "region": "navigation “Views”"
+      },
+      {
+        "selector": "#ca-bookmark > a",
+        "text": "Save",
+        "href": "https://en.wikipedia.org/wiki/Rust_(programming_language)#",
+        "region": "navigation “Views”"
+      },
+      {
+        "selector": "#mwGKg",
+        "text": "This is a good article. Click here for more information.",
+        "href": "https://en.wikipedia.org/wiki/Wikipedia:Good_articles*",
+        "region": "main “Rust (programming language)”"
+      },
+      {
+        "selector": "#mwDQ > tbody > tr:nth-of-type(2) > td > span > a",
+        "text": "Rust logo: a capital letter R attached inside a sprocket with teeth on the outsi",
+        "href": "https://en.wikipedia.org/wiki/File:Rust_programming_language_black_logo.svg",
+        "region": "section"
+      },
+      {
+        "selector": "#mwDQ > tbody > tr:nth-of-type(3) > th > a",
+        "text": "Paradigms",
+        "href": "https://en.wikipedia.org/wiki/Programming_paradigm",
+        "region": "section"
+      },
+      {
+        "selector": "#mwDQ > tbody > tr:nth-of-type(3) > td > ul > li:nth-of-type(1) > a:nth-of-type(1)",
+        "text": "Multi-paradigm",
+        "href": "https://en.wikipedia.org/wiki/Comparison_of_multi-paradigm_programming_languages",
+        "region": "section"
+      },
+      {
+        "selector": "#mwDQ > tbody > tr:nth-of-type(3) > td > ul > li:nth-of-type(1) > a:nth-of-type(2)",
+        "text": "concurrent",
+        "href": "https://en.wikipedia.org/wiki/Concurrent_computing",
+        "region": "section"
+      }
+    ],
+    "buttons": [
+      {
+        "tag": "input",
+        "role": "button",
+        "selector": "#vector-main-menu-dropdown-checkbox",
+        "text": "Main menu",
+        "state": {
+          "checked": false
+        },
+        "region": "navigation “Site”"
+      },
+      {
+        "selector": "#searchform > button",
+        "text": "Search",
+        "region": "form"
+      },
+      {
+        "selector": "#vector-toc > div > button:nth-of-type(2)",
+        "text": "Hide Contents",
+        "region": "navigation “Contents”"
+      },
+      {
+        "selector": "#toc-History > button",
+        "text": "Toggle History subsection",
+        "region": "navigation “Contents”"
+      },
+      {
+        "selector": "#toc-Syntax_and_features > button",
+        "text": "Toggle Syntax and features subsection",
+        "region": "navigation “Contents”"
+      },
+      {
+        "selector": "#toc-Ecosystem > button",
+        "text": "Toggle Ecosystem subsection",
+        "region": "navigation “Contents”"
+      },
+      {
+        "selector": "#toc-Community > button",
+        "text": "Toggle Community subsection",
+        "region": "navigation “Contents”"
+      },
+      {
+        "selector": "#toc-References > button",
+        "text": "Toggle References subsection",
+        "region": "navigation “Contents”"
+      },
+      {
+        "tag": "input",
+        "role": "button",
+        "selector": "#p-lang-btn-checkbox",
+        "text": "60 languages",
+        "state": {
+          "checked": false
+        },
+        "region": "banner “Rust (programming language)”"
+      },
+      {
+        "tag": "input",
+        "role": "button",
+        "selector": "#vector-page-tools-dropdown-checkbox",
+        "text": "Tools",
+        "state": {
+          "checked": false
+        },
+        "region": "navigation “Page tools”"
+      },
+      {
+        "selector": "#vector-appearance > div > button:nth-of-type(2)",
+        "text": "Hide Appearance",
+        "region": "navigation “Appearance”"
+      }
+    ],
+    "fields": [
+      {
+        "tag": "input",
+        "role": "button",
+        "selector": "#vector-main-menu-dropdown-checkbox",
+        "text": "Main menu",
+        "state": {
+          "checked": false
+        },
+        "kind": "checkbox",
+        "region": "navigation “Site”"
+      },
+      {
+        "tag": "input",
+        "role": "searchbox",
+        "selector": "#searchInput",
+        "text": "Search Wikipedia",
+        "state": {
+          "filled": false
+        },
+        "kind": "search",
+        "region": "form"
+      },
+      {
+        "tag": "input",
+        "role": "button",
+        "selector": "#p-lang-btn-checkbox",
+        "text": "60 languages",
+        "state": {
+          "checked": false
+        },
+        "kind": "checkbox",
+        "region": "banner “Rust (programming language)”"
+      },
+      {
+        "tag": "input",
+        "role": "button",
+        "selector": "#vector-page-tools-dropdown-checkbox",
+        "text": "Tools",
+        "state": {
+          "checked": false
+        },
+        "kind": "checkbox",
+        "region": "navigation “Page tools”"
+      }
+    ],
+    "forms": [
+      {
+        "selector": "#searchform",
+        "action": "/w/index.php",
+        "method": "get",
+        "region": "search"
+      }
+    ],
+    "counts": {
+      "links": 1751,
+      "buttons": 11,
+      "fields": 4,
+      "forms": 1
+    }
+  }
+}

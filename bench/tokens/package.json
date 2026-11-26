@@ -1,0 +1,9 @@
+{
+  "name": "vexdom-bench-tokens",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "esbuild": "^0.28.2",
+    "puppeteer": "^25.18.1"
+  }
+}

@@ -1,0 +1,1103 @@
+{
+  "v": 1,
+  "docKey": "7c55dcb2-34ec-4e42-8de2-6e3e8a4007a6",
+  "url": "https://docs.rs/tokio/latest/tokio/",
+  "title": "tokio - Rust",
+  "viewport": {
+    "w": 1280,
+    "h": 800,
+    "scrollX": 0,
+    "scrollY": 0
+  },
+  "nodes": [
+    {
+      "r": "RootWebArea",
+      "n": "tokio - Rust",
+      "c": [
+        1,
+        10,
+        11,
+        13,
+        14,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        37,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65,
+        66,
+        67,
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81,
+        82,
+        83,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89,
+        90,
+        91,
+        92,
+        93,
+        94,
+        95,
+        96,
+        97,
+        98,
+        99,
+        100,
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112,
+        113,
+        114,
+        115,
+        116,
+        117,
+        118,
+        119,
+        120,
+        121,
+        122,
+        123,
+        124,
+        125,
+        126,
+        127,
+        128,
+        129,
+        130,
+        131,
+        132,
+        133,
+        134,
+        135,
+        136,
+        137,
+        138,
+        139,
+        140,
+        141,
+        142
+      ]
+    },
+    {
+      "id": 1,
+      "r": "navigation",
+      "n": "Main navigation",
+      "c": [
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9
+      ]
+    },
+    {
+      "id": 2,
+      "r": "link",
+      "n": "Docs.rs",
+      "u": "https://docs.rs/"
+    },
+    {
+      "id": 3,
+      "r": "link",
+      "n": "tokio-1.54.1 ▼",
+      "u": "https://docs.rs/tokio/latest/tokio/#"
+    },
+    {
+      "id": 4,
+      "r": "link",
+      "n": "Platform",
+      "u": "https://docs.rs/tokio/latest/tokio/#"
+    },
+    {
+      "id": 5,
+      "r": "link",
+      "n": "Feature flags",
+      "u": "https://docs.rs/crate/tokio/latest/features"
+    },
+    {
+      "id": 6,
+      "r": "link",
+      "n": "docs.rs",
+      "u": "https://docs.rs/tokio/latest/tokio/#"
+    },
+    {
+      "id": 7,
+      "r": "link",
+      "n": "Rust",
+      "u": "https://docs.rs/tokio/latest/tokio/#"
+    },
+    {
+      "id": 8,
+      "r": "generic",
+      "k": {
+        "hasCursorPointer": true,
+        "hasOnClick": false,
+        "hasTabIndex": false,
+        "isEditable": false,
+        "text": "",
+        "isNative": false,
+        "hiddenInputType": null,
+        "hiddenInputChecked": null
+      }
+    },
+    {
+      "id": 9,
+      "r": "textbox",
+      "n": "Find crate by search query"
+    },
+    {
+      "id": 10,
+      "r": "link",
+      "n": "Skip to main content",
+      "u": "https://docs.rs/tokio/latest/tokio/#main-content"
+    },
+    {
+      "id": 11,
+      "r": "heading",
+      "n": "tokio 1.54.1",
+      "s": {
+        "level": 2
+      },
+      "c": [
+        12
+      ]
+    },
+    {
+      "id": 12,
+      "r": "link",
+      "n": "tokio",
+      "u": "https://docs.rs/tokio/latest/tokio/index.html"
+    },
+    {
+      "id": 13,
+      "r": "link",
+      "n": "All Items",
+      "u": "https://docs.rs/tokio/latest/tokio/all.html"
+    },
+    {
+      "id": 14,
+      "r": "heading",
+      "n": "Sections",
+      "s": {
+        "level": 3
+      },
+      "c": [
+        15
+      ]
+    },
+    {
+      "id": 15,
+      "r": "link",
+      "n": "Sections",
+      "u": "https://docs.rs/tokio/latest/tokio/#"
+    },
+    {
+      "id": 16,
+      "r": "link",
+      "n": "A Tour of Tokio",
+      "u": "https://docs.rs/tokio/latest/tokio/#a-tour-of-tokio"
+    },
+    {
+      "id": 17,
+      "r": "link",
+      "n": "Authoring applications",
+      "u": "https://docs.rs/tokio/latest/tokio/#authoring-applications"
+    },
+    {
+      "id": 18,
+      "r": "link",
+      "n": "Authoring libraries",
+      "u": "https://docs.rs/tokio/latest/tokio/#authoring-libraries"
+    },
+    {
+      "id": 19,
+      "r": "link",
+      "n": "Working With Tasks",
+      "u": "https://docs.rs/tokio/latest/tokio/#working-with-tasks"
+    },
+    {
+      "id": 20,
+      "r": "link",
+      "n": "CPU-bound tasks and blocking code",
+      "u": "https://docs.rs/tokio/latest/tokio/#cpu-bound-tasks-and-blocking-code"
+    },
+    {
+      "id": 21,
+      "r": "link",
+      "n": "Asynchronous IO",
+      "u": "https://docs.rs/tokio/latest/tokio/#asynchronous-io"
+    },
+    {
+      "id": 22,
+      "r": "link",
+      "n": "Examples",
+      "u": "https://docs.rs/tokio/latest/tokio/#examples"
+    },
+    {
+      "id": 23,
+      "r": "link",
+      "n": "Feature flags",
+      "u": "https://docs.rs/tokio/latest/tokio/#feature-flags",
+      "h": "in:Unstable features"
+    },
+    {
+      "id": 24,
+      "r": "link",
+      "n": "Unstable features",
+      "u": "https://docs.rs/tokio/latest/tokio/#unstable-features"
+    },
+    {
+      "id": 25,
+      "r": "link",
+      "n": "Supported platforms",
+      "u": "https://docs.rs/tokio/latest/tokio/#supported-platforms"
+    },
+    {
+      "id": 26,
+      "r": "link",
+      "n": "WASM support",
+      "u": "https://docs.rs/tokio/latest/tokio/#wasm-support"
+    },
+    {
+      "id": 27,
+      "r": "heading",
+      "n": "Crate Items",
+      "s": {
+        "level": 3
+      },
+      "c": [
+        28
+      ]
+    },
+    {
+      "id": 28,
+      "r": "link",
+      "n": "Crate Items",
+      "u": "https://docs.rs/tokio/latest/tokio/#reexports"
+    },
+    {
+      "id": 29,
+      "r": "link",
+      "n": "Re-exports",
+      "u": "https://docs.rs/tokio/latest/tokio/#reexports"
+    },
+    {
+      "id": 30,
+      "r": "link",
+      "n": "Modules",
+      "u": "https://docs.rs/tokio/latest/tokio/#modules"
+    },
+    {
+      "id": 31,
+      "r": "link",
+      "n": "Macros",
+      "u": "https://docs.rs/tokio/latest/tokio/#macros"
+    },
+    {
+      "id": 32,
+      "r": "link",
+      "n": "Attribute Macros",
+      "u": "https://docs.rs/tokio/latest/tokio/#attributes"
+    },
+    {
+      "id": 33,
+      "r": "heading",
+      "n": "Crates",
+      "s": {
+        "level": 3
+      }
+    },
+    {
+      "id": 34,
+      "r": "link",
+      "n": "tokio",
+      "u": "https://docs.rs/tokio/latest/tokio/index.html"
+    },
+    {
+      "id": 35,
+      "r": "heading",
+      "n": "Crate tokio Copy item path",
+      "s": {
+        "level": 1
+      },
+      "c": [
+        36
+      ]
+    },
+    {
+      "id": 36,
+      "r": "button",
+      "n": "Copy item path"
+    },
+    {
+      "id": 37,
+      "r": "generic",
+      "k": {
+        "hasCursorPointer": false,
+        "hasOnClick": true,
+        "hasTabIndex": false,
+        "isEditable": false,
+        "text": "Search",
+        "isNative": false,
+        "hiddenInputType": null,
+        "hiddenInputChecked": null
+      },
+      "c": [
+        38
+      ]
+    },
+    {
+      "id": 38,
+      "r": "link",
+      "n": "Search",
+      "u": "https://docs.rs/tokio/latest/tokio/?search="
+    },
+    {
+      "id": 39,
+      "r": "link",
+      "n": "Settings",
+      "u": "https://docs.rs/tokio/latest/settings.html"
+    },
+    {
+      "id": 40,
+      "r": "link",
+      "n": "Help",
+      "u": "https://docs.rs/tokio/latest/help.html"
+    },
+    {
+      "id": 41,
+      "r": "button",
+      "n": "Summary"
+    },
+    {
+      "id": 42,
+      "r": "link",
+      "n": "Source",
+      "u": "https://docs.rs/tokio/latest/src/tokio/lib.rs.html#1-754"
+    },
+    {
+      "id": 43,
+      "r": "button",
+      "n": "Collapse",
+      "s": {
+        "expanded": true
+      }
+    },
+    {
+      "id": 44,
+      "r": "link",
+      "n": "working with asynchronous tasks",
+      "u": "https://docs.rs/tokio/latest/tokio/#working-with-tasks"
+    },
+    {
+      "id": 45,
+      "r": "link",
+      "n": "synchronization primitives and channels",
+      "u": "https://docs.rs/tokio/latest/tokio/sync/index.html"
+    },
+    {
+      "id": 46,
+      "r": "link",
+      "n": "timeouts, sleeps, and intervals",
+      "u": "https://docs.rs/tokio/latest/tokio/time/index.html"
+    },
+    {
+      "id": 47,
+      "r": "link",
+      "n": "performing asynchronous I/O",
+      "u": "https://docs.rs/tokio/latest/tokio/#asynchronous-io"
+    },
+    {
+      "id": 48,
+      "r": "link",
+      "n": "TCP and UDP",
+      "u": "https://docs.rs/tokio/latest/tokio/net/index.html"
+    },
+    {
+      "id": 49,
+      "r": "link",
+      "n": "filesystem",
+      "u": "https://docs.rs/tokio/latest/tokio/fs/index.html"
+    },
+    {
+      "id": 50,
+      "r": "link",
+      "n": "process",
+      "u": "https://docs.rs/tokio/latest/tokio/process/index.html",
+      "h": "in:APIs for performing asynchronous I/O, includi"
+    },
+    {
+      "id": 51,
+      "r": "link",
+      "n": "signal",
+      "u": "https://docs.rs/tokio/latest/tokio/signal/index.html",
+      "h": "in:APIs for performing asynchronous I/O, includi"
+    },
+    {
+      "id": 52,
+      "r": "link",
+      "n": "runtime",
+      "u": "https://docs.rs/tokio/latest/tokio/runtime/index.html",
+      "h": "in:A for executing asynchronous code, including "
+    },
+    {
+      "id": 53,
+      "r": "link",
+      "n": "website",
+      "u": "https://tokio.rs/tokio/tutorial"
+    },
+    {
+      "id": 54,
+      "r": "heading",
+      "n": "A Tour of Tokio",
+      "s": {
+        "level": 2
+      }
+    },
+    {
+      "id": 55,
+      "r": "heading",
+      "n": "Authoring applications",
+      "s": {
+        "level": 4
+      }
+    },
+    {
+      "id": 56,
+      "r": "heading",
+      "n": "Example",
+      "s": {
+        "level": 5
+      }
+    },
+    {
+      "id": 57,
+      "r": "heading",
+      "n": "Authoring libraries",
+      "s": {
+        "level": 4
+      }
+    },
+    {
+      "id": 58,
+      "r": "heading",
+      "n": "Example",
+      "s": {
+        "level": 5
+      }
+    },
+    {
+      "id": 59,
+      "r": "heading",
+      "n": "Working With Tasks",
+      "s": {
+        "level": 3
+      }
+    },
+    {
+      "id": 60,
+      "r": "link",
+      "n": "tasks",
+      "u": "https://docs.rs/tokio/latest/tokio/#working-with-tasks"
+    },
+    {
+      "id": 61,
+      "r": "link",
+      "n": "tokio::task",
+      "u": "https://docs.rs/tokio/latest/tokio/task/index.html"
+    },
+    {
+      "id": 62,
+      "r": "link",
+      "n": "spawn",
+      "u": "https://docs.rs/tokio/latest/tokio/task/fn.spawn.html",
+      "h": "in:The function and JoinHandle type, for schedul"
+    },
+    {
+      "id": 63,
+      "r": "link",
+      "n": "JoinHandle",
+      "u": "https://docs.rs/tokio/latest/tokio/task/struct.JoinHandle.html"
+    },
+    {
+      "id": 64,
+      "r": "link",
+      "n": "running blocking operations",
+      "u": "https://docs.rs/tokio/latest/tokio/task/index.html#blocking-and-yielding"
+    },
+    {
+      "id": 65,
+      "r": "link",
+      "n": "tokio::task",
+      "u": "https://docs.rs/tokio/latest/tokio/task/index.html"
+    },
+    {
+      "id": 66,
+      "r": "link",
+      "n": "tokio::sync",
+      "u": "https://docs.rs/tokio/latest/tokio/sync/index.html"
+    },
+    {
+      "id": 67,
+      "r": "link",
+      "n": "oneshot",
+      "u": "https://docs.rs/tokio/latest/tokio/sync/oneshot/index.html",
+      "h": "in:channels (, mpsc, watch, and broadcast), for "
+    },
+    {
+      "id": 68,
+      "r": "link",
+      "n": "mpsc",
+      "u": "https://docs.rs/tokio/latest/tokio/sync/mpsc/index.html"
+    },
+    {
+      "id": 69,
+      "r": "link",
+      "n": "watch",
+      "u": "https://docs.rs/tokio/latest/tokio/sync/watch/index.html"
+    },
+    {
+      "id": 70,
+      "r": "link",
+      "n": "broadcast",
+      "u": "https://docs.rs/tokio/latest/tokio/sync/broadcast/index.html"
+    },
+    {
+      "id": 71,
+      "r": "link",
+      "n": "Mutex",
+      "u": "https://docs.rs/tokio/latest/tokio/sync/struct.Mutex.html"
+    },
+    {
+      "id": 72,
+      "r": "link",
+      "n": "Barrier",
+      "u": "https://docs.rs/tokio/latest/tokio/sync/struct.Barrier.html"
+    },
+    {
+      "id": 73,
+      "r": "link",
+      "n": "tokio::time",
+      "u": "https://docs.rs/tokio/latest/tokio/time/index.html"
+    },
+    {
+      "id": 74,
+      "r": "link",
+      "n": "timeouts",
+      "u": "https://docs.rs/tokio/latest/tokio/time/fn.timeout.html"
+    },
+    {
+      "id": 75,
+      "r": "link",
+      "n": "sleeping",
+      "u": "https://docs.rs/tokio/latest/tokio/time/fn.sleep.html"
+    },
+    {
+      "id": 76,
+      "r": "link",
+      "n": "repeating an operation at an interval",
+      "u": "https://docs.rs/tokio/latest/tokio/time/fn.interval.html"
+    },
+    {
+      "id": 77,
+      "r": "link",
+      "n": "#[tokio::main]",
+      "u": "https://docs.rs/tokio/latest/tokio/attr.main.html"
+    },
+    {
+      "id": 78,
+      "r": "link",
+      "n": "tokio::runtime",
+      "u": "https://docs.rs/tokio/latest/tokio/runtime/index.html"
+    },
+    {
+      "id": 79,
+      "r": "link",
+      "n": "single-threaded scheduler",
+      "u": "https://docs.rs/tokio/latest/tokio/runtime/index.html#current-thread-scheduler"
+    },
+    {
+      "id": 80,
+      "r": "link",
+      "n": "multi-thread scheduler",
+      "u": "https://docs.rs/tokio/latest/tokio/runtime/index.html#multi-thread-scheduler"
+    },
+    {
+      "id": 81,
+      "r": "link",
+      "n": "runtime module documentation",
+      "u": "https://docs.rs/tokio/latest/tokio/runtime/index.html#runtime-scheduler"
+    },
+    {
+      "id": 82,
+      "r": "heading",
+      "n": "CPU-bound tasks and blocking code",
+      "s": {
+        "level": 3
+      }
+    },
+    {
+      "id": 83,
+      "r": "link",
+      "n": "thread_keep_alive",
+      "u": "https://docs.rs/tokio/latest/tokio/runtime/struct.Builder.html#method.thread_keep_alive"
+    },
+    {
+      "id": 84,
+      "r": "link",
+      "n": "Builder",
+      "u": "https://docs.rs/tokio/latest/tokio/runtime/struct.Builder.html"
+    },
+    {
+      "id": 85,
+      "r": "link",
+      "n": "spawn_blocking",
+      "u": "https://docs.rs/tokio/latest/tokio/task/fn.spawn_blocking.html"
+    },
+    {
+      "id": 86,
+      "r": "link",
+      "n": "rayon",
+      "u": "https://docs.rs/rayon"
+    },
+    {
+      "id": 87,
+      "r": "link",
+      "n": "oneshot",
+      "u": "https://docs.rs/tokio/latest/tokio/sync/oneshot/index.html"
+    },
+    {
+      "id": 88,
+      "r": "heading",
+      "n": "Asynchronous IO",
+      "s": {
+        "level": 3
+      }
+    },
+    {
+      "id": 89,
+      "r": "link",
+      "n": "tokio::io",
+      "u": "https://docs.rs/tokio/latest/tokio/io/index.html"
+    },
+    {
+      "id": 90,
+      "r": "link",
+      "n": "AsyncRead",
+      "u": "https://docs.rs/tokio/latest/tokio/io/trait.AsyncRead.html"
+    },
+    {
+      "id": 91,
+      "r": "link",
+      "n": "AsyncWrite",
+      "u": "https://docs.rs/tokio/latest/tokio/io/trait.AsyncWrite.html"
+    },
+    {
+      "id": 92,
+      "r": "link",
+      "n": "AsyncBufRead",
+      "u": "https://docs.rs/tokio/latest/tokio/io/trait.AsyncBufRead.html"
+    },
+    {
+      "id": 93,
+      "r": "link",
+      "n": "std::io",
+      "u": "https://doc.rust-lang.org/nightly/std/io/index.html"
+    },
+    {
+      "id": 94,
+      "r": "link",
+      "n": "tokio::net",
+      "u": "https://docs.rs/tokio/latest/tokio/net/index.html"
+    },
+    {
+      "id": 95,
+      "r": "link",
+      "n": "TCP",
+      "u": "https://docs.rs/tokio/latest/tokio/net/tcp/index.html"
+    },
+    {
+      "id": 96,
+      "r": "link",
+      "n": "UDP",
+      "u": "https://docs.rs/tokio/latest/tokio/net/struct.UdpSocket.html"
+    },
+    {
+      "id": 97,
+      "r": "link",
+      "n": "Unix Domain Sockets",
+      "u": "https://docs.rs/tokio/latest/tokio/net/unix/index.html"
+    },
+    {
+      "id": 98,
+      "r": "link",
+      "n": "tokio::fs",
+      "u": "https://docs.rs/tokio/latest/tokio/fs/index.html"
+    },
+    {
+      "id": 99,
+      "r": "link",
+      "n": "std::fs",
+      "u": "https://doc.rust-lang.org/nightly/std/fs/index.html"
+    },
+    {
+      "id": 100,
+      "r": "link",
+      "n": "tokio::signal",
+      "u": "https://docs.rs/tokio/latest/tokio/signal/index.html"
+    },
+    {
+      "id": 101,
+      "r": "link",
+      "n": "tokio::process",
+      "u": "https://docs.rs/tokio/latest/tokio/process/index.html"
+    },
+    {
+      "id": 102,
+      "r": "heading",
+      "n": "Examples",
+      "s": {
+        "level": 2
+      }
+    },
+    {
+      "id": 103,
+      "r": "heading",
+      "n": "Feature flags",
+      "s": {
+        "level": 2
+      }
+    },
+    {
+      "id": 104,
+      "r": "link",
+      "n": "feature flags",
+      "u": "https://doc.rust-lang.org/cargo/reference/manifest.html#the-features-section"
+    },
+    {
+      "id": 105,
+      "r": "link",
+      "n": "parking_lot",
+      "u": "https://docs.rs/parking_lot/0.12.5/x86_64-unknown-linux-gnu/parking_lot/index.html",
+      "h": "in:: As a potential optimization, use the parkin"
+    },
+    {
+      "id": 106,
+      "r": "link",
+      "n": "parking_lot",
+      "u": "https://docs.rs/parking_lot/0.12.5/x86_64-unknown-linux-gnu/parking_lot/index.html",
+      "h": "in:: As a potential optimization, use the parkin"
+    },
+    {
+      "id": 107,
+      "r": "heading",
+      "n": "Unstable features",
+      "s": {
+        "level": 3
+      }
+    },
+    {
+      "id": 108,
+      "r": "link",
+      "n": "does not yet directly support such opt-ins",
+      "u": "https://internals.rust-lang.org/t/feature-request-unstable-opt-in-non-transitive-crate-features/16193#why-not-a-crate-feature-2"
+    },
+    {
+      "id": 109,
+      "r": "heading",
+      "n": "Supported platforms",
+      "s": {
+        "level": 2
+      }
+    },
+    {
+      "id": 110,
+      "r": "link",
+      "n": "in mio’s documentation",
+      "u": "https://crates.io/crates/mio#platforms"
+    },
+    {
+      "id": 111,
+      "r": "heading",
+      "n": "WASM support",
+      "s": {
+        "level": 3
+      }
+    },
+    {
+      "id": 112,
+      "r": "heading",
+      "n": "WASI support",
+      "s": {
+        "level": 4
+      }
+    },
+    {
+      "id": 113,
+      "r": "heading",
+      "n": "Emscripten support",
+      "s": {
+        "level": 4
+      }
+    },
+    {
+      "id": 114,
+      "r": "heading",
+      "n": "Re-exports",
+      "s": {
+        "level": 2
+      }
+    },
+    {
+      "id": 115,
+      "r": "link",
+      "n": "spawn",
+      "u": "https://docs.rs/tokio/latest/tokio/task/fn.spawn.html"
+    },
+    {
+      "id": 116,
+      "r": "heading",
+      "n": "Modules",
+      "s": {
+        "level": 2
+      }
+    },
+    {
+      "id": 117,
+      "r": "link",
+      "n": "doc",
+      "u": "https://docs.rs/tokio/latest/tokio/doc/index.html"
+    },
+    {
+      "id": 118,
+      "r": "link",
+      "n": "fs",
+      "u": "https://docs.rs/tokio/latest/tokio/fs/index.html"
+    },
+    {
+      "id": 119,
+      "r": "link",
+      "n": "io",
+      "u": "https://docs.rs/tokio/latest/tokio/io/index.html"
+    },
+    {
+      "id": 120,
+      "r": "link",
+      "n": "net",
+      "u": "https://docs.rs/tokio/latest/tokio/net/index.html"
+    },
+    {
+      "id": 121,
+      "r": "link",
+      "n": "process",
+      "u": "https://docs.rs/tokio/latest/tokio/process/index.html"
+    },
+    {
+      "id": 122,
+      "r": "link",
+      "n": "runtime",
+      "u": "https://docs.rs/tokio/latest/tokio/runtime/index.html"
+    },
+    {
+      "id": 123,
+      "r": "link",
+      "n": "signal",
+      "u": "https://docs.rs/tokio/latest/tokio/signal/index.html"
+    },
+    {
+      "id": 124,
+      "r": "link",
+      "n": "stream",
+      "u": "https://docs.rs/tokio/latest/tokio/stream/index.html"
+    },
+    {
+      "id": 125,
+      "r": "link",
+      "n": "tokio-stream",
+      "u": "https://docs.rs/tokio-stream"
+    },
+    {
+      "id": 126,
+      "r": "link",
+      "n": "sync",
+      "u": "https://docs.rs/tokio/latest/tokio/sync/index.html"
+    },
+    {
+      "id": 127,
+      "r": "link",
+      "n": "task",
+      "u": "https://docs.rs/tokio/latest/tokio/task/index.html"
+    },
+    {
+      "id": 128,
+      "r": "link",
+      "n": "time",
+      "u": "https://docs.rs/tokio/latest/tokio/time/index.html"
+    },
+    {
+      "id": 129,
+      "r": "heading",
+      "n": "Macros",
+      "s": {
+        "level": 2
+      }
+    },
+    {
+      "id": 130,
+      "r": "link",
+      "n": "join",
+      "u": "https://docs.rs/tokio/latest/tokio/macro.join.html"
+    },
+    {
+      "id": 131,
+      "r": "link",
+      "n": "pin",
+      "u": "https://docs.rs/tokio/latest/tokio/macro.pin.html"
+    },
+    {
+      "id": 132,
+      "r": "link",
+      "n": "select",
+      "u": "https://docs.rs/tokio/latest/tokio/macro.select.html"
+    },
+    {
+      "id": 133,
+      "r": "link",
+      "n": "task_local",
+      "u": "https://docs.rs/tokio/latest/tokio/macro.task_local.html"
+    },
+    {
+      "id": 134,
+      "r": "link",
+      "n": "tokio::task::LocalKey",
+      "u": "https://docs.rs/tokio/latest/tokio/task/struct.LocalKey.html"
+    },
+    {
+      "id": 135,
+      "r": "link",
+      "n": "try_join",
+      "u": "https://docs.rs/tokio/latest/tokio/macro.try_join.html"
+    },
+    {
+      "id": 136,
+      "r": "heading",
+      "n": "Attribute Macros",
+      "s": {
+        "level": 2
+      }
+    },
+    {
+      "id": 137,
+      "r": "link",
+      "n": "main",
+      "u": "https://docs.rs/tokio/latest/tokio/attr.main.html"
+    },
+    {
+      "id": 138,
+      "r": "link",
+      "n": "Runtime",
+      "u": "https://docs.rs/tokio/latest/tokio/runtime/struct.Runtime.html"
+    },
+    {
+      "id": 139,
+      "r": "link",
+      "n": "Builder",
+      "u": "https://docs.rs/tokio/latest/tokio/runtime/struct.Builder.html"
+    },
+    {
+      "id": 140,
+      "r": "link",
+      "n": "test",
+      "u": "https://docs.rs/tokio/latest/tokio/attr.test.html"
+    },
+    {
+      "id": 141,
+      "r": "link",
+      "n": "Runtime",
+      "u": "https://docs.rs/tokio/latest/tokio/runtime/struct.Runtime.html"
+    },
+    {
+      "id": 142,
+      "r": "link",
+      "n": "Builder",
+      "u": "https://docs.rs/tokio/latest/tokio/runtime/struct.Builder.html"
+    }
+  ],
+  "frames": [],
+  "stats": {
+    "elements": 668,
+    "nodes": 143,
+    "ms": 8.2,
+    "truncated": false
+  }
+}

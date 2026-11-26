@@ -1,0 +1,5 @@
+{
+  "url": "file:///agent-browser/cli/src/native/test_fixtures/firefox_probe.html",
+  "title": "Firefox adapter probe",
+  "html": "<html lang=\"en\"><head><meta charset=\"utf-8\"><title>Firefox adapter probe</title></head>\n<body>\n<h1>Firefox probe</h1>\n<input id=\"name\" aria-label=\"Name\">\n<button id=\"go\" onclick=\"document.title = 'Hello ' + document.getElementById('name').value\">Go</button>\n<div id=\"list\"><button onclick=\"document.title = 'clicked-first'\">First</button><button onclick=\"document.title = 'clicked-second'\">Second</button></div>\n<button id=\"ask\" onclick=\"document.title = confirm('Proceed?') ? 'confirmed' : 'cancelled'\">Ask</button>\n<button id=\"alert\" onclick=\"alert('Heads up')\">Alert</button>\n<a id=\"dl\" href=\"/download.txt\" download=\"\">Download file</a>\n<a id=\"dl-inline\" href=\"/api\" download=\"\">Download inline file</a>\n<div id=\"host\"></div>\n<iframe src=\"__OTHER__/frame.html\" title=\"Other origin\"></iframe>\n\n\n\n</body></html>"
+}

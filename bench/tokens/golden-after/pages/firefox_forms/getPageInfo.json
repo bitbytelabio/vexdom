@@ -1,0 +1,118 @@
+{
+  "document": {
+    "url": "file:///agent-browser/cli/src/native/test_fixtures/firefox_forms.html",
+    "title": "Firefox forms",
+    "lang": "en"
+  },
+  "viewport": {
+    "width": 1280,
+    "height": 800,
+    "scrollX": 0,
+    "scrollY": 0,
+    "pageWidth": 1280,
+    "pageHeight": 1460
+  },
+  "layout": {
+    "diagram": "page 1280×1460 · viewport 1280×800 @ y=0"
+  },
+  "outline": [],
+  "interactive": {
+    "links": [],
+    "buttons": [
+      {
+        "selector": "#drag-source",
+        "text": "source"
+      },
+      {
+        "selector": "#drag-target",
+        "text": "target"
+      }
+    ],
+    "fields": [
+      {
+        "tag": "input",
+        "role": "textbox",
+        "selector": "#issues",
+        "text": "Issues",
+        "state": {
+          "filled": true
+        },
+        "kind": "text"
+      },
+      {
+        "tag": "textarea",
+        "role": "textbox",
+        "selector": "#literal",
+        "text": "Literal",
+        "state": {
+          "filled": false
+        },
+        "kind": "textarea"
+      },
+      {
+        "tag": "input",
+        "role": "textbox",
+        "selector": "#guarded",
+        "text": "Guarded",
+        "state": {
+          "filled": false
+        },
+        "kind": "text"
+      },
+      {
+        "tag": "input",
+        "role": "textbox",
+        "selector": "#password",
+        "text": "Password",
+        "state": {
+          "filled": false
+        },
+        "kind": "password"
+      },
+      {
+        "tag": "textarea",
+        "role": "textbox",
+        "selector": "#notes",
+        "text": "Notes",
+        "state": {
+          "filled": false
+        },
+        "kind": "textarea"
+      },
+      {
+        "tag": "input",
+        "role": "textbox",
+        "selector": "#email",
+        "text": "Email",
+        "state": {
+          "filled": false
+        },
+        "kind": "email"
+      },
+      {
+        "tag": "input",
+        "role": "spinbutton",
+        "selector": "#number",
+        "text": "Number",
+        "state": {
+          "filled": false
+        },
+        "kind": "number"
+      }
+    ],
+    "forms": [],
+    "counts": {
+      "links": 0,
+      "buttons": 2,
+      "fields": 7,
+      "forms": 0
+    }
+  },
+  "frames": [
+    {
+      "selector": "body > iframe",
+      "src": "file:///agent-browser/cli/src/native/test_fixtures/__OTHER__/forms-frame.html",
+      "title": "Cross origin forms"
+    }
+  ]
+}

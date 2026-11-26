@@ -1,0 +1,107 @@
+# The same gate CONTRIBUTING.md asks for locally, on every pull request and push to main.
+#
+# Bun 1.4.5 is the package manager and runtime (ADR-027), installed from bun.lock with
+# --frozen-lockfile. The Bridge is the Rust workspace at the root (ADR-025, ADR-026); the extension
+# (packages/extension) compiles its ext-core crate to wasm with BoltFFI, which needs the wasm32
+# target, the boltffi CLI and binaryen's wasm-opt. vexdom-schema's build.rs runs capnpc.
+# Docs-only changes skip CI.
+
+name: CI
+
+on:
+  pull_request:
+    paths-ignore: ['docs/**', '**/*.md', 'brand/**', '.github/ISSUE_TEMPLATE/**']
+  push:
+    branches: [main]
+    paths-ignore: ['docs/**', '**/*.md', 'brand/**', '.github/ISSUE_TEMPLATE/**']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/extension
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.5
+
+      - name: Rust toolchain
+        run: |
+          # rust-toolchain.toml pins the version; rustup installs it on first use.
+          rustup component add rustfmt clippy
+          rustup target add wasm32-unknown-unknown
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends capnproto
+
+      - name: binaryen (wasm-opt)
+        # Ubuntu's binaryen is too old for the flags boltffi passes (--enable-bulk-memory-opt).
+        run: |
+          v=version_133
+          curl -fsSL "https://github.com/WebAssembly/binaryen/releases/download/$v/binaryen-$v-x86_64-linux.tar.gz" | tar xz -C "$RUNNER_TEMP"
+          echo "$RUNNER_TEMP/binaryen-$v/bin" >> "$GITHUB_PATH"
+
+      - uses: taiki-e/cache-cargo-install-action@v2
+        with:
+          tool: boltffi_cli@0.32.1
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: linux
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Check
+        run: bun run check
+
+      - name: Bundle the extension
+        # Type checks pass on code Vite still refuses to bundle; catch that here, not on a tag.
+        # ext-core is already built by `check`, so call WXT directly.
+        run: bunx wxt build
+
+  # The Bridge on macOS, the platform Vexdom ships for first (ADR-026): launchd, the native-messaging
+  # manifests under ~/Library and the Mac file system. Also the GPUI desktop app, a workspace of its own.
+  macos:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Toolchain
+        run: |
+          rustup component add rustfmt clippy
+          brew install capnp
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: macos
+          workspaces: |
+            .
+            desktop
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Test the Bridge
+        run: |
+          cargo clippy --workspace --all-targets -- -D warnings
+          cargo test --workspace
+
+      - name: Test the desktop app
+        working-directory: desktop
+        run: |
+          cargo fmt --check
+          cargo clippy --locked --all-targets -- -D warnings
+          cargo test --locked

@@ -1,0 +1,6 @@
+> {"jsonrpc":"2.0","id":12,"method":"tools/call","params":{"name":"snapshot","arguments":{}}}
+< {"jsonrpc":"2.0","id":12,"result":{"content":[{"type":"text","text":"<<<untrusted-page-data:7e24d227bfd6>>>\nsnapshot r4\n- Iframe [ref=e25]\n<<</untrusted-page-data:7e24d227bfd6>>>"}],"isError":false}}
+> {"jsonrpc":"2.0","id":13,"method":"tools/call","params":{"name":"snapshot","arguments":{"as":"markdown"}}}
+< {"jsonrpc":"2.0","id":13,"result":{"content":[{"type":"text","text":"<<<untrusted-page-data:8ed02962ba30>>>\nidle\n<<</untrusted-page-data:8ed02962ba30>>>"}],"isError":false}}
+> {"jsonrpc":"2.0","id":14,"method":"tools/call","params":{"name":"snapshot","arguments":{"as":"markdown","outline":true}}}
+< {"jsonrpc":"2.0","id":14,"result":{"content":[{"type":"text","text":"<<<untrusted-page-data:cbec7cd55567>>>\n\n<<</untrusted-page-data:cbec7cd55567>>>"}],"isError":false}}

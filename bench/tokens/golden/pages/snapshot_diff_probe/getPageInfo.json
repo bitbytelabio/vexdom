@@ -1,0 +1,53 @@
+{
+  "document": {
+    "url": "file:///agent-browser/cli/src/native/test_fixtures/snapshot_diff_probe.html",
+    "title": "Snapshot diff probe",
+    "lang": "en"
+  },
+  "viewport": {
+    "width": 1280,
+    "height": 800,
+    "scrollX": 0,
+    "scrollY": 0,
+    "pageWidth": 1280,
+    "pageHeight": 800
+  },
+  "layout": {
+    "diagram": "page 1280×800 · viewport 1280×800 @ y=0"
+  },
+  "outline": [],
+  "interactive": {
+    "links": [
+      {
+        "selector": "body > a",
+        "text": "Details",
+        "href": "file:///agent-browser/cli/src/native/test_fixtures/snapshot_diff_probe.html#target"
+      }
+    ],
+    "buttons": [
+      {
+        "selector": "#primary-action",
+        "text": "Primary action"
+      }
+    ],
+    "fields": [
+      {
+        "tag": "input",
+        "role": "textbox",
+        "selector": "#account-name",
+        "text": "Account name",
+        "state": {
+          "filled": false
+        },
+        "kind": "text"
+      }
+    ],
+    "forms": [],
+    "counts": {
+      "links": 1,
+      "buttons": 1,
+      "fields": 1,
+      "forms": 0
+    }
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "extends": "./.wxt/tsconfig.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
+  },
+  // .ext-core/ is boltffi's pack output (crates/ext-core/boltffi.toml); boltffi checks it itself.
+  "exclude": ["node_modules", "dist", ".wxt/types-check", ".ext-core"]
+}

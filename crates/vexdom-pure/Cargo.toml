@@ -1,0 +1,25 @@
+[package]
+name = "vexdom-pure"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+description = "Pure logic shared by the Bridge and ext-core (wasm): no I/O, clock, randomness or system time zone"
+
+[dependencies]
+base64 = { workspace = true }
+fancy-regex = { workspace = true }
+hmac = { workspace = true }
+jiff = { workspace = true }
+pbkdf2 = { workspace = true }
+regex = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+subtle = { workspace = true }
+url = { workspace = true }
+
+[lints]
+workspace = true

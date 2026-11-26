@@ -1,0 +1,36 @@
+{
+  "document": {
+    "url": "file:///agent-browser/cli/src/native/test_fixtures/webmcp_probe.html",
+    "title": "WebMCP probe"
+  },
+  "viewport": {
+    "width": 1280,
+    "height": 800,
+    "scrollX": 0,
+    "scrollY": 0,
+    "pageWidth": 1280,
+    "pageHeight": 800
+  },
+  "layout": {
+    "diagram": "page 1280×800 · viewport 1280×800 @ y=0"
+  },
+  "outline": [],
+  "interactive": {
+    "links": [],
+    "buttons": [],
+    "fields": [],
+    "forms": [],
+    "counts": {
+      "links": 0,
+      "buttons": 0,
+      "fields": 0,
+      "forms": 0
+    }
+  },
+  "frames": [
+    {
+      "selector": "#tool-frame",
+      "src": "http://127.0.0.1:__PORT__/frame.html"
+    }
+  ]
+}

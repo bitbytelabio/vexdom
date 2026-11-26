@@ -1,0 +1,8 @@
+> {"jsonrpc":"2.0","id":15,"method":"tools/call","params":{"name":"snapshot","arguments":{}}}
+< {"jsonrpc":"2.0","id":15,"result":{"content":[{"type":"text","text":"<<<untrusted-page-data:7e24d227bfd6>>>\nsnapshot r5\n- button \"Primary action\" [ref=e26]\n- textbox \"Account name\" [ref=e27]\n- link \"Details\" [ref=e28]\n<<</untrusted-page-data:7e24d227bfd6>>>"}],"isError":false}}
+> {"jsonrpc":"2.0","id":16,"method":"tools/call","params":{"name":"snapshot","arguments":{"as":"markdown"}}}
+< {"jsonrpc":"2.0","id":16,"result":{"content":[{"type":"text","text":"<<<untrusted-page-data:576ffe2a1833>>>\nPrimary action\nAccount name\n\nDetails\n\nTarget\n<<</untrusted-page-data:576ffe2a1833>>>"}],"isError":false}}
+> {"jsonrpc":"2.0","id":17,"method":"tools/call","params":{"name":"snapshot","arguments":{"as":"markdown","outline":true}}}
+< {"jsonrpc":"2.0","id":17,"result":{"content":[{"type":"text","text":"<<<untrusted-page-data:5ed1bfd470e2>>>\n\n<<</untrusted-page-data:5ed1bfd470e2>>>"}],"isError":false}}
+> {"jsonrpc":"2.0","id":18,"method":"tools/call","params":{"name":"snapshot","arguments":{}}}
+< {"jsonrpc":"2.0","id":18,"result":{"content":[{"type":"text","text":"<<<untrusted-page-data:7e24d227bfd6>>>\nsnapshot r6\n- button \"Primary action\" [ref=e26]\n- textbox \"Account name\" [ref=e27]: Ada Lovelace\n- link \"Details\" [ref=e28]\n<<</untrusted-page-data:7e24d227bfd6>>>"}],"isError":false}}

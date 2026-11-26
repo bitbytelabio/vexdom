@@ -1,0 +1,2838 @@
+{
+  "v": 1,
+  "docKey": "68e3cf6e-b802-4f2d-954b-bdacb42a1d19",
+  "url": "https://news.ycombinator.com/",
+  "title": "Hacker News",
+  "viewport": {
+    "w": 1280,
+    "h": 800,
+    "scrollX": 0,
+    "scrollY": 0
+  },
+  "nodes": [
+    {
+      "r": "RootWebArea",
+      "n": "Hacker News",
+      "c": [
+        1,
+        15,
+        378
+      ]
+    },
+    {
+      "id": 1,
+      "r": "cell",
+      "n": "Hacker Newsnew | past | comments | ask | show | jobs | submit login",
+      "c": [
+        2,
+        4,
+        13
+      ]
+    },
+    {
+      "id": 2,
+      "r": "cell",
+      "c": [
+        3
+      ]
+    },
+    {
+      "id": 3,
+      "r": "link",
+      "u": "https://news.ycombinator.com/",
+      "h": "img:y18; in:Hacker Newsnew | past | comments | ask | show"
+    },
+    {
+      "id": 4,
+      "r": "cell",
+      "n": "Hacker Newsnew | past | comments | ask | show | jobs | submit",
+      "c": [
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12
+      ]
+    },
+    {
+      "id": 5,
+      "r": "link",
+      "n": "Hacker News",
+      "u": "https://news.ycombinator.com/news"
+    },
+    {
+      "id": 6,
+      "r": "link",
+      "n": "new",
+      "u": "https://news.ycombinator.com/newest"
+    },
+    {
+      "id": 7,
+      "r": "link",
+      "n": "past",
+      "u": "https://news.ycombinator.com/front"
+    },
+    {
+      "id": 8,
+      "r": "link",
+      "n": "comments",
+      "u": "https://news.ycombinator.com/newcomments"
+    },
+    {
+      "id": 9,
+      "r": "link",
+      "n": "ask",
+      "u": "https://news.ycombinator.com/ask"
+    },
+    {
+      "id": 10,
+      "r": "link",
+      "n": "show",
+      "u": "https://news.ycombinator.com/show"
+    },
+    {
+      "id": 11,
+      "r": "link",
+      "n": "jobs",
+      "u": "https://news.ycombinator.com/jobs"
+    },
+    {
+      "id": 12,
+      "r": "link",
+      "n": "submit",
+      "u": "https://news.ycombinator.com/submit"
+    },
+    {
+      "id": 13,
+      "r": "cell",
+      "n": "login",
+      "c": [
+        14
+      ]
+    },
+    {
+      "id": 14,
+      "r": "link",
+      "n": "login",
+      "u": "https://news.ycombinator.com/login?goto=news"
+    },
+    {
+      "id": 15,
+      "r": "cell",
+      "n": "1. upvote Holy shit holy shit holy shit holy shit: The magnitude of what’s now happening (scottaaronson.blog) 1340 points by Kotlopou 12 hours ago | hide | 1161 comments 2. upvote 1Password Security Incident (1password.com) 1351 points by lxhrstn 14 hours ago | hide | 567 comments 3. upvote Lions' Commentary on Unix: Why It Was Secretly Copied for 20 Years (fosscomics.com) 48 points by joonehur 2 hours ago | hide | 5 comments 4. upvote Much shorter version of GRH Lean verification from Anthropic (github.com/lsernau) 418 points by nb-t 9 hours ago | hide | 207 comments 5. upvote Minipg: PostgreSQL as a Single Executable (progrium.github.io) 76 points by rguiscard 4 hours ago | hide | 13 comments 6. upvote Tell HN: Lots of Ask HNs again 233 points by dang 6 hours ago | hide | 86 comments 7. upvote Collection of preserved UI style guides (aresluna.org) 123 points by sohkamyung 6 hours ago | hide | 13 comments 8. upvote What VP ≠ VNP Means (In 3 Minutes) (friedgil.com) 100 points by vinhnx 5 hours ago | hide | 18 comments 9. upvote Slow Ubuntu security response times (openwall.com) 254 points by gslin 10 hours ago | hide | 110 comments 10. upvote GPT-6.2 Astra is the first model to beat Googlers' code golf records (bjin.github.io) 352 points by bjin 11 hours ago | hide | 94 comments 11. upvote The Great Automatic Grammatizator (By Roald Dahl), 1954 [pdf] (gwern.net) 64 points by Michelangelo11 4 hours ago | hide | 17 comments 12. upvote A few questions for the guy who went snorkeling in a Home Depot retention pond (vox.com) 468 points by gumby 16 hours ago | hide | 113 comments 13. upvote OpenAI cuts GPT-6.2 usage: Astra hits limits 40% faster, Sol 25% faster (twitter.com/thsottiaux) 166 points by Herrera 3 hours ago | hide | 86 comments 14. upvote Bare Metal Qwen (github.com/alesha-pro) 129 points by miohtama 9 hours ago | hide | 28 comments 15. upvote Nfs2root: A 12-year-old pre-auth remote root in the Linux kernel's NFS server (opensec.in) 125 points by dm 10 hours ago | hide | 45 comments 16. upvote Qualcomm's Oryon 3 Reaches the Top (chipsandcheese.com) 31 points by wmf 3 hours ago | hide | 4 comments 17. upvote The New York Times warns photographers not to update Photoshop over AI features (theverge.com) 325 points by rmason 10 hours ago | hide | 278 comments 18. upvote How did pinwheel calculators work? (coredump.cx) 58 points by surprisetalk 5 hours ago | hide | 4 comments 19. upvote Deploying a payphone on a tiny Pacific Island for fun and zero profit (nickvsnetworking.com) 85 points by qzervaas 9 hours ago | hide | 11 comments 20. upvote SSH is a GUI framework (zydra.sh) 176 points by teledream 12 hours ago | hide | 84 comments 21. upvote Show HN: Synth Patch Hero (swarkentin.github.io) 7 points by kaidon 1 hour ago | hide | 2 comments 22. upvote Xkcd and Fourier (leancrew.com) 30 points by surprisetalk 2 hours ago | hide | 8 comments 23. upvote Google releases Cogentic papers on integer factorization, discrete logs and more (github.com/google-research) 484 points by rgwohlbold 17 hours ago | hide | 347 comments 24. upvote Hkust 3D Prints a Titanium Alloy That Keeps Hardening (3dprinting.com) 30 points by rbanffy 5 hours ago | hide | 5 comments 25. upvote The polynomial Hirsch conjecture is false [pdf] (github.com/openai) 151 points by acossta 13 hours ago | hide | 41 comments 26. upvote Deriving Black-Scholes (alvarezrosa.com) 66 points by meysamazad 12 hours ago | hide | 46 comments 27. upvote Can a TV be too large? An investigation (techcrunch.com) 49 points by jomon003 10 hours ago | hide | 70 comments 28. upvote Marginal Grains (asteriskmag.com) 8 points by NaOH 3 hours ago | hide | discuss 29. upvote I checked Clojure's core with Lean and found unreported bugs (conao3.com) 214 points by encyclopedism 16 hours ago | hide | 73 comments 30. upvote The trouble with serendipity: Scientific discoveries don't happen how you think (worksinprogress.news) 38 points by crescit_eundo 7 hours ago | hide | 10 comments More",
+      "c": [
+        16,
+        17,
+        19,
+        22,
+        23,
+        28,
+        29,
+        31,
+        34,
+        35,
+        40,
+        41,
+        43,
+        46,
+        47,
+        52,
+        53,
+        55,
+        58,
+        59,
+        64,
+        65,
+        67,
+        70,
+        71,
+        76,
+        77,
+        79,
+        81,
+        82,
+        87,
+        88,
+        90,
+        93,
+        94,
+        99,
+        100,
+        102,
+        105,
+        106,
+        111,
+        112,
+        114,
+        117,
+        118,
+        123,
+        124,
+        126,
+        129,
+        130,
+        135,
+        136,
+        138,
+        141,
+        142,
+        147,
+        148,
+        150,
+        153,
+        154,
+        159,
+        160,
+        162,
+        165,
+        166,
+        171,
+        172,
+        174,
+        177,
+        178,
+        183,
+        184,
+        186,
+        189,
+        190,
+        195,
+        196,
+        198,
+        201,
+        202,
+        207,
+        208,
+        210,
+        213,
+        214,
+        219,
+        220,
+        222,
+        225,
+        226,
+        231,
+        232,
+        234,
+        237,
+        238,
+        243,
+        244,
+        246,
+        249,
+        250,
+        255,
+        256,
+        258,
+        261,
+        262,
+        267,
+        268,
+        270,
+        273,
+        274,
+        279,
+        280,
+        282,
+        285,
+        286,
+        291,
+        292,
+        294,
+        297,
+        298,
+        303,
+        304,
+        306,
+        309,
+        310,
+        315,
+        316,
+        318,
+        321,
+        322,
+        327,
+        328,
+        330,
+        333,
+        334,
+        339,
+        340,
+        342,
+        345,
+        346,
+        351,
+        352,
+        354,
+        357,
+        358,
+        363,
+        364,
+        366,
+        369,
+        370,
+        375,
+        376
+      ]
+    },
+    {
+      "id": 16,
+      "r": "cell",
+      "n": "1."
+    },
+    {
+      "id": 17,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        18
+      ]
+    },
+    {
+      "id": 18,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50646108&how=up&goto=news",
+      "h": "in:1. Holy shit holy shit holy shit holy shit: T"
+    },
+    {
+      "id": 19,
+      "r": "cell",
+      "n": "Holy shit holy shit holy shit holy shit: The magnitude of what’s now happening (scottaaronson.blog)",
+      "c": [
+        20,
+        21
+      ]
+    },
+    {
+      "id": 20,
+      "r": "link",
+      "n": "Holy shit holy shit holy shit holy shit: The magnitude of what’s now happening",
+      "u": "https://scottaaronson.blog/?p=10379"
+    },
+    {
+      "id": 21,
+      "r": "link",
+      "n": "scottaaronson.blog",
+      "u": "https://news.ycombinator.com/from?site=scottaaronson.blog"
+    },
+    {
+      "id": 22,
+      "r": "cell"
+    },
+    {
+      "id": 23,
+      "r": "cell",
+      "n": "1340 points by Kotlopou 12 hours ago | hide | 1161 comments",
+      "c": [
+        24,
+        25,
+        26,
+        27
+      ]
+    },
+    {
+      "id": 24,
+      "r": "link",
+      "n": "Kotlopou",
+      "u": "https://news.ycombinator.com/user?id=Kotlopou"
+    },
+    {
+      "id": 25,
+      "r": "link",
+      "n": "12 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50646108",
+      "h": "in:1340 points by Kotlopou | hide | 1161 comment"
+    },
+    {
+      "id": 26,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50646108&goto=news",
+      "h": "in:1340 points by Kotlopou 12 hours ago | | 1161"
+    },
+    {
+      "id": 27,
+      "r": "link",
+      "n": "1161 comments",
+      "u": "https://news.ycombinator.com/item?id=50646108"
+    },
+    {
+      "id": 28,
+      "r": "cell",
+      "n": "2."
+    },
+    {
+      "id": 29,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        30
+      ]
+    },
+    {
+      "id": 30,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50644817&how=up&goto=news",
+      "h": "in:2. 1Password Security Incident (1password.com"
+    },
+    {
+      "id": 31,
+      "r": "cell",
+      "n": "1Password Security Incident (1password.com)",
+      "c": [
+        32,
+        33
+      ]
+    },
+    {
+      "id": 32,
+      "r": "link",
+      "n": "1Password Security Incident",
+      "u": "https://1password.com/blog/update-on-nov-2026-security-incident"
+    },
+    {
+      "id": 33,
+      "r": "link",
+      "n": "1password.com",
+      "u": "https://news.ycombinator.com/from?site=1password.com"
+    },
+    {
+      "id": 34,
+      "r": "cell"
+    },
+    {
+      "id": 35,
+      "r": "cell",
+      "n": "1351 points by lxhrstn 14 hours ago | hide | 567 comments",
+      "c": [
+        36,
+        37,
+        38,
+        39
+      ]
+    },
+    {
+      "id": 36,
+      "r": "link",
+      "n": "lxhrstn",
+      "u": "https://news.ycombinator.com/user?id=lxhrstn"
+    },
+    {
+      "id": 37,
+      "r": "link",
+      "n": "14 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50644817"
+    },
+    {
+      "id": 38,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50644817&goto=news",
+      "h": "in:1351 points by lxhrstn 14 hours ago | | 567 c"
+    },
+    {
+      "id": 39,
+      "r": "link",
+      "n": "567 comments",
+      "u": "https://news.ycombinator.com/item?id=50644817"
+    },
+    {
+      "id": 40,
+      "r": "cell",
+      "n": "3."
+    },
+    {
+      "id": 41,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        42
+      ]
+    },
+    {
+      "id": 42,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50651719&how=up&goto=news",
+      "h": "in:3. Lions' Commentary on Unix: Why It Was Secr"
+    },
+    {
+      "id": 43,
+      "r": "cell",
+      "n": "Lions' Commentary on Unix: Why It Was Secretly Copied for 20 Years (fosscomics.com)",
+      "c": [
+        44,
+        45
+      ]
+    },
+    {
+      "id": 44,
+      "r": "link",
+      "n": "Lions' Commentary on Unix: Why It Was Secretly Copied for 20 Years",
+      "u": "https://fosscomics.com/posts/17.%20Lions%27%20Commentary%20on%20Unix/"
+    },
+    {
+      "id": 45,
+      "r": "link",
+      "n": "fosscomics.com",
+      "u": "https://news.ycombinator.com/from?site=fosscomics.com"
+    },
+    {
+      "id": 46,
+      "r": "cell"
+    },
+    {
+      "id": 47,
+      "r": "cell",
+      "n": "48 points by joonehur 2 hours ago | hide | 5 comments",
+      "c": [
+        48,
+        49,
+        50,
+        51
+      ]
+    },
+    {
+      "id": 48,
+      "r": "link",
+      "n": "joonehur",
+      "u": "https://news.ycombinator.com/user?id=joonehur"
+    },
+    {
+      "id": 49,
+      "r": "link",
+      "n": "2 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50651719",
+      "h": "in:48 points by joonehur | hide | 5 comments"
+    },
+    {
+      "id": 50,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50651719&goto=news",
+      "h": "in:48 points by joonehur 2 hours ago | | 5 comme"
+    },
+    {
+      "id": 51,
+      "r": "link",
+      "n": "5 comments",
+      "u": "https://news.ycombinator.com/item?id=50651719",
+      "h": "in:48 points by joonehur 2 hours ago | hide |"
+    },
+    {
+      "id": 52,
+      "r": "cell",
+      "n": "4."
+    },
+    {
+      "id": 53,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        54
+      ]
+    },
+    {
+      "id": 54,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50648050&how=up&goto=news",
+      "h": "in:4. Much shorter version of GRH Lean verificat"
+    },
+    {
+      "id": 55,
+      "r": "cell",
+      "n": "Much shorter version of GRH Lean verification from Anthropic (github.com/lsernau)",
+      "c": [
+        56,
+        57
+      ]
+    },
+    {
+      "id": 56,
+      "r": "link",
+      "n": "Much shorter version of GRH Lean verification from Anthropic",
+      "u": "https://github.com/lsernau/grh-lean"
+    },
+    {
+      "id": 57,
+      "r": "link",
+      "n": "github.com/lsernau",
+      "u": "https://news.ycombinator.com/from?site=github.com/lsernau"
+    },
+    {
+      "id": 58,
+      "r": "cell"
+    },
+    {
+      "id": 59,
+      "r": "cell",
+      "n": "418 points by nb-t 9 hours ago | hide | 207 comments",
+      "c": [
+        60,
+        61,
+        62,
+        63
+      ]
+    },
+    {
+      "id": 60,
+      "r": "link",
+      "n": "nb-t",
+      "u": "https://news.ycombinator.com/user?id=nb-t"
+    },
+    {
+      "id": 61,
+      "r": "link",
+      "n": "9 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50648050",
+      "h": "in:418 points by nb-t | hide | 207 comments"
+    },
+    {
+      "id": 62,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50648050&goto=news",
+      "h": "in:418 points by nb-t 9 hours ago | | 207 commen"
+    },
+    {
+      "id": 63,
+      "r": "link",
+      "n": "207 comments",
+      "u": "https://news.ycombinator.com/item?id=50648050"
+    },
+    {
+      "id": 64,
+      "r": "cell",
+      "n": "5."
+    },
+    {
+      "id": 65,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        66
+      ]
+    },
+    {
+      "id": 66,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50650892&how=up&goto=news",
+      "h": "in:5. Minipg: PostgreSQL as a Single Executable "
+    },
+    {
+      "id": 67,
+      "r": "cell",
+      "n": "Minipg: PostgreSQL as a Single Executable (progrium.github.io)",
+      "c": [
+        68,
+        69
+      ]
+    },
+    {
+      "id": 68,
+      "r": "link",
+      "n": "Minipg: PostgreSQL as a Single Executable",
+      "u": "https://progrium.github.io/minipg/"
+    },
+    {
+      "id": 69,
+      "r": "link",
+      "n": "progrium.github.io",
+      "u": "https://news.ycombinator.com/from?site=progrium.github.io"
+    },
+    {
+      "id": 70,
+      "r": "cell"
+    },
+    {
+      "id": 71,
+      "r": "cell",
+      "n": "76 points by rguiscard 4 hours ago | hide | 13 comments",
+      "c": [
+        72,
+        73,
+        74,
+        75
+      ]
+    },
+    {
+      "id": 72,
+      "r": "link",
+      "n": "rguiscard",
+      "u": "https://news.ycombinator.com/user?id=rguiscard"
+    },
+    {
+      "id": 73,
+      "r": "link",
+      "n": "4 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50650892",
+      "h": "in:76 points by rguiscard | hide | 13 comments"
+    },
+    {
+      "id": 74,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50650892&goto=news",
+      "h": "in:76 points by rguiscard 4 hours ago | | 13 com"
+    },
+    {
+      "id": 75,
+      "r": "link",
+      "n": "13 comments",
+      "u": "https://news.ycombinator.com/item?id=50650892",
+      "h": "in:76 points by rguiscard 4 hours ago | hide |"
+    },
+    {
+      "id": 76,
+      "r": "cell",
+      "n": "6."
+    },
+    {
+      "id": 77,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        78
+      ]
+    },
+    {
+      "id": 78,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50649864&how=up&goto=news",
+      "h": "in:6. Tell HN: Lots of Ask HNs again"
+    },
+    {
+      "id": 79,
+      "r": "cell",
+      "n": "Tell HN: Lots of Ask HNs again",
+      "c": [
+        80
+      ]
+    },
+    {
+      "id": 80,
+      "r": "link",
+      "n": "Tell HN: Lots of Ask HNs again",
+      "u": "https://news.ycombinator.com/item?id=50649864"
+    },
+    {
+      "id": 81,
+      "r": "cell"
+    },
+    {
+      "id": 82,
+      "r": "cell",
+      "n": "233 points by dang 6 hours ago | hide | 86 comments",
+      "c": [
+        83,
+        84,
+        85,
+        86
+      ]
+    },
+    {
+      "id": 83,
+      "r": "link",
+      "n": "dang",
+      "u": "https://news.ycombinator.com/user?id=dang"
+    },
+    {
+      "id": 84,
+      "r": "link",
+      "n": "6 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50649864",
+      "h": "in:233 points by dang | hide | 86 comments"
+    },
+    {
+      "id": 85,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50649864&goto=news",
+      "h": "in:233 points by dang 6 hours ago | | 86 comment"
+    },
+    {
+      "id": 86,
+      "r": "link",
+      "n": "86 comments",
+      "u": "https://news.ycombinator.com/item?id=50649864",
+      "h": "in:233 points by dang 6 hours ago | hide |"
+    },
+    {
+      "id": 87,
+      "r": "cell",
+      "n": "7."
+    },
+    {
+      "id": 88,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        89
+      ]
+    },
+    {
+      "id": 89,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50649834&how=up&goto=news",
+      "h": "in:7. Collection of preserved UI style guides (a"
+    },
+    {
+      "id": 90,
+      "r": "cell",
+      "n": "Collection of preserved UI style guides (aresluna.org)",
+      "c": [
+        91,
+        92
+      ]
+    },
+    {
+      "id": 91,
+      "r": "link",
+      "n": "Collection of preserved UI style guides",
+      "u": "https://aresluna.org/ui-style-guides/"
+    },
+    {
+      "id": 92,
+      "r": "link",
+      "n": "aresluna.org",
+      "u": "https://news.ycombinator.com/from?site=aresluna.org"
+    },
+    {
+      "id": 93,
+      "r": "cell"
+    },
+    {
+      "id": 94,
+      "r": "cell",
+      "n": "123 points by sohkamyung 6 hours ago | hide | 13 comments",
+      "c": [
+        95,
+        96,
+        97,
+        98
+      ]
+    },
+    {
+      "id": 95,
+      "r": "link",
+      "n": "sohkamyung",
+      "u": "https://news.ycombinator.com/user?id=sohkamyung"
+    },
+    {
+      "id": 96,
+      "r": "link",
+      "n": "6 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50649834",
+      "h": "in:123 points by sohkamyung | hide | 13 comments"
+    },
+    {
+      "id": 97,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50649834&goto=news",
+      "h": "in:123 points by sohkamyung 6 hours ago | | 13 c"
+    },
+    {
+      "id": 98,
+      "r": "link",
+      "n": "13 comments",
+      "u": "https://news.ycombinator.com/item?id=50649834",
+      "h": "in:123 points by sohkamyung 6 hours ago | hide |"
+    },
+    {
+      "id": 99,
+      "r": "cell",
+      "n": "8."
+    },
+    {
+      "id": 100,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        101
+      ]
+    },
+    {
+      "id": 101,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50626466&how=up&goto=news",
+      "h": "in:8. What VP ≠ VNP Means (In 3 Minutes) (friedg"
+    },
+    {
+      "id": 102,
+      "r": "cell",
+      "n": "What VP ≠ VNP Means (In 3 Minutes) (friedgil.com)",
+      "c": [
+        103,
+        104
+      ]
+    },
+    {
+      "id": 103,
+      "r": "link",
+      "n": "What VP ≠ VNP Means (In 3 Minutes)",
+      "u": "https://www.friedgil.com/vpvnp"
+    },
+    {
+      "id": 104,
+      "r": "link",
+      "n": "friedgil.com",
+      "u": "https://news.ycombinator.com/from?site=friedgil.com"
+    },
+    {
+      "id": 105,
+      "r": "cell"
+    },
+    {
+      "id": 106,
+      "r": "cell",
+      "n": "100 points by vinhnx 5 hours ago | hide | 18 comments",
+      "c": [
+        107,
+        108,
+        109,
+        110
+      ]
+    },
+    {
+      "id": 107,
+      "r": "link",
+      "n": "vinhnx",
+      "u": "https://news.ycombinator.com/user?id=vinhnx"
+    },
+    {
+      "id": 108,
+      "r": "link",
+      "n": "5 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50626466",
+      "h": "in:100 points by vinhnx | hide | 18 comments"
+    },
+    {
+      "id": 109,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50626466&goto=news",
+      "h": "in:100 points by vinhnx 5 hours ago | | 18 comme"
+    },
+    {
+      "id": 110,
+      "r": "link",
+      "n": "18 comments",
+      "u": "https://news.ycombinator.com/item?id=50626466"
+    },
+    {
+      "id": 111,
+      "r": "cell",
+      "n": "9."
+    },
+    {
+      "id": 112,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        113
+      ]
+    },
+    {
+      "id": 113,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50647181&how=up&goto=news",
+      "h": "in:9. Slow Ubuntu security response times (openw"
+    },
+    {
+      "id": 114,
+      "r": "cell",
+      "n": "Slow Ubuntu security response times (openwall.com)",
+      "c": [
+        115,
+        116
+      ]
+    },
+    {
+      "id": 115,
+      "r": "link",
+      "n": "Slow Ubuntu security response times",
+      "u": "https://www.openwall.com/lists/oss-security/2026/11/25/9"
+    },
+    {
+      "id": 116,
+      "r": "link",
+      "n": "openwall.com",
+      "u": "https://news.ycombinator.com/from?site=openwall.com"
+    },
+    {
+      "id": 117,
+      "r": "cell"
+    },
+    {
+      "id": 118,
+      "r": "cell",
+      "n": "254 points by gslin 10 hours ago | hide | 110 comments",
+      "c": [
+        119,
+        120,
+        121,
+        122
+      ]
+    },
+    {
+      "id": 119,
+      "r": "link",
+      "n": "gslin",
+      "u": "https://news.ycombinator.com/user?id=gslin"
+    },
+    {
+      "id": 120,
+      "r": "link",
+      "n": "10 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50647181",
+      "h": "in:254 points by gslin | hide | 110 comments"
+    },
+    {
+      "id": 121,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50647181&goto=news",
+      "h": "in:254 points by gslin 10 hours ago | | 110 comm"
+    },
+    {
+      "id": 122,
+      "r": "link",
+      "n": "110 comments",
+      "u": "https://news.ycombinator.com/item?id=50647181"
+    },
+    {
+      "id": 123,
+      "r": "cell",
+      "n": "10."
+    },
+    {
+      "id": 124,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        125
+      ]
+    },
+    {
+      "id": 125,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50601280&how=up&goto=news",
+      "h": "in:10. GPT-6.2 Astra is the first model to beat "
+    },
+    {
+      "id": 126,
+      "r": "cell",
+      "n": "GPT-6.2 Astra is the first model to beat Googlers' code golf records (bjin.github.io)",
+      "c": [
+        127,
+        128
+      ]
+    },
+    {
+      "id": 127,
+      "r": "link",
+      "n": "GPT-6.2 Astra is the first model to beat Googlers' code golf records",
+      "u": "https://bjin.github.io/go-codegolf-benchmark/#leaderboard"
+    },
+    {
+      "id": 128,
+      "r": "link",
+      "n": "bjin.github.io",
+      "u": "https://news.ycombinator.com/from?site=bjin.github.io"
+    },
+    {
+      "id": 129,
+      "r": "cell"
+    },
+    {
+      "id": 130,
+      "r": "cell",
+      "n": "352 points by bjin 11 hours ago | hide | 94 comments",
+      "c": [
+        131,
+        132,
+        133,
+        134
+      ]
+    },
+    {
+      "id": 131,
+      "r": "link",
+      "n": "bjin",
+      "u": "https://news.ycombinator.com/user?id=bjin"
+    },
+    {
+      "id": 132,
+      "r": "link",
+      "n": "11 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50601280"
+    },
+    {
+      "id": 133,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50601280&goto=news",
+      "h": "in:352 points by bjin 11 hours ago | | 94 commen"
+    },
+    {
+      "id": 134,
+      "r": "link",
+      "n": "94 comments",
+      "u": "https://news.ycombinator.com/item?id=50601280"
+    },
+    {
+      "id": 135,
+      "r": "cell",
+      "n": "11."
+    },
+    {
+      "id": 136,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        137
+      ]
+    },
+    {
+      "id": 137,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50598636&how=up&goto=news",
+      "h": "in:11. The Great Automatic Grammatizator (By Roa"
+    },
+    {
+      "id": 138,
+      "r": "cell",
+      "n": "The Great Automatic Grammatizator (By Roald Dahl), 1954 [pdf] (gwern.net)",
+      "c": [
+        139,
+        140
+      ]
+    },
+    {
+      "id": 139,
+      "r": "link",
+      "n": "The Great Automatic Grammatizator (By Roald Dahl), 1954 [pdf]",
+      "u": "https://gwern.net/doc/fiction/science-fiction/1953-dahl-thegreatautomaticgrammatizator.pdf"
+    },
+    {
+      "id": 140,
+      "r": "link",
+      "n": "gwern.net",
+      "u": "https://news.ycombinator.com/from?site=gwern.net"
+    },
+    {
+      "id": 141,
+      "r": "cell"
+    },
+    {
+      "id": 142,
+      "r": "cell",
+      "n": "64 points by Michelangelo11 4 hours ago | hide | 17 comments",
+      "c": [
+        143,
+        144,
+        145,
+        146
+      ]
+    },
+    {
+      "id": 143,
+      "r": "link",
+      "n": "Michelangelo11",
+      "u": "https://news.ycombinator.com/user?id=Michelangelo11"
+    },
+    {
+      "id": 144,
+      "r": "link",
+      "n": "4 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50598636",
+      "h": "in:64 points by Michelangelo11 | hide | 17 comme"
+    },
+    {
+      "id": 145,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50598636&goto=news",
+      "h": "in:64 points by Michelangelo11 4 hours ago | | 1"
+    },
+    {
+      "id": 146,
+      "r": "link",
+      "n": "17 comments",
+      "u": "https://news.ycombinator.com/item?id=50598636"
+    },
+    {
+      "id": 147,
+      "r": "cell",
+      "n": "12."
+    },
+    {
+      "id": 148,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        149
+      ]
+    },
+    {
+      "id": 149,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50643129&how=up&goto=news",
+      "h": "in:12. A few questions for the guy who went snor"
+    },
+    {
+      "id": 150,
+      "r": "cell",
+      "n": "A few questions for the guy who went snorkeling in a Home Depot retention pond (vox.com)",
+      "c": [
+        151,
+        152
+      ]
+    },
+    {
+      "id": 151,
+      "r": "link",
+      "n": "A few questions for the guy who went snorkeling in a Home Depot retention pond",
+      "u": "https://www.vox.com/down-to-earth/511999/home-depot-retention-pond-snorkel-joseph-ricketts"
+    },
+    {
+      "id": 152,
+      "r": "link",
+      "n": "vox.com",
+      "u": "https://news.ycombinator.com/from?site=vox.com"
+    },
+    {
+      "id": 153,
+      "r": "cell"
+    },
+    {
+      "id": 154,
+      "r": "cell",
+      "n": "468 points by gumby 16 hours ago | hide | 113 comments",
+      "c": [
+        155,
+        156,
+        157,
+        158
+      ]
+    },
+    {
+      "id": 155,
+      "r": "link",
+      "n": "gumby",
+      "u": "https://news.ycombinator.com/user?id=gumby"
+    },
+    {
+      "id": 156,
+      "r": "link",
+      "n": "16 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50643129",
+      "h": "in:468 points by gumby | hide | 113 comments"
+    },
+    {
+      "id": 157,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50643129&goto=news",
+      "h": "in:468 points by gumby 16 hours ago | | 113 comm"
+    },
+    {
+      "id": 158,
+      "r": "link",
+      "n": "113 comments",
+      "u": "https://news.ycombinator.com/item?id=50643129"
+    },
+    {
+      "id": 159,
+      "r": "cell",
+      "n": "13."
+    },
+    {
+      "id": 160,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        161
+      ]
+    },
+    {
+      "id": 161,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50651117&how=up&goto=news",
+      "h": "in:13. OpenAI cuts GPT-6.2 usage: Astra hits lim"
+    },
+    {
+      "id": 162,
+      "r": "cell",
+      "n": "OpenAI cuts GPT-6.2 usage: Astra hits limits 40% faster, Sol 25% faster (twitter.com/thsottiaux)",
+      "c": [
+        163,
+        164
+      ]
+    },
+    {
+      "id": 163,
+      "r": "link",
+      "n": "OpenAI cuts GPT-6.2 usage: Astra hits limits 40% faster, Sol 25% faster",
+      "u": "https://twitter.com/thsottiaux/status/2125784147889393806"
+    },
+    {
+      "id": 164,
+      "r": "link",
+      "n": "twitter.com/thsottiaux",
+      "u": "https://news.ycombinator.com/from?site=twitter.com/thsottiaux"
+    },
+    {
+      "id": 165,
+      "r": "cell"
+    },
+    {
+      "id": 166,
+      "r": "cell",
+      "n": "166 points by Herrera 3 hours ago | hide | 86 comments",
+      "c": [
+        167,
+        168,
+        169,
+        170
+      ]
+    },
+    {
+      "id": 167,
+      "r": "link",
+      "n": "Herrera",
+      "u": "https://news.ycombinator.com/user?id=Herrera"
+    },
+    {
+      "id": 168,
+      "r": "link",
+      "n": "3 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50651117",
+      "h": "in:166 points by Herrera | hide | 86 comments"
+    },
+    {
+      "id": 169,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50651117&goto=news",
+      "h": "in:166 points by Herrera 3 hours ago | | 86 comm"
+    },
+    {
+      "id": 170,
+      "r": "link",
+      "n": "86 comments",
+      "u": "https://news.ycombinator.com/item?id=50651117",
+      "h": "in:166 points by Herrera 3 hours ago | hide |"
+    },
+    {
+      "id": 171,
+      "r": "cell",
+      "n": "14."
+    },
+    {
+      "id": 172,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        173
+      ]
+    },
+    {
+      "id": 173,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50648365&how=up&goto=news",
+      "h": "in:14. Bare Metal Qwen (github.com/alesha-pro)"
+    },
+    {
+      "id": 174,
+      "r": "cell",
+      "n": "Bare Metal Qwen (github.com/alesha-pro)",
+      "c": [
+        175,
+        176
+      ]
+    },
+    {
+      "id": 175,
+      "r": "link",
+      "n": "Bare Metal Qwen",
+      "u": "https://github.com/alesha-pro/llm.asm/tree/main/02-baremetal-os"
+    },
+    {
+      "id": 176,
+      "r": "link",
+      "n": "github.com/alesha-pro",
+      "u": "https://news.ycombinator.com/from?site=github.com/alesha-pro"
+    },
+    {
+      "id": 177,
+      "r": "cell"
+    },
+    {
+      "id": 178,
+      "r": "cell",
+      "n": "129 points by miohtama 9 hours ago | hide | 28 comments",
+      "c": [
+        179,
+        180,
+        181,
+        182
+      ]
+    },
+    {
+      "id": 179,
+      "r": "link",
+      "n": "miohtama",
+      "u": "https://news.ycombinator.com/user?id=miohtama"
+    },
+    {
+      "id": 180,
+      "r": "link",
+      "n": "9 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50648365",
+      "h": "in:129 points by miohtama | hide | 28 comments"
+    },
+    {
+      "id": 181,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50648365&goto=news",
+      "h": "in:129 points by miohtama 9 hours ago | | 28 com"
+    },
+    {
+      "id": 182,
+      "r": "link",
+      "n": "28 comments",
+      "u": "https://news.ycombinator.com/item?id=50648365"
+    },
+    {
+      "id": 183,
+      "r": "cell",
+      "n": "15."
+    },
+    {
+      "id": 184,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        185
+      ]
+    },
+    {
+      "id": 185,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50647161&how=up&goto=news",
+      "h": "in:15. Nfs2root: A 12-year-old pre-auth remote r"
+    },
+    {
+      "id": 186,
+      "r": "cell",
+      "n": "Nfs2root: A 12-year-old pre-auth remote root in the Linux kernel's NFS server (opensec.in)",
+      "c": [
+        187,
+        188
+      ]
+    },
+    {
+      "id": 187,
+      "r": "link",
+      "n": "Nfs2root: A 12-year-old pre-auth remote root in the Linux kernel's NFS server",
+      "u": "https://opensec.in/blog/nfs2root-cve-2026-99362"
+    },
+    {
+      "id": 188,
+      "r": "link",
+      "n": "opensec.in",
+      "u": "https://news.ycombinator.com/from?site=opensec.in"
+    },
+    {
+      "id": 189,
+      "r": "cell"
+    },
+    {
+      "id": 190,
+      "r": "cell",
+      "n": "125 points by dm 10 hours ago | hide | 45 comments",
+      "c": [
+        191,
+        192,
+        193,
+        194
+      ]
+    },
+    {
+      "id": 191,
+      "r": "link",
+      "n": "dm",
+      "u": "https://news.ycombinator.com/user?id=dm"
+    },
+    {
+      "id": 192,
+      "r": "link",
+      "n": "10 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50647161",
+      "h": "in:125 points by dm | hide | 45 comments"
+    },
+    {
+      "id": 193,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50647161&goto=news",
+      "h": "in:125 points by dm 10 hours ago | | 45 comments"
+    },
+    {
+      "id": 194,
+      "r": "link",
+      "n": "45 comments",
+      "u": "https://news.ycombinator.com/item?id=50647161"
+    },
+    {
+      "id": 195,
+      "r": "cell",
+      "n": "16."
+    },
+    {
+      "id": 196,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        197
+      ]
+    },
+    {
+      "id": 197,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50651158&how=up&goto=news",
+      "h": "in:16. Qualcomm's Oryon 3 Reaches the Top (chips"
+    },
+    {
+      "id": 198,
+      "r": "cell",
+      "n": "Qualcomm's Oryon 3 Reaches the Top (chipsandcheese.com)",
+      "c": [
+        199,
+        200
+      ]
+    },
+    {
+      "id": 199,
+      "r": "link",
+      "n": "Qualcomm's Oryon 3 Reaches the Top",
+      "u": "https://chipsandcheese.com/p/qualcomms-oryon-3-reaches-the-top"
+    },
+    {
+      "id": 200,
+      "r": "link",
+      "n": "chipsandcheese.com",
+      "u": "https://news.ycombinator.com/from?site=chipsandcheese.com"
+    },
+    {
+      "id": 201,
+      "r": "cell"
+    },
+    {
+      "id": 202,
+      "r": "cell",
+      "n": "31 points by wmf 3 hours ago | hide | 4 comments",
+      "c": [
+        203,
+        204,
+        205,
+        206
+      ]
+    },
+    {
+      "id": 203,
+      "r": "link",
+      "n": "wmf",
+      "u": "https://news.ycombinator.com/user?id=wmf"
+    },
+    {
+      "id": 204,
+      "r": "link",
+      "n": "3 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50651158",
+      "h": "in:31 points by wmf | hide | 4 comments"
+    },
+    {
+      "id": 205,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50651158&goto=news",
+      "h": "in:31 points by wmf 3 hours ago | | 4 comments"
+    },
+    {
+      "id": 206,
+      "r": "link",
+      "n": "4 comments",
+      "u": "https://news.ycombinator.com/item?id=50651158",
+      "h": "in:31 points by wmf 3 hours ago | hide |"
+    },
+    {
+      "id": 207,
+      "r": "cell",
+      "n": "17."
+    },
+    {
+      "id": 208,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        209
+      ]
+    },
+    {
+      "id": 209,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50647673&how=up&goto=news",
+      "h": "in:17. The New York Times warns photographers no"
+    },
+    {
+      "id": 210,
+      "r": "cell",
+      "n": "The New York Times warns photographers not to update Photoshop over AI features (theverge.com)",
+      "c": [
+        211,
+        212
+      ]
+    },
+    {
+      "id": 211,
+      "r": "link",
+      "n": "The New York Times warns photographers not to update Photoshop over AI features",
+      "u": "https://www.theverge.com/ai-artificial-intelligence/1041227/the-new-york-times-warns-photographers-not-to-update-photoshop-over-ai-features"
+    },
+    {
+      "id": 212,
+      "r": "link",
+      "n": "theverge.com",
+      "u": "https://news.ycombinator.com/from?site=theverge.com"
+    },
+    {
+      "id": 213,
+      "r": "cell"
+    },
+    {
+      "id": 214,
+      "r": "cell",
+      "n": "325 points by rmason 10 hours ago | hide | 278 comments",
+      "c": [
+        215,
+        216,
+        217,
+        218
+      ]
+    },
+    {
+      "id": 215,
+      "r": "link",
+      "n": "rmason",
+      "u": "https://news.ycombinator.com/user?id=rmason"
+    },
+    {
+      "id": 216,
+      "r": "link",
+      "n": "10 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50647673",
+      "h": "in:325 points by rmason | hide | 278 comments"
+    },
+    {
+      "id": 217,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50647673&goto=news",
+      "h": "in:325 points by rmason 10 hours ago | | 278 com"
+    },
+    {
+      "id": 218,
+      "r": "link",
+      "n": "278 comments",
+      "u": "https://news.ycombinator.com/item?id=50647673"
+    },
+    {
+      "id": 219,
+      "r": "cell",
+      "n": "18."
+    },
+    {
+      "id": 220,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        221
+      ]
+    },
+    {
+      "id": 221,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50637448&how=up&goto=news",
+      "h": "in:18. How did pinwheel calculators work? (cored"
+    },
+    {
+      "id": 222,
+      "r": "cell",
+      "n": "How did pinwheel calculators work? (coredump.cx)",
+      "c": [
+        223,
+        224
+      ]
+    },
+    {
+      "id": 223,
+      "r": "link",
+      "n": "How did pinwheel calculators work?",
+      "u": "https://blog.coredump.cx/p/how-did-pinwheel-calculators-work"
+    },
+    {
+      "id": 224,
+      "r": "link",
+      "n": "coredump.cx",
+      "u": "https://news.ycombinator.com/from?site=coredump.cx"
+    },
+    {
+      "id": 225,
+      "r": "cell"
+    },
+    {
+      "id": 226,
+      "r": "cell",
+      "n": "58 points by surprisetalk 5 hours ago | hide | 4 comments",
+      "c": [
+        227,
+        228,
+        229,
+        230
+      ]
+    },
+    {
+      "id": 227,
+      "r": "link",
+      "n": "surprisetalk",
+      "u": "https://news.ycombinator.com/user?id=surprisetalk",
+      "h": "in:58 points by 5 hours ago | hide | 4 comments"
+    },
+    {
+      "id": 228,
+      "r": "link",
+      "n": "5 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50637448",
+      "h": "in:58 points by surprisetalk | hide | 4 comments"
+    },
+    {
+      "id": 229,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50637448&goto=news",
+      "h": "in:58 points by surprisetalk 5 hours ago | | 4 c"
+    },
+    {
+      "id": 230,
+      "r": "link",
+      "n": "4 comments",
+      "u": "https://news.ycombinator.com/item?id=50637448",
+      "h": "in:58 points by surprisetalk 5 hours ago | hide "
+    },
+    {
+      "id": 231,
+      "r": "cell",
+      "n": "19."
+    },
+    {
+      "id": 232,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        233
+      ]
+    },
+    {
+      "id": 233,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50648323&how=up&goto=news",
+      "h": "in:19. Deploying a payphone on a tiny Pacific Is"
+    },
+    {
+      "id": 234,
+      "r": "cell",
+      "n": "Deploying a payphone on a tiny Pacific Island for fun and zero profit (nickvsnetworking.com)",
+      "c": [
+        235,
+        236
+      ]
+    },
+    {
+      "id": 235,
+      "r": "link",
+      "n": "Deploying a payphone on a tiny Pacific Island for fun and zero profit",
+      "u": "https://nickvsnetworking.com/deploying-a-payphone-on-a-tiny-pacific-island-for-fun-and-zero-profit/"
+    },
+    {
+      "id": 236,
+      "r": "link",
+      "n": "nickvsnetworking.com",
+      "u": "https://news.ycombinator.com/from?site=nickvsnetworking.com"
+    },
+    {
+      "id": 237,
+      "r": "cell"
+    },
+    {
+      "id": 238,
+      "r": "cell",
+      "n": "85 points by qzervaas 9 hours ago | hide | 11 comments",
+      "c": [
+        239,
+        240,
+        241,
+        242
+      ]
+    },
+    {
+      "id": 239,
+      "r": "link",
+      "n": "qzervaas",
+      "u": "https://news.ycombinator.com/user?id=qzervaas"
+    },
+    {
+      "id": 240,
+      "r": "link",
+      "n": "9 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50648323",
+      "h": "in:85 points by qzervaas | hide | 11 comments"
+    },
+    {
+      "id": 241,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50648323&goto=news",
+      "h": "in:85 points by qzervaas 9 hours ago | | 11 comm"
+    },
+    {
+      "id": 242,
+      "r": "link",
+      "n": "11 comments",
+      "u": "https://news.ycombinator.com/item?id=50648323"
+    },
+    {
+      "id": 243,
+      "r": "cell",
+      "n": "20."
+    },
+    {
+      "id": 244,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        245
+      ]
+    },
+    {
+      "id": 245,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50589784&how=up&goto=news",
+      "h": "in:20. SSH is a GUI framework (zydra.sh)"
+    },
+    {
+      "id": 246,
+      "r": "cell",
+      "n": "SSH is a GUI framework (zydra.sh)",
+      "c": [
+        247,
+        248
+      ]
+    },
+    {
+      "id": 247,
+      "r": "link",
+      "n": "SSH is a GUI framework",
+      "u": "https://zydra.sh/articles/ssh-is-a-gui-framework/"
+    },
+    {
+      "id": 248,
+      "r": "link",
+      "n": "zydra.sh",
+      "u": "https://news.ycombinator.com/from?site=zydra.sh"
+    },
+    {
+      "id": 249,
+      "r": "cell"
+    },
+    {
+      "id": 250,
+      "r": "cell",
+      "n": "176 points by teledream 12 hours ago | hide | 84 comments",
+      "c": [
+        251,
+        252,
+        253,
+        254
+      ]
+    },
+    {
+      "id": 251,
+      "r": "link",
+      "n": "teledream",
+      "u": "https://news.ycombinator.com/user?id=teledream"
+    },
+    {
+      "id": 252,
+      "r": "link",
+      "n": "12 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50589784",
+      "h": "in:176 points by teledream | hide | 84 comments"
+    },
+    {
+      "id": 253,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50589784&goto=news",
+      "h": "in:176 points by teledream 12 hours ago | | 84 c"
+    },
+    {
+      "id": 254,
+      "r": "link",
+      "n": "84 comments",
+      "u": "https://news.ycombinator.com/item?id=50589784"
+    },
+    {
+      "id": 255,
+      "r": "cell",
+      "n": "21."
+    },
+    {
+      "id": 256,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        257
+      ]
+    },
+    {
+      "id": 257,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50623232&how=up&goto=news",
+      "h": "in:21. Show HN: Synth Patch Hero (swarkentin.git"
+    },
+    {
+      "id": 258,
+      "r": "cell",
+      "n": "Show HN: Synth Patch Hero (swarkentin.github.io)",
+      "c": [
+        259,
+        260
+      ]
+    },
+    {
+      "id": 259,
+      "r": "link",
+      "n": "Show HN: Synth Patch Hero",
+      "u": "https://swarkentin.github.io/synth-patch-hero/"
+    },
+    {
+      "id": 260,
+      "r": "link",
+      "n": "swarkentin.github.io",
+      "u": "https://news.ycombinator.com/from?site=swarkentin.github.io"
+    },
+    {
+      "id": 261,
+      "r": "cell"
+    },
+    {
+      "id": 262,
+      "r": "cell",
+      "n": "7 points by kaidon 1 hour ago | hide | 2 comments",
+      "c": [
+        263,
+        264,
+        265,
+        266
+      ]
+    },
+    {
+      "id": 263,
+      "r": "link",
+      "n": "kaidon",
+      "u": "https://news.ycombinator.com/user?id=kaidon"
+    },
+    {
+      "id": 264,
+      "r": "link",
+      "n": "1 hour ago",
+      "u": "https://news.ycombinator.com/item?id=50623232"
+    },
+    {
+      "id": 265,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50623232&goto=news",
+      "h": "in:7 points by kaidon 1 hour ago | | 2 comments"
+    },
+    {
+      "id": 266,
+      "r": "link",
+      "n": "2 comments",
+      "u": "https://news.ycombinator.com/item?id=50623232"
+    },
+    {
+      "id": 267,
+      "r": "cell",
+      "n": "22."
+    },
+    {
+      "id": 268,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        269
+      ]
+    },
+    {
+      "id": 269,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50627532&how=up&goto=news",
+      "h": "in:22. Xkcd and Fourier (leancrew.com)"
+    },
+    {
+      "id": 270,
+      "r": "cell",
+      "n": "Xkcd and Fourier (leancrew.com)",
+      "c": [
+        271,
+        272
+      ]
+    },
+    {
+      "id": 271,
+      "r": "link",
+      "n": "Xkcd and Fourier",
+      "u": "https://leancrew.com/all-this/2026/10/xkcd-and-fourier/"
+    },
+    {
+      "id": 272,
+      "r": "link",
+      "n": "leancrew.com",
+      "u": "https://news.ycombinator.com/from?site=leancrew.com"
+    },
+    {
+      "id": 273,
+      "r": "cell"
+    },
+    {
+      "id": 274,
+      "r": "cell",
+      "n": "30 points by surprisetalk 2 hours ago | hide | 8 comments",
+      "c": [
+        275,
+        276,
+        277,
+        278
+      ]
+    },
+    {
+      "id": 275,
+      "r": "link",
+      "n": "surprisetalk",
+      "u": "https://news.ycombinator.com/user?id=surprisetalk",
+      "h": "in:30 points by 2 hours ago | hide | 8 comments"
+    },
+    {
+      "id": 276,
+      "r": "link",
+      "n": "2 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50627532",
+      "h": "in:30 points by surprisetalk | hide | 8 comments"
+    },
+    {
+      "id": 277,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50627532&goto=news",
+      "h": "in:30 points by surprisetalk 2 hours ago | | 8 c"
+    },
+    {
+      "id": 278,
+      "r": "link",
+      "n": "8 comments",
+      "u": "https://news.ycombinator.com/item?id=50627532"
+    },
+    {
+      "id": 279,
+      "r": "cell",
+      "n": "23."
+    },
+    {
+      "id": 280,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        281
+      ]
+    },
+    {
+      "id": 281,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50642086&how=up&goto=news",
+      "h": "in:23. Google releases Cogentic papers on intege"
+    },
+    {
+      "id": 282,
+      "r": "cell",
+      "n": "Google releases Cogentic papers on integer factorization, discrete logs and more (github.com/google-research)",
+      "c": [
+        283,
+        284
+      ]
+    },
+    {
+      "id": 283,
+      "r": "link",
+      "n": "Google releases Cogentic papers on integer factorization, discrete logs and more",
+      "u": "https://github.com/google-research/google-research/tree/master/cogentic_research_papers"
+    },
+    {
+      "id": 284,
+      "r": "link",
+      "n": "github.com/google-research",
+      "u": "https://news.ycombinator.com/from?site=github.com/google-research"
+    },
+    {
+      "id": 285,
+      "r": "cell"
+    },
+    {
+      "id": 286,
+      "r": "cell",
+      "n": "484 points by rgwohlbold 17 hours ago | hide | 347 comments",
+      "c": [
+        287,
+        288,
+        289,
+        290
+      ]
+    },
+    {
+      "id": 287,
+      "r": "link",
+      "n": "rgwohlbold",
+      "u": "https://news.ycombinator.com/user?id=rgwohlbold"
+    },
+    {
+      "id": 288,
+      "r": "link",
+      "n": "17 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50642086"
+    },
+    {
+      "id": 289,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50642086&goto=news",
+      "h": "in:484 points by rgwohlbold 17 hours ago | | 347"
+    },
+    {
+      "id": 290,
+      "r": "link",
+      "n": "347 comments",
+      "u": "https://news.ycombinator.com/item?id=50642086"
+    },
+    {
+      "id": 291,
+      "r": "cell",
+      "n": "24."
+    },
+    {
+      "id": 292,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        293
+      ]
+    },
+    {
+      "id": 293,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50620991&how=up&goto=news",
+      "h": "in:24. Hkust 3D Prints a Titanium Alloy That Kee"
+    },
+    {
+      "id": 294,
+      "r": "cell",
+      "n": "Hkust 3D Prints a Titanium Alloy That Keeps Hardening (3dprinting.com)",
+      "c": [
+        295,
+        296
+      ]
+    },
+    {
+      "id": 295,
+      "r": "link",
+      "n": "Hkust 3D Prints a Titanium Alloy That Keeps Hardening",
+      "u": "https://3dprinting.com/news/hkust-researchers-3d-print-a-titanium-alloy-that-keeps-hardening-under-strain/"
+    },
+    {
+      "id": 296,
+      "r": "link",
+      "n": "3dprinting.com",
+      "u": "https://news.ycombinator.com/from?site=3dprinting.com"
+    },
+    {
+      "id": 297,
+      "r": "cell"
+    },
+    {
+      "id": 298,
+      "r": "cell",
+      "n": "30 points by rbanffy 5 hours ago | hide | 5 comments",
+      "c": [
+        299,
+        300,
+        301,
+        302
+      ]
+    },
+    {
+      "id": 299,
+      "r": "link",
+      "n": "rbanffy",
+      "u": "https://news.ycombinator.com/user?id=rbanffy"
+    },
+    {
+      "id": 300,
+      "r": "link",
+      "n": "5 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50620991",
+      "h": "in:30 points by rbanffy | hide | 5 comments"
+    },
+    {
+      "id": 301,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50620991&goto=news",
+      "h": "in:30 points by rbanffy 5 hours ago | | 5 commen"
+    },
+    {
+      "id": 302,
+      "r": "link",
+      "n": "5 comments",
+      "u": "https://news.ycombinator.com/item?id=50620991",
+      "h": "in:30 points by rbanffy 5 hours ago | hide |"
+    },
+    {
+      "id": 303,
+      "r": "cell",
+      "n": "25."
+    },
+    {
+      "id": 304,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        305
+      ]
+    },
+    {
+      "id": 305,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50644980&how=up&goto=news",
+      "h": "in:25. The polynomial Hirsch conjecture is false"
+    },
+    {
+      "id": 306,
+      "r": "cell",
+      "n": "The polynomial Hirsch conjecture is false [pdf] (github.com/openai)",
+      "c": [
+        307,
+        308
+      ]
+    },
+    {
+      "id": 307,
+      "r": "link",
+      "n": "The polynomial Hirsch conjecture is false [pdf]",
+      "u": "https://github.com/openai/math/blob/main/preprints/Superpolynomial-graph-diameter-of-simple-polytopes-November-24-2026/paper.pdf"
+    },
+    {
+      "id": 308,
+      "r": "link",
+      "n": "github.com/openai",
+      "u": "https://news.ycombinator.com/from?site=github.com/openai"
+    },
+    {
+      "id": 309,
+      "r": "cell"
+    },
+    {
+      "id": 310,
+      "r": "cell",
+      "n": "151 points by acossta 13 hours ago | hide | 41 comments",
+      "c": [
+        311,
+        312,
+        313,
+        314
+      ]
+    },
+    {
+      "id": 311,
+      "r": "link",
+      "n": "acossta",
+      "u": "https://news.ycombinator.com/user?id=acossta"
+    },
+    {
+      "id": 312,
+      "r": "link",
+      "n": "13 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50644980"
+    },
+    {
+      "id": 313,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50644980&goto=news",
+      "h": "in:151 points by acossta 13 hours ago | | 41 com"
+    },
+    {
+      "id": 314,
+      "r": "link",
+      "n": "41 comments",
+      "u": "https://news.ycombinator.com/item?id=50644980"
+    },
+    {
+      "id": 315,
+      "r": "cell",
+      "n": "26."
+    },
+    {
+      "id": 316,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        317
+      ]
+    },
+    {
+      "id": 317,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50644814&how=up&goto=news",
+      "h": "in:26. Deriving Black-Scholes (alvarezrosa.com)"
+    },
+    {
+      "id": 318,
+      "r": "cell",
+      "n": "Deriving Black-Scholes (alvarezrosa.com)",
+      "c": [
+        319,
+        320
+      ]
+    },
+    {
+      "id": 319,
+      "r": "link",
+      "n": "Deriving Black-Scholes",
+      "u": "https://david.alvarezrosa.com/posts/deriving-black-scholes/"
+    },
+    {
+      "id": 320,
+      "r": "link",
+      "n": "alvarezrosa.com",
+      "u": "https://news.ycombinator.com/from?site=alvarezrosa.com"
+    },
+    {
+      "id": 321,
+      "r": "cell"
+    },
+    {
+      "id": 322,
+      "r": "cell",
+      "n": "66 points by meysamazad 12 hours ago | hide | 46 comments",
+      "c": [
+        323,
+        324,
+        325,
+        326
+      ]
+    },
+    {
+      "id": 323,
+      "r": "link",
+      "n": "meysamazad",
+      "u": "https://news.ycombinator.com/user?id=meysamazad"
+    },
+    {
+      "id": 324,
+      "r": "link",
+      "n": "12 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50644814",
+      "h": "in:66 points by meysamazad | hide | 46 comments"
+    },
+    {
+      "id": 325,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50644814&goto=news",
+      "h": "in:66 points by meysamazad 12 hours ago | | 46 c"
+    },
+    {
+      "id": 326,
+      "r": "link",
+      "n": "46 comments",
+      "u": "https://news.ycombinator.com/item?id=50644814"
+    },
+    {
+      "id": 327,
+      "r": "cell",
+      "n": "27."
+    },
+    {
+      "id": 328,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        329
+      ]
+    },
+    {
+      "id": 329,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50608175&how=up&goto=news",
+      "h": "in:27. Can a TV be too large? An investigation ("
+    },
+    {
+      "id": 330,
+      "r": "cell",
+      "n": "Can a TV be too large? An investigation (techcrunch.com)",
+      "c": [
+        331,
+        332
+      ]
+    },
+    {
+      "id": 331,
+      "r": "link",
+      "n": "Can a TV be too large? An investigation",
+      "u": "https://techcrunch.com/2026/11/22/can-a-tv-be-too-large-an-investigation/"
+    },
+    {
+      "id": 332,
+      "r": "link",
+      "n": "techcrunch.com",
+      "u": "https://news.ycombinator.com/from?site=techcrunch.com"
+    },
+    {
+      "id": 333,
+      "r": "cell"
+    },
+    {
+      "id": 334,
+      "r": "cell",
+      "n": "49 points by jomon003 10 hours ago | hide | 70 comments",
+      "c": [
+        335,
+        336,
+        337,
+        338
+      ]
+    },
+    {
+      "id": 335,
+      "r": "link",
+      "n": "jomon003",
+      "u": "https://news.ycombinator.com/user?id=jomon003"
+    },
+    {
+      "id": 336,
+      "r": "link",
+      "n": "10 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50608175",
+      "h": "in:49 points by jomon003 | hide | 70 comments"
+    },
+    {
+      "id": 337,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50608175&goto=news",
+      "h": "in:49 points by jomon003 10 hours ago | | 70 com"
+    },
+    {
+      "id": 338,
+      "r": "link",
+      "n": "70 comments",
+      "u": "https://news.ycombinator.com/item?id=50608175"
+    },
+    {
+      "id": 339,
+      "r": "cell",
+      "n": "28."
+    },
+    {
+      "id": 340,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        341
+      ]
+    },
+    {
+      "id": 341,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50634381&how=up&goto=news",
+      "h": "in:28. Marginal Grains (asteriskmag.com)"
+    },
+    {
+      "id": 342,
+      "r": "cell",
+      "n": "Marginal Grains (asteriskmag.com)",
+      "c": [
+        343,
+        344
+      ]
+    },
+    {
+      "id": 343,
+      "r": "link",
+      "n": "Marginal Grains",
+      "u": "https://asteriskmag.com/issues/16/marginal-grains"
+    },
+    {
+      "id": 344,
+      "r": "link",
+      "n": "asteriskmag.com",
+      "u": "https://news.ycombinator.com/from?site=asteriskmag.com"
+    },
+    {
+      "id": 345,
+      "r": "cell"
+    },
+    {
+      "id": 346,
+      "r": "cell",
+      "n": "8 points by NaOH 3 hours ago | hide | discuss",
+      "c": [
+        347,
+        348,
+        349,
+        350
+      ]
+    },
+    {
+      "id": 347,
+      "r": "link",
+      "n": "NaOH",
+      "u": "https://news.ycombinator.com/user?id=NaOH"
+    },
+    {
+      "id": 348,
+      "r": "link",
+      "n": "3 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50634381",
+      "h": "in:8 points by NaOH | hide | discuss"
+    },
+    {
+      "id": 349,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50634381&goto=news",
+      "h": "in:8 points by NaOH 3 hours ago | | discuss"
+    },
+    {
+      "id": 350,
+      "r": "link",
+      "n": "discuss",
+      "u": "https://news.ycombinator.com/item?id=50634381"
+    },
+    {
+      "id": 351,
+      "r": "cell",
+      "n": "29."
+    },
+    {
+      "id": 352,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        353
+      ]
+    },
+    {
+      "id": 353,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50642939&how=up&goto=news",
+      "h": "in:29. I checked Clojure's core with Lean and fo"
+    },
+    {
+      "id": 354,
+      "r": "cell",
+      "n": "I checked Clojure's core with Lean and found unreported bugs (conao3.com)",
+      "c": [
+        355,
+        356
+      ]
+    },
+    {
+      "id": 355,
+      "r": "link",
+      "n": "I checked Clojure's core with Lean and found unreported bugs",
+      "u": "https://s.conao3.com/blog/2026/e4f733"
+    },
+    {
+      "id": 356,
+      "r": "link",
+      "n": "conao3.com",
+      "u": "https://news.ycombinator.com/from?site=conao3.com"
+    },
+    {
+      "id": 357,
+      "r": "cell"
+    },
+    {
+      "id": 358,
+      "r": "cell",
+      "n": "214 points by encyclopedism 16 hours ago | hide | 73 comments",
+      "c": [
+        359,
+        360,
+        361,
+        362
+      ]
+    },
+    {
+      "id": 359,
+      "r": "link",
+      "n": "encyclopedism",
+      "u": "https://news.ycombinator.com/user?id=encyclopedism"
+    },
+    {
+      "id": 360,
+      "r": "link",
+      "n": "16 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50642939",
+      "h": "in:214 points by encyclopedism | hide | 73 comme"
+    },
+    {
+      "id": 361,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50642939&goto=news",
+      "h": "in:214 points by encyclopedism 16 hours ago | | "
+    },
+    {
+      "id": 362,
+      "r": "link",
+      "n": "73 comments",
+      "u": "https://news.ycombinator.com/item?id=50642939"
+    },
+    {
+      "id": 363,
+      "r": "cell",
+      "n": "30."
+    },
+    {
+      "id": 364,
+      "r": "cell",
+      "n": "upvote",
+      "c": [
+        365
+      ]
+    },
+    {
+      "id": 365,
+      "r": "link",
+      "n": "upvote",
+      "u": "https://news.ycombinator.com/vote?id=50616473&how=up&goto=news",
+      "h": "in:30. The trouble with serendipity: Scientific "
+    },
+    {
+      "id": 366,
+      "r": "cell",
+      "n": "The trouble with serendipity: Scientific discoveries don't happen how you think (worksinprogress.news)",
+      "c": [
+        367,
+        368
+      ]
+    },
+    {
+      "id": 367,
+      "r": "link",
+      "n": "The trouble with serendipity: Scientific discoveries don't happen how you think",
+      "u": "https://www.worksinprogress.news/p/the-trouble-with-serendipity"
+    },
+    {
+      "id": 368,
+      "r": "link",
+      "n": "worksinprogress.news",
+      "u": "https://news.ycombinator.com/from?site=worksinprogress.news"
+    },
+    {
+      "id": 369,
+      "r": "cell"
+    },
+    {
+      "id": 370,
+      "r": "cell",
+      "n": "38 points by crescit_eundo 7 hours ago | hide | 10 comments",
+      "c": [
+        371,
+        372,
+        373,
+        374
+      ]
+    },
+    {
+      "id": 371,
+      "r": "link",
+      "n": "crescit_eundo",
+      "u": "https://news.ycombinator.com/user?id=crescit_eundo"
+    },
+    {
+      "id": 372,
+      "r": "link",
+      "n": "7 hours ago",
+      "u": "https://news.ycombinator.com/item?id=50616473"
+    },
+    {
+      "id": 373,
+      "r": "link",
+      "n": "hide",
+      "u": "https://news.ycombinator.com/hide?id=50616473&goto=news",
+      "h": "in:38 points by crescit_eundo 7 hours ago | | 10"
+    },
+    {
+      "id": 374,
+      "r": "link",
+      "n": "10 comments",
+      "u": "https://news.ycombinator.com/item?id=50616473"
+    },
+    {
+      "id": 375,
+      "r": "cell"
+    },
+    {
+      "id": 376,
+      "r": "cell",
+      "n": "More",
+      "c": [
+        377
+      ]
+    },
+    {
+      "id": 377,
+      "r": "link",
+      "n": "More",
+      "u": "https://news.ycombinator.com/?p=2"
+    },
+    {
+      "id": 378,
+      "r": "cell",
+      "n": "Guidelines | FAQ | Lists | API | Security | Legal | Apply to YC | Contact Search:",
+      "c": [
+        379,
+        380,
+        381,
+        382,
+        383,
+        384,
+        385,
+        386,
+        387,
+        388
+      ]
+    },
+    {
+      "id": 379,
+      "r": "cell"
+    },
+    {
+      "id": 380,
+      "r": "link",
+      "n": "Guidelines",
+      "u": "https://news.ycombinator.com/newsguidelines.html"
+    },
+    {
+      "id": 381,
+      "r": "link",
+      "n": "FAQ",
+      "u": "https://news.ycombinator.com/newsfaq.html"
+    },
+    {
+      "id": 382,
+      "r": "link",
+      "n": "Lists",
+      "u": "https://news.ycombinator.com/lists"
+    },
+    {
+      "id": 383,
+      "r": "link",
+      "n": "API",
+      "u": "https://github.com/HackerNews/API"
+    },
+    {
+      "id": 384,
+      "r": "link",
+      "n": "Security",
+      "u": "https://news.ycombinator.com/security.html"
+    },
+    {
+      "id": 385,
+      "r": "link",
+      "n": "Legal",
+      "u": "https://www.ycombinator.com/legal/"
+    },
+    {
+      "id": 386,
+      "r": "link",
+      "n": "Apply to YC",
+      "u": "https://www.ycombinator.com/apply/"
+    },
+    {
+      "id": 387,
+      "r": "link",
+      "n": "Contact",
+      "u": "mailto:hn@ycombinator.com"
+    },
+    {
+      "id": 388,
+      "r": "textbox",
+      "h": "name:q; in:Guidelines | FAQ | Lists | API | Security | L"
+    }
+  ],
+  "frames": [],
+  "stats": {
+    "elements": 806,
+    "nodes": 389,
+    "ms": 14.1,
+    "truncated": false
+  }
+}

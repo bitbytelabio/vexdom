@@ -1,0 +1,50 @@
+{
+  "v": 1,
+  "docKey": "f7d5b49b-2da4-4de5-af83-18fd3c5ea87c",
+  "url": "file:///agent-browser/cli/src/native/test_fixtures/snapshot_diff_probe.html",
+  "title": "Snapshot diff probe",
+  "viewport": {
+    "w": 1280,
+    "h": 800,
+    "scrollX": 0,
+    "scrollY": 0
+  },
+  "nodes": [
+    {
+      "r": "RootWebArea",
+      "n": "Snapshot diff probe",
+      "c": [
+        1,
+        2,
+        3
+      ]
+    },
+    {
+      "id": 1,
+      "r": "button",
+      "n": "Primary action"
+    },
+    {
+      "id": 2,
+      "r": "textbox",
+      "n": "Account name",
+      "v": "Ada Lovelace",
+      "s": {
+        "focused": true
+      }
+    },
+    {
+      "id": 3,
+      "r": "link",
+      "n": "Details",
+      "u": "file:///agent-browser/cli/src/native/test_fixtures/snapshot_diff_probe.html#target"
+    }
+  ],
+  "frames": [],
+  "stats": {
+    "elements": 6,
+    "nodes": 4,
+    "ms": 0.4,
+    "truncated": false
+  }
+}

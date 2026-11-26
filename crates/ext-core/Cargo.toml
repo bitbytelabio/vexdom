@@ -1,0 +1,33 @@
+[package]
+name = "ext-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+description = "The extension's end of the Bridge link (ADR-017): capnp-rpc in a BoltFFI wasm module, driven by the JavaScript-owned WebSocket"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+boltffi = { workspace = true }
+capnp = { workspace = true }
+capnp-rpc = { workspace = true }
+futures = { workspace = true, features = ["executor"] }
+# The browser's time zone arrives by name; wasm has no system tzdb to look it up in.
+jiff = { workspace = true, features = ["tzdb-bundle-always"] }
+serde_json = { workspace = true }
+vexdom-pure = { workspace = true }
+vexdom-schema = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
+tokio-tungstenite = { workspace = true, features = ["connect"] }
+vexdom-core = { workspace = true }
+vexdom-daemon = { workspace = true }
+vexdom-link = { workspace = true }
+
+[lints]
+workspace = true

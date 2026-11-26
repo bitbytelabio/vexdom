@@ -1,0 +1,5 @@
+{
+  "url": "file:///agent-browser/cli/src/native/test_fixtures/snapshot_diff_probe.html",
+  "title": "Snapshot diff probe",
+  "html": "<html lang=\"en\"><head>\n  <meta charset=\"utf-8\">\n  <title>Snapshot diff probe</title>\n</head>\n<body>\n  <button id=\"primary-action\" type=\"button\">Primary action</button>\n  <label for=\"account-name\">Account name</label>\n  <input id=\"account-name\" type=\"text\">\n  <a href=\"#target\">Details</a>\n  <div id=\"target\">Target</div>\n\n\n</body></html>"
+}

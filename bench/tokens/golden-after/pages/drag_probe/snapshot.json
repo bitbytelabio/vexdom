@@ -1,0 +1,25 @@
+{
+  "v": 1,
+  "docKey": "e9318fc3-9793-4e1a-9710-c36892e9ccb9",
+  "url": "file:///agent-browser/cli/src/native/test_fixtures/drag_probe.html",
+  "title": "Drag Probe",
+  "viewport": {
+    "w": 1280,
+    "h": 800,
+    "scrollX": 0,
+    "scrollY": 0
+  },
+  "nodes": [
+    {
+      "r": "RootWebArea",
+      "n": "Drag Probe"
+    }
+  ],
+  "frames": [],
+  "stats": {
+    "elements": 5,
+    "nodes": 1,
+    "ms": 0.8,
+    "truncated": false
+  }
+}

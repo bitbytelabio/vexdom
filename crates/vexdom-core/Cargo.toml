@@ -1,0 +1,23 @@
+[package]
+name = "vexdom-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+publish.workspace = true
+description = "Bridge state and policy: protocol constants, state files, guardrails, tools (ADR-025); pure logic is vexdom-pure"
+
+[dependencies]
+base64 = { workspace = true }
+getrandom = { workspace = true }
+jiff = { workspace = true }
+regex = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+url = { workspace = true }
+vexdom-pure = { workspace = true }
+
+[lints]
+workspace = true
