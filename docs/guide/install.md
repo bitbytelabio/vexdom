@@ -73,7 +73,7 @@ browser can start the Bridge when it is down), checks the agent, and asks which 
 extension:
 
 ```
-  Vexdom 0.9.2 — your browser's superpower
+  Vexdom 0.10.0 — your real browser, driven by agents
 
   ✓ Vexdom Bridge  running on 127.0.0.1:8785 (pid 4242)
   ✓ Wake-up            Chrome, Firefox can start the Bridge when it is down

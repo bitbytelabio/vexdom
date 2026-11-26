@@ -19,7 +19,7 @@ export function About() {
         <div className="min-w-48 flex-1">
           <p className="font-display text-lg font-semibold tracking-tight text-ink">Vexdom</p>
           <p className="text-xs text-ink-faint">
-            v{browser.runtime.getManifest().version} · your browser’s superpower · free and open source, Apache 2.0
+            v{browser.runtime.getManifest().version} · your real browser, driven by agents · free and open source, Apache 2.0
           </p>
         </div>
         <div className="flex gap-2">

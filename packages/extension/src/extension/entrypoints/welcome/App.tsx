@@ -31,7 +31,7 @@ export default function App() {
           <div className="space-y-1">
             <h1 className="text-xl font-semibold">Vexdom is in your browser</h1>
             <p className="text-sm leading-relaxed text-ink-dim">
-              Your browser’s superpower: free, open source, and no API key, subscription or account. It runs on the agent
+              Your real browser, driven by agents: free, open source, and no API key, subscription or account. It runs on the agent
               CLI you already use, through Vexdom Bridge on this computer.
             </p>
           </div>

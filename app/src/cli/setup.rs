@@ -567,7 +567,7 @@ pub fn setup(argv: &[String]) -> ExitCode {
         let mode = pairing_mode(&bridge).await;
 
         if !json {
-            println!("\n  Vexdom {VERSION} — your browser's superpower\n");
+            println!("\n  Vexdom {VERSION} — your real browser, driven by agents\n");
             println!(
                 "  ✓ Vexdom Bridge  running on 127.0.0.1:{} (pid {})",
                 lock.port, lock.pid

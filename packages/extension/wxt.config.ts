@@ -23,7 +23,7 @@ export default defineConfig({
   }),
   manifest: ({ browser }) => ({
     name: 'Vexdom',
-    description: 'Reimagine browsing as agentic — driven by the AI agent you already run, in your own logged-in browser.',
+    description: 'Your real, signed-in browser, driven by Claude Code or any MCP client. Runs on this computer: no account, no cloud.',
     permissions: [
       'storage', 'unlimitedStorage', 'activeTab', 'contextMenus', 'alarms', 'scripting',
       'notifications', 'downloads', 'nativeMessaging', 'cookies', 'clipboardRead', 'clipboardWrite',

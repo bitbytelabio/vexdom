@@ -1,7 +1,7 @@
 {
   "name": "vexdom",
   "version": "0.10.0",
-  "description": "Vexdom: an agentic browser harness for the AI agent you already run",
+  "description": "Vexdom: your real browser, driven by agents",
   "license": "Apache-2.0",
   "private": true,
   "type": "module",
