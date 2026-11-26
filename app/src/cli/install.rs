@@ -42,9 +42,11 @@ pub fn read_stamp(dir: &Path) -> Option<InstallStamp> {
 /// The extension build this binary ships or sits beside: `<exe>/../extension/chrome-mv3` in a
 /// package, `Contents/Resources/extension/chrome-mv3` from `Contents/MacOS/vexdom` in
 /// `Vexdom.app`, `<repo>/packages/extension/dist/chrome-mv3` from `target/<profile>/vexdom` in a
-/// source checkout.
+/// source checkout. A symlink to the binary (`~/.local/bin/vexdom`) resolves to the real file
+/// first: `current_exe` returns the link on macOS.
 fn packaged_extension() -> Option<(PathBuf, &'static str)> {
     let exe = std::env::current_exe().ok()?;
+    let exe = std::fs::canonicalize(&exe).unwrap_or(exe);
     let here = exe.parent()?;
     let candidates = [
         (
