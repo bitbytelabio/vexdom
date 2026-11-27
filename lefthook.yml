@@ -10,7 +10,7 @@ pre-commit:
       stage_fixed: true
     web-fmt:
       glob: '*.{js,jsx,ts,tsx,mjs,cjs,css,html,json,jsonc,yml,yaml}'
-      exclude: ['crates/**/assets/**', 'bench/**', '**/dist/**', '**/target/**']
+      exclude: ['crates/**/assets/**', 'bench/**', '**/dist/**', '**/target/**', '**/tests/golden/**']
       run: bun fmt --no-script --single-quote --print-width=120 {staged_files}
       stage_fixed: true
     shellcheck:

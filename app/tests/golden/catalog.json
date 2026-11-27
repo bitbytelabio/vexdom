@@ -8,7 +8,11 @@
       "properties": {
         "as": {
           "type": "string",
-          "enum": ["tree", "markdown", "image"]
+          "enum": [
+            "tree",
+            "markdown",
+            "image"
+          ]
         },
         "interactive": {
           "type": "boolean",
@@ -62,11 +66,17 @@
         },
         "llms": {
           "type": "string",
-          "enum": ["index", "full"],
+          "enum": [
+            "index",
+            "full"
+          ],
           "description": "markdown with url: the site's llms.txt or llms-full.txt."
         },
         "target": {
-          "type": ["string", "object"],
+          "type": [
+            "string",
+            "object"
+          ],
           "description": "markdown or image: one element."
         },
         "fullPage": {
@@ -84,7 +94,10 @@
         },
         "format": {
           "type": "string",
-          "enum": ["png", "jpeg"]
+          "enum": [
+            "png",
+            "jpeg"
+          ]
         },
         "quality": {
           "type": "integer"
