@@ -1,6 +1,6 @@
 {
   "name": "vexdom",
-  "version": "0.10.1",
+  "version": "0.10.2",
   "description": "Vexdom: your real browser, driven by agents",
   "license": "Apache-2.0",
   "private": true,

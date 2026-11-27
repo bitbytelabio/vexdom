@@ -18,7 +18,7 @@ default-members = [
 exclude = ["desktop"]
 
 [workspace.package]
-version = "0.10.1"
+version = "0.10.2"
 edition = "2024"
 rust-version = "1.100"
 license = "Apache-2.0"
