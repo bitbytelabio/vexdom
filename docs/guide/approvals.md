@@ -29,8 +29,9 @@ never runs an action the agent is no longer waiting on.
 The same gate applies to `vexdom` page commands and to MCP clients (ADR-032). The call waits up to
 **120 seconds** for an answer, from any of:
 
-- **the Vexdom app**: the request appears on Overview, with a notification, as
-  *Allow ‹action› on ‹site›?* and the buttons **Deny**, **Always on ‹site›** and **Allow**;
+- **the Vexdom app**: the request appears in its menu-bar menu, with a notification, as
+  *Allow ‹action› on ‹site›?* with **Allow**, **Always Allow on ‹site›** and **Deny** (also pinned
+  at the top of its window);
 - **a terminal**:
 
   ```sh

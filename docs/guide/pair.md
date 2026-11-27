@@ -34,8 +34,9 @@ setting guards.
 
 **Ask** shows each new browser to you before it connects:
 
-- **In the Vexdom app**, a notification and a row on Overview ask *Allow ‹browser›?*, with a name
-  field ("Work Chrome"), **Deny** and **Allow**.
+- **In the Vexdom app**, a notification and the menu-bar menu ask *‹browser› wants to connect*,
+  with **Allow as “‹browser›”**, **Allow and Name…** (a name field such as "Work Chrome", in the
+  window) and **Deny**.
 - **From a terminal**, `vexdom requests` lists the browsers waiting, `vexdom approve <id>` lets one
   in, `vexdom approve --watch` asks about each one as it comes, and `vexdom deny <id>` turns one
   down. `vexdom setup` also asks while it waits.

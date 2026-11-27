@@ -1,9 +1,10 @@
-//! The window: Overview (the power switch and its lamp, browsers asking to pair, actions waiting
-//! for approval, notices), Browsers (pairing, adding the extension, paired browsers), Agent
-//! (Claude Code and its model), Settings (General, Skills, Activity, Logs) and About (versions,
-//! help, the app's own update). While a required first-run check fails, the first-run screen
-//! stands in for the tabs. The look is the appliance face in `theme.rs`; the direction contract
-//! is `.impeccable/surfaces/desktop-src-ui-rs.md`.
+//! The app's state and its Settings window. The menu-bar item (`tray.rs`) is the main surface; the
+//! window opens from it, with General (the Bridge, this app, browser theme, guardrails, command
+//! line, uninstall), Browsers (pairing, adding the extension, paired browsers), Agent (Claude Code
+//! and its model), Skills, Activity, Logs and About (versions, help, the app's own update).
+//! Browsers asking to pair and actions waiting for approval are pinned above every tab. While a
+//! required first-run check fails, the first-run screen stands in for the tabs. The look is the
+//! appliance face in `theme.rs`; the direction contract is `.impeccable/surfaces/desktop-src-ui-rs.md`.
 
 use std::collections::HashSet;
 use std::path::Path;
@@ -31,7 +32,7 @@ use crate::preflight::{Check, Fix, Outcome, Preflight};
 use crate::settings::{self, Appearance, Settings};
 use crate::text_input::{FieldEvent, TextInput};
 use crate::theme::{self, Palette, Tone};
-use crate::tray::{self, Pick, Tray};
+use crate::tray::{self, MenuConfirmation, MenuState, Pick, Tray};
 
 /// Room for the traffic lights at the left of the title strip.
 const TITLE_STRIP: f32 = 40.;
@@ -87,41 +88,27 @@ impl Pending {
     }
 }
 
-/// The tabs, in the order ⌘1…⌘5 pick them.
+/// The tabs, in the order ⌘1…⌘7 pick them.
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum Tab {
-    Overview,
+    General,
     Browsers,
     Agent,
-    Settings,
+    Skills,
+    Activity,
+    Logs,
     About,
 }
 
 impl Tab {
-    const ALL: [(Self, &'static str); 5] = [
-        (Self::Overview, "Overview"),
+    const ALL: [(Self, &'static str); 7] = [
+        (Self::General, "General"),
         (Self::Browsers, "Browsers"),
         (Self::Agent, "Agent"),
-        (Self::Settings, "Settings"),
-        (Self::About, "About"),
-    ];
-}
-
-/// Settings' own pages, in its side list.
-#[derive(Clone, Copy, PartialEq, Eq)]
-enum Page {
-    General,
-    Skills,
-    Activity,
-    Logs,
-}
-
-impl Page {
-    const ALL: [(Self, &'static str); 4] = [
-        (Self::General, "General"),
         (Self::Skills, "Skills"),
         (Self::Activity, "Activity"),
         (Self::Logs, "Logs"),
+        (Self::About, "About"),
     ];
 }
 
@@ -135,7 +122,6 @@ pub struct AppView {
     commands: UnboundedSender<Command>,
     tray: Option<Tray>,
     tab: Tab,
-    page: Page,
     /// Whether the bridge thread has answered once; until then the window claims nothing.
     known: bool,
     /// `Control.status`, or `None` while no Bridge answers.
@@ -147,6 +133,9 @@ pub struct AppView {
     /// The name for the first request, and which request it was filled in for.
     label: Entity<TextInput>,
     label_for: Option<String>,
+    /// The request picked with the menu's "Allow and Name…": the window shows it instead of the
+    /// first one while it waits.
+    naming: Option<String>,
     /// Focus the name field on the next frame (a new request arrived).
     focus_label: bool,
     agent: Option<AgentCard>,
@@ -426,6 +415,7 @@ impl AppView {
         mut inbox: UnboundedReceiver<Inbound>,
         menu: UnboundedSender<Inbound>,
         settings: Settings,
+        window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Self {
         let tray = Tray::try_new(move |pick| {
@@ -433,10 +423,10 @@ impl AppView {
         })
         .inspect_err(|error| eprintln!("vexdom-desktop: no menu-bar item ({error})"))
         .ok();
-        cx.spawn(async move |this, cx| {
+        cx.spawn_in(window, async move |this, cx| {
             while let Some(message) = inbox.recv().await {
                 if this
-                    .update(cx, |view, cx| view.receive(message, cx))
+                    .update_in(cx, |view, window, cx| view.receive(message, window, cx))
                     .is_err()
                 {
                     break;
@@ -446,8 +436,8 @@ impl AppView {
         .detach();
         let label = cx.new(|cx| TextInput::new("Name this browser", LABEL_LIMIT, cx));
         cx.subscribe(&label, |view, _, event: &FieldEvent, cx| match event {
-            FieldEvent::Submitted => view.decide_first(true, cx),
-            FieldEvent::Cancelled => view.decide_first(false, cx),
+            FieldEvent::Submitted => view.decide_shown(true, cx),
+            FieldEvent::Cancelled => view.decide_shown(false, cx),
         })
         .detach();
         let skill_filter = cx.new(|cx| TextInput::new("Filter skills", FILTER_LIMIT, cx));
@@ -462,8 +452,7 @@ impl AppView {
         Self {
             commands,
             tray,
-            tab: Tab::Overview,
-            page: Page::General,
+            tab: Tab::General,
             known: false,
             status: None,
             sessions: Vec::new(),
@@ -471,6 +460,7 @@ impl AppView {
             announced: HashSet::new(),
             label,
             label_for: None,
+            naming: None,
             focus_label: false,
             agent: None,
             browsers: Vec::new(),
@@ -500,7 +490,8 @@ impl AppView {
             log_scroll: ScrollHandle::new(),
             log_polling: false,
             command_line: CommandLine::default(),
-            login: None,
+            // The menu shows "Open at Login" before General is opened.
+            login: login_item::state(),
             uninstall: false,
             keep_skills: true,
             update: UpdateState::default(),
@@ -526,11 +517,13 @@ impl AppView {
             let _ = this.update(cx, |view, cx| {
                 if view.pending_seq == seq {
                     view.pending = None;
+                    view.refresh_tray();
                     cx.notify();
                 }
             });
         })
         .detach();
+        self.refresh_tray();
         cx.notify();
     }
 
@@ -555,11 +548,33 @@ impl AppView {
         self.hold(Pending::Restart, cx);
     }
 
-    fn decide_first(&mut self, allow: bool, cx: &mut Context<Self>) {
-        if self.pending == Some(Pending::Decide) {
+    /// The request the window shows and its name field is for: the one picked to name from the
+    /// menu while it waits, else the first.
+    fn shown_request(&self) -> Option<&PairRequest> {
+        self.naming
+            .as_ref()
+            .and_then(|id| self.requests.iter().find(|request| &request.id == id))
+            .or_else(|| self.requests.first())
+    }
+
+    /// Fills the name field with the shown request's suggested name when that request changed.
+    fn fill_label(&mut self, cx: &mut Context<Self>) {
+        let shown = self
+            .shown_request()
+            .map(|request| (request.id.clone(), request.suggested_label.clone()));
+        if shown.as_ref().map(|(id, _)| id) == self.label_for.as_ref() {
             return;
         }
-        let Some(request) = self.requests.first() else {
+        let (id, suggested) = shown.unzip();
+        self.focus_label = id.is_some();
+        self.label_for = id;
+        self.label.update(cx, |input, cx| {
+            input.set_text(suggested.unwrap_or_default(), cx);
+        });
+    }
+
+    fn decide_shown(&mut self, allow: bool, cx: &mut Context<Self>) {
+        let Some(request) = self.shown_request() else {
             return;
         };
         let label = if allow {
@@ -567,8 +582,15 @@ impl AppView {
         } else {
             String::new()
         };
+        self.decide(request.id.clone(), allow, label, cx);
+    }
+
+    fn decide(&mut self, request: String, allow: bool, label: String, cx: &mut Context<Self>) {
+        if self.pending == Some(Pending::Decide) {
+            return;
+        }
         self.send(Command::Decide {
-            request: request.id.clone(),
+            request,
             allow,
             label,
         });
@@ -641,7 +663,120 @@ impl AppView {
             Ok(now) => self.settings = now,
             Err(error) => self.say(format!("Could not save desktop.json: {error}"), true, cx),
         }
+        self.refresh_tray();
         cx.notify();
+    }
+
+    /// Shows the Dock icon when Settings says so, or when there is no menu-bar item to reach the
+    /// app by.
+    fn apply_dock(&self) {
+        tray::set_dock_visible(self.settings.show_in_dock || self.tray.is_none());
+    }
+
+    fn set_dock(&mut self, visible: bool, window: &mut Window, cx: &mut Context<Self>) {
+        let front = window.is_window_active();
+        self.save(|settings| settings.show_in_dock = visible, cx);
+        self.apply_dock();
+        // Turning into an accessory drops the window behind other apps.
+        if front {
+            cx.activate(true);
+            window.activate_window();
+        }
+    }
+
+    /// Brings the window forward, on `tab` when one is given.
+    pub fn reveal(&mut self, tab: Option<Tab>, window: &mut Window, cx: &mut Context<Self>) {
+        tray::reveal();
+        cx.activate(true);
+        window.activate_window();
+        if let Some(tab) = tab {
+            self.show_tab(tab, cx);
+        }
+    }
+
+    /// Right after the window opens, hidden: sets the Dock policy and shows the window only on
+    /// the very first launch or when there is no menu-bar item.
+    pub fn launch(&mut self, first_launch: bool, window: &mut Window, cx: &mut Context<Self>) {
+        if first_launch {
+            // The file marks every later launch as not the first.
+            self.save(|_| {}, cx);
+        }
+        self.apply_dock();
+        if self.tray.is_none() || first_launch {
+            self.reveal(Some(Tab::General), window, cx);
+        }
+        self.refresh_tray();
+    }
+
+    fn refresh_tray(&mut self) {
+        let state = self.menu_state();
+        if let Some(tray) = &mut self.tray {
+            tray.show(state);
+        }
+    }
+
+    fn menu_state(&self) -> MenuState {
+        let switching = matches!(
+            self.pending,
+            Some(Pending::Start | Pending::Stop | Pending::Restart)
+        );
+        let power = match self.pending {
+            Some(Pending::Start) => "Starting Vexdom…",
+            Some(Pending::Stop) => "Stopping Vexdom…",
+            Some(Pending::Restart) => "Restarting Vexdom…",
+            _ if self.running() => "Stop Vexdom",
+            _ => "Start Vexdom",
+        };
+        MenuState {
+            line: self.tray_line(),
+            facts: facts(self.status.as_ref(), self.agent.as_ref(), &self.sessions),
+            requests: self
+                .requests
+                .iter()
+                .map(|request| {
+                    (
+                        request.id.clone(),
+                        request.name.clone(),
+                        request.suggested_label.clone(),
+                    )
+                })
+                .collect(),
+            confirmations: self
+                .confirmations
+                .iter()
+                .map(|confirmation| MenuConfirmation {
+                    id: confirmation.id.clone(),
+                    question: confirmation.question(),
+                    summary: confirmation.summary.clone(),
+                    site: confirmation.site.clone(),
+                })
+                .collect(),
+            power: power.to_owned(),
+            power_enabled: self.known && !switching,
+            restart_enabled: self.running() && self.pending.is_none(),
+            agent: self
+                .agent
+                .as_ref()
+                .map(|agent| (agent.model.clone(), agent.models.clone())),
+            pairing: self
+                .status
+                .as_ref()
+                .and_then(|status| status.pointer("/pairing/mode"))
+                .and_then(Value::as_str)
+                .map(str::to_owned),
+            notices: self
+                .notices
+                .shown
+                .iter()
+                .take(10)
+                .map(|notice| (notice.id.clone(), notice.title.clone()))
+                .collect(),
+            appearance: self.settings.appearance,
+            start_on_launch: self.settings.start_bridge_on_launch,
+            open_at_login: self.login.map(|login| login != LoginState::Off),
+            show_in_dock: self.settings.show_in_dock,
+            update: self.update.clone(),
+        }
     }
 
     fn set_appearance(
@@ -661,6 +796,7 @@ impl AppView {
             self.say(error, true, cx);
         }
         self.login = login_item::state();
+        self.refresh_tray();
         cx.notify();
     }
 
@@ -668,20 +804,74 @@ impl AppView {
         self.send(Command::SetPreference(change));
     }
 
-    fn receive(&mut self, message: Inbound, cx: &mut Context<Self>) {
+    fn receive(&mut self, message: Inbound, window: &mut Window, cx: &mut Context<Self>) {
         match message {
-            Inbound::Menu(Pick::Power) => self.toggle_power(cx),
-            Inbound::Menu(Pick::Restart) => self.restart(cx),
-            Inbound::Menu(Pick::Open) => {
-                tray::reveal();
-                cx.activate(true);
+            Inbound::Menu(pick) => {
+                // The click may have flipped a check mark the state did not follow.
+                if let Some(tray) = &mut self.tray {
+                    tray.forget();
+                }
+                self.pick(pick, window, cx);
             }
-            Inbound::Menu(Pick::Quit) => cx.quit(),
-            Inbound::Bridge(update) => self.apply(update, cx),
+            Inbound::Bridge(update) => self.apply(update, window, cx),
+        }
+        self.refresh_tray();
+    }
+
+    /// What a menu-bar click asks for.
+    fn pick(&mut self, pick: Pick, window: &mut Window, cx: &mut Context<Self>) {
+        match pick {
+            Pick::Power => self.toggle_power(cx),
+            Pick::Restart => self.restart(cx),
+            Pick::Allow(id) => {
+                let label = self
+                    .requests
+                    .iter()
+                    .find(|request| request.id == id)
+                    .map(|request| request.suggested_label.clone())
+                    .unwrap_or_default();
+                self.decide(id, true, label, cx);
+            }
+            Pick::AllowAndName(id) => {
+                // The request pinned above the tabs carries the name field.
+                self.naming = Some(id);
+                self.fill_label(cx);
+                self.focus_label = true;
+                self.reveal(None, window, cx);
+            }
+            Pick::Deny(id) => self.decide(id, false, String::new(), cx),
+            Pick::Confirm {
+                id,
+                allow,
+                remember,
+            } => self.confirm(id, allow, remember, cx),
+            Pick::Model(model) => self.send(Command::SetAgent { model }),
+            Pick::Pairing(mode) => self.send(Command::SetPairing(mode)),
+            Pick::PairCode => {
+                self.send(Command::PairCode);
+                self.reveal(Some(Tab::Browsers), window, cx);
+            }
+            Pick::Notice(id) => self.send(Command::OpenNotice(id)),
+            Pick::Appearance(appearance) => self.set_appearance(appearance, window, cx),
+            Pick::StartOnLaunch => {
+                let start = !self.settings.start_bridge_on_launch;
+                self.save(|settings| settings.start_bridge_on_launch = start, cx);
+            }
+            // On when it is off; on, or waiting for approval, turns it off.
+            Pick::OpenAtLogin => self.set_login(self.login == Some(LoginState::Off), cx),
+            Pick::ShowInDock => self.set_dock(!self.settings.show_in_dock, window, cx),
+            Pick::Settings => self.reveal(None, window, cx),
+            Pick::CheckUpdate => {
+                self.send(Command::CheckUpdate);
+                self.reveal(Some(Tab::About), window, cx);
+            }
+            Pick::InstallUpdate => self.send(Command::InstallUpdate),
+            Pick::About => self.reveal(Some(Tab::About), window, cx),
+            Pick::Quit => cx.quit(),
         }
     }
 
-    fn apply(&mut self, update: Update, cx: &mut Context<Self>) {
+    fn apply(&mut self, update: Update, window: &mut Window, cx: &mut Context<Self>) {
         match update {
             Update::Disconnected => {
                 self.known = true;
@@ -713,16 +903,12 @@ impl AppView {
                 if self.pending == Some(Pending::Decide) {
                     self.pending = None;
                 }
-                let first = self.requests.first();
-                if first.map(|request| &request.id) != self.label_for.as_ref() {
-                    self.label_for = first.map(|request| request.id.clone());
-                    let suggested = first
-                        .map(|request| request.suggested_label.clone())
-                        .unwrap_or_default();
-                    self.label
-                        .update(cx, |input, cx| input.set_text(suggested, cx));
-                    self.focus_label = first.is_some();
+                if let Some(id) = &self.naming
+                    && !self.requests.iter().any(|request| &request.id == id)
+                {
+                    self.naming = None;
                 }
+                self.fill_label(cx);
                 self.announce_requests(cx);
             }
             Update::Agent(state) => self.agent = agent_card(&state),
@@ -753,6 +939,7 @@ impl AppView {
                 // the screen was asked for from About.
                 if !checks.ready() {
                     self.first_run = true;
+                    self.reveal(None, window, cx);
                 } else if !self.first_run_asked {
                     self.first_run = false;
                 }
@@ -787,9 +974,6 @@ impl AppView {
                 self.say(text, true, cx);
             }
         }
-        if let Some(tray) = &self.tray {
-            tray.show(&self.tray_line(), self.running());
-        }
         cx.notify();
     }
 
@@ -805,7 +989,7 @@ impl AppView {
             notify(
                 cx,
                 format!("{name} wants to connect to Vexdom"),
-                "Open Vexdom to allow it.".to_owned(),
+                "Allow it from the Vexdom menu bar.".to_owned(),
             );
         }
     }
@@ -820,7 +1004,7 @@ impl AppView {
             .collect();
         for (question, summary) in fresh {
             let body = if summary.is_empty() {
-                "Open Vexdom to answer.".to_owned()
+                "Answer from the Vexdom menu bar.".to_owned()
             } else {
                 summary
             };
@@ -860,28 +1044,21 @@ impl AppView {
     pub fn show_tab(&mut self, tab: Tab, cx: &mut Context<Self>) {
         self.tab = tab;
         match tab {
-            Tab::Browsers | Tab::Agent => self.send(Command::Refresh),
-            Tab::Settings => self.show_page(self.page, cx),
-            Tab::Overview | Tab::About => {}
-        }
-        cx.notify();
-    }
-
-    fn show_page(&mut self, page: Page, cx: &mut Context<Self>) {
-        self.page = page;
-        match page {
-            Page::General => {
+            Tab::General => {
                 self.send(Command::Preferences);
                 self.login = login_item::state();
+                self.refresh_tray();
             }
-            Page::Skills => self.send(Command::Skills),
-            Page::Activity => self.send(Command::Activity),
-            Page::Logs => self.watch_log(cx),
+            Tab::Browsers | Tab::Agent => self.send(Command::Refresh),
+            Tab::Skills => self.send(Command::Skills),
+            Tab::Activity => self.send(Command::Activity),
+            Tab::Logs => self.watch_log(cx),
+            Tab::About => {}
         }
         cx.notify();
     }
 
-    /// Reads the log every second while Settings → Logs shows.
+    /// Reads the log every second while Logs shows.
     fn watch_log(&mut self, cx: &mut Context<Self>) {
         self.poll_log(true);
         if std::mem::replace(&mut self.log_polling, true) {
@@ -891,7 +1068,7 @@ impl AppView {
             loop {
                 cx.background_executor().timer(LOG_POLL).await;
                 let going = this.update(cx, |view, cx| {
-                    let shown = view.tab == Tab::Settings && view.page == Page::Logs;
+                    let shown = view.tab == Tab::Logs;
                     if !shown {
                         view.log_polling = false;
                     } else if view.poll_log(false) {
@@ -952,11 +1129,6 @@ impl AppView {
     fn tab_button(&self, tab: Tab, label: &'static str, cx: &mut Context<Self>) -> Stateful<Div> {
         let p = theme::palette(cx);
         let chosen = self.tab == tab;
-        // A browser asking to connect, or an action waiting for approval, is answered on
-        // Overview: mark the tab from elsewhere.
-        let asking = tab == Tab::Overview
-            && !chosen
-            && (!self.requests.is_empty() || !self.confirmations.is_empty());
         let base = div()
             .id(label)
             .flex()
@@ -969,7 +1141,6 @@ impl AppView {
             .font_weight(FontWeight::MEDIUM)
             .cursor_pointer()
             .child(label)
-            .when(asking, |tab| tab.child(lamp(6., p.lamp_waiting)))
             .on_click(cx.listener(move |view, _: &ClickEvent, _, cx| view.show_tab(tab, cx)));
         if chosen {
             base.bg(p.face).text_color(p.ink).shadow(p.lift())
@@ -979,95 +1150,18 @@ impl AppView {
         }
     }
 
-    /// The signature: a round push switch in its well. Raised and bright while off; latched in
-    /// (smaller, duller, no lift) while the Bridge runs, its well ringed in the lamp's colour.
-    /// Dimmed and inert while it is not known yet or a Start, Stop or Restart is under way.
-    fn power_switch(&self, cx: &mut Context<Self>) -> impl IntoElement {
-        let p = theme::palette(cx);
-        let running = self.running();
-        let busy = !self.known
-            || matches!(
-                self.pending,
-                Some(Pending::Start | Pending::Stop | Pending::Restart)
-            );
-        let label = match self.pending {
-            Some(Pending::Start) => "Starting",
-            Some(Pending::Stop) => "Stopping",
-            Some(Pending::Restart) => "Restarting",
-            _ if running => "Stop",
-            _ => "Start",
-        };
-        let knob = div()
-            .id("power")
-            .size(px(if running { 104. } else { 112. }))
-            .rounded_full()
-            .flex()
-            .items_center()
-            .justify_center()
-            .text_size(px(19.))
-            .font_weight(FontWeight::BOLD)
-            .text_color(p.on_power)
-            .child(label)
-            .on_click(cx.listener(|view, _: &ClickEvent, _, cx| view.toggle_power(cx)));
-        let knob = if busy {
-            knob.bg(if running { p.power_latched } else { p.power })
-                .opacity(0.6)
-        } else if running {
-            knob.cursor_pointer()
-                .bg(p.power_latched)
-                .shadow(vec![gpui::BoxShadow {
-                    color: gpui::black().opacity(0.18),
-                    offset: gpui::point(px(0.), px(1.)),
-                    blur_radius: px(1.),
-                    spread_radius: px(0.),
-                }])
-                .hover(move |style| style.bg(p.power_pressed))
-        } else {
-            knob.cursor_pointer()
-                .bg(p.power)
-                .shadow(vec![
-                    gpui::BoxShadow {
-                        color: gpui::black().opacity(0.16),
-                        offset: gpui::point(px(0.), px(2.)),
-                        blur_radius: px(3.),
-                        spread_radius: px(0.),
-                    },
-                    gpui::BoxShadow {
-                        color: gpui::black().opacity(0.12),
-                        offset: gpui::point(px(0.), px(8.)),
-                        blur_radius: px(18.),
-                        spread_radius: px(-6.),
-                    },
-                ])
-                .hover(move |style| style.bg(p.power_hover))
-                .active(move |style| style.bg(p.power_pressed))
-        };
-        let ring = if running && !busy {
-            lamp_color(&p, self.headline().lamp)
-        } else {
-            p.well_hover
-        };
-        div()
-            .size(px(168.))
-            .flex_none()
-            .rounded_full()
-            .bg(p.well)
-            .border_2()
-            .border_color(ring)
-            .flex()
-            .items_center()
-            .justify_center()
-            .child(knob)
-    }
-
-    fn overview(&self, cx: &mut Context<Self>) -> Div {
+    /// The Bridge, first on General: its lamp and headline, the facts that prove it, Start or
+    /// Stop and Restart. The buttons are dimmed and inert while a Start, Stop or Restart is under
+    /// way, and absent until the bridge thread has answered.
+    fn bridge_face(&self, cx: &mut Context<Self>) -> Div {
         let p = theme::palette(cx);
         let Headline {
             lamp: state,
             caption,
             title,
         } = self.headline();
-        let mut fact_list = div().flex().flex_col().gap(px(6.)).mt(px(14.));
+        let running = self.running();
+        let mut fact_list = div().flex().flex_col().gap(px(6.)).mt(px(10.));
         for (name, value) in facts(self.status.as_ref(), self.agent.as_ref(), &self.sessions) {
             let value = div().text_color(p.ink).child(value);
             fact_list = fact_list.child(
@@ -1083,23 +1177,50 @@ impl AppView {
                     }),
             );
         }
-        let restarting = self.pending == Some(Pending::Restart);
-        let restart = div().flex().mt(px(6.)).child(
-            p.button(
-                "restart",
-                if restarting { "Restarting" } else { "Restart" },
-                Tone::Secondary,
-            )
-            .when(self.pending.is_some(), |button| button.opacity(0.5))
-            .on_click(cx.listener(|view, _: &ClickEvent, _, cx| view.restart(cx))),
+        let switching = matches!(
+            self.pending,
+            Some(Pending::Start | Pending::Stop | Pending::Restart)
         );
-        let state_face = p
-            .panel()
+        let label = match self.pending {
+            Some(Pending::Start) => "Starting…",
+            Some(Pending::Stop) => "Stopping…",
+            Some(Pending::Restart) => "Restarting…",
+            _ if running => "Stop",
+            _ => "Start",
+        };
+        let mut buttons = div().flex().flex_none().items_center().gap_2();
+        if self.known {
+            if running {
+                buttons = buttons.child(
+                    p.button("restart", "Restart", Tone::Secondary)
+                        .when(self.pending.is_some(), |button| button.opacity(0.5))
+                        .on_click(cx.listener(|view, _: &ClickEvent, _, cx| view.restart(cx))),
+                );
+            }
+            buttons = buttons.child(
+                p.button("power", label, Tone::Primary)
+                    .when(switching, |button| button.opacity(0.5))
+                    .on_click(cx.listener(|view, _: &ClickEvent, _, cx| view.toggle_power(cx))),
+            );
+        }
+        let detail = if running {
+            fact_list
+        } else if !self.known {
+            div()
+        } else {
+            quiet(
+                &p,
+                "Press Start to run the Bridge. Your browsers and the agent show here once it runs.",
+            )
+            .mt(px(8.))
+        };
+        p.panel()
             .flex_row()
             .items_center()
-            .gap(px(28.))
-            .p(px(24.))
-            .child(self.power_switch(cx))
+            .justify_between()
+            .gap_4()
+            .px(px(20.))
+            .py(px(16.))
             .child(
                 div()
                     .flex()
@@ -1117,33 +1238,15 @@ impl AppView {
                     )
                     .child(
                         div()
-                            .mt(px(8.))
-                            .text_size(px(28.))
-                            .line_height(px(34.))
+                            .mt(px(6.))
+                            .text_size(px(17.))
                             .font_weight(FontWeight::BOLD)
                             .text_color(p.ink)
                             .child(title),
                     )
-                    .child(if self.running() {
-                        fact_list.child(restart)
-                    } else if !self.known {
-                        div()
-                    } else {
-                        quiet(
-                            &p,
-                            "Press Start to run the Bridge. Your browsers and the agent show here once it runs.",
-                        )
-                        .mt(px(10.))
-                    }),
-            );
-        let mut column = div().flex().flex_col().gap(px(14.)).child(state_face);
-        if let Some(request) = self.requests.first() {
-            column = column.child(self.request_face(request, cx));
-        }
-        if !self.confirmations.is_empty() {
-            column = column.child(self.confirmation_face(cx));
-        }
-        column.child(self.notice_list(cx))
+                    .child(detail),
+            )
+            .child(buttons)
     }
 
     fn request_face(&self, request: &PairRequest, cx: &mut Context<Self>) -> Div {
@@ -1176,14 +1279,14 @@ impl AppView {
                 p.button("deny", "Deny", Tone::Secondary)
                     .when(busy, |button| button.opacity(0.5))
                     .on_click(
-                        cx.listener(|view, _: &ClickEvent, _, cx| view.decide_first(false, cx)),
+                        cx.listener(|view, _: &ClickEvent, _, cx| view.decide_shown(false, cx)),
                     ),
             )
             .child(
                 p.button("allow", "Allow", Tone::Primary)
                     .when(busy, |button| button.opacity(0.5))
                     .on_click(
-                        cx.listener(|view, _: &ClickEvent, _, cx| view.decide_first(true, cx)),
+                        cx.listener(|view, _: &ClickEvent, _, cx| view.decide_shown(true, cx)),
                     ),
             )
     }
@@ -1244,37 +1347,6 @@ impl AppView {
             })
             .collect();
         list_face(&p, "Waiting for your approval", entries, "")
-    }
-
-    fn notice_list(&self, cx: &mut Context<Self>) -> Div {
-        let p = theme::palette(cx);
-        if self.notices.shown.is_empty() {
-            return div()
-                .px(px(4.))
-                .child(quiet(&p, "Notices from tasks and monitors show up here."));
-        }
-        let entries = self
-            .notices
-            .shown
-            .iter()
-            .map(|notice| {
-                let id = notice.id.clone();
-                row(
-                    notice.title.clone(),
-                    quiet(&p, notice.body.clone()),
-                    p.button(
-                        SharedString::from(format!("open-{id}")),
-                        "Open",
-                        Tone::Secondary,
-                    )
-                    .on_click(cx.listener(move |view, _: &ClickEvent, _, _| {
-                        view.send(Command::OpenNotice(id.clone()));
-                    }))
-                    .into_any_element(),
-                )
-            })
-            .collect();
-        list_face(&p, "Notices", entries, "")
     }
 
     /// How browsers pair: the mode, a code for one that asks for it, and Unpair all.
@@ -1485,7 +1557,7 @@ impl AppView {
             })
             .collect();
         let none_paired = if self.running() {
-            "No browser is paired yet. Add the extension, then allow it on Overview."
+            "No browser is paired yet. Add the extension, then allow it from the menu bar."
         } else {
             "Start Vexdom to see paired browsers."
         };
@@ -1617,50 +1689,6 @@ impl AppView {
             )
     }
 
-    fn settings_tab(&self, cx: &mut Context<Self>) -> Div {
-        let p = theme::palette(cx);
-        let mut nav = div()
-            .flex()
-            .flex_col()
-            .flex_none()
-            .w(px(124.))
-            .gap(px(2.))
-            .p(px(2.))
-            .rounded(px(9.))
-            .bg(p.well_hover);
-        for (page, label) in Page::ALL {
-            let item = div()
-                .id(SharedString::from(format!("page-{label}")))
-                .px(px(12.))
-                .py(px(6.))
-                .rounded(px(7.))
-                .text_size(px(13.))
-                .font_weight(FontWeight::MEDIUM)
-                .cursor_pointer()
-                .child(label)
-                .on_click(cx.listener(move |view, _: &ClickEvent, _, cx| view.show_page(page, cx)));
-            let ink = p.ink;
-            nav = nav.child(if self.page == page {
-                item.bg(p.face).text_color(p.ink).shadow(p.lift())
-            } else {
-                item.text_color(p.label)
-                    .hover(move |style| style.text_color(ink))
-            });
-        }
-        let content = match self.page {
-            Page::General => self.general_page(cx),
-            Page::Skills => self.skills_page(cx),
-            Page::Activity => self.activity_page(cx),
-            Page::Logs => self.logs_page(cx),
-        };
-        div()
-            .flex()
-            .items_start()
-            .gap(px(14.))
-            .child(nav)
-            .child(div().flex_1().min_w_0().child(content))
-    }
-
     fn general_page(&self, cx: &mut Context<Self>) -> Div {
         let p = theme::palette(cx);
         let mut looks = track(&p);
@@ -1711,13 +1739,28 @@ impl AppView {
                     .into_any_element(),
             ));
         }
-        let mut page = div().flex().flex_col().gap(px(14.)).child(
-            p.panel()
-                .px(px(20.))
-                .py(px(8.))
-                .child(heading(&p, "This app").py(px(6.)))
-                .child(rows(&p, app_rows)),
-        );
+        let dock = self.settings.show_in_dock;
+        app_rows.push(row(
+            "Show in Dock",
+            quiet(&p, "Off keeps Vexdom in the menu bar only."),
+            switch(&p, "show-in-dock", dock)
+                .on_click(cx.listener(move |view, _: &ClickEvent, window, cx| {
+                    view.set_dock(!dock, window, cx);
+                }))
+                .into_any_element(),
+        ));
+        let mut page = div()
+            .flex()
+            .flex_col()
+            .gap(px(14.))
+            .child(self.bridge_face(cx))
+            .child(
+                p.panel()
+                    .px(px(20.))
+                    .py(px(8.))
+                    .child(heading(&p, "This app").py(px(6.)))
+                    .child(rows(&p, app_rows)),
+            );
         page = match &self.preferences {
             Some(prefs) => page
                 .child(self.theme_face(prefs, cx))
@@ -2447,20 +2490,30 @@ impl AppView {
 
 impl Render for AppView {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        if std::mem::take(&mut self.focus_label) && self.tab == Tab::Overview && !self.first_run {
+        if std::mem::take(&mut self.focus_label) && !self.first_run {
             window.focus(&self.label.focus_handle(cx));
         }
         let p = theme::palette(cx);
         let body = if self.first_run {
             self.first_run_screen(cx)
         } else {
-            match self.tab {
-                Tab::Overview => self.overview(cx),
+            // What waits on the user is pinned above every tab.
+            let mut column = div().flex().flex_col().gap(px(14.));
+            if let Some(request) = self.shown_request() {
+                column = column.child(self.request_face(request, cx));
+            }
+            if !self.confirmations.is_empty() {
+                column = column.child(self.confirmation_face(cx));
+            }
+            column.child(match self.tab {
+                Tab::General => self.general_page(cx),
                 Tab::Browsers => self.browsers_tab(cx),
                 Tab::Agent => self.agent_tab(cx),
-                Tab::Settings => self.settings_tab(cx),
+                Tab::Skills => self.skills_page(cx),
+                Tab::Activity => self.activity_page(cx),
+                Tab::Logs => self.logs_page(cx),
                 Tab::About => self.about_tab(cx),
-            }
+            })
         };
         let strip = if self.first_run {
             div()

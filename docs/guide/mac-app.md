@@ -1,9 +1,11 @@
 # The Mac app
 
-`Vexdom.app` puts the Bridge behind a power switch. It starts and stops the Bridge, pairs browsers,
-answers approvals, picks the side panel's model and holds a few settings. For all of this it runs
-the `vexdom` binary inside its own bundle, so anything it does can also be done from a terminal. The
-app has five tabs: **Overview**, **Browsers**, **Agent**, **Settings** and **About** (⌘1 to ⌘5).
+`Vexdom.app` lives in the menu bar. It starts and stops the Bridge, pairs browsers, answers
+approvals, picks the side panel's model and holds a few settings. For all of this it runs the
+`vexdom` binary inside its own bundle, so anything it does can also be done from a terminal. The
+[menu-bar item](#the-menu-bar) is the main surface; the window is Settings, opened from it, with
+seven tabs: **General**, **Browsers**, **Agent**, **Skills**, **Activity**, **Logs** and **About**
+(⌘1 to ⌘7).
 
 It needs macOS 14 or newer, on Apple silicon (`aarch64-apple-darwin`) or Intel (`x86_64-apple-darwin`).
 
@@ -48,8 +50,8 @@ Vexdom.app/Contents/Resources/extension/chrome-mv3/       the extension build, f
 
 ## First run: the checks
 
-Until two required checks pass, the app shows a **Set up Vexdom** screen of check rows in place of
-the tabs. Once they pass, the screen goes away by itself.
+Until two required checks pass, the app opens its window on a **Set up Vexdom** screen of check
+rows in place of the tabs. Once they pass, the screen goes away by itself.
 
 | Check | Passes when | Button when it fails |
 | --- | --- | --- |
@@ -68,11 +70,76 @@ off, that row reads "Start Vexdom to look for Claude Code."
 
 ---
 
-## Overview
+## The menu bar
 
-**The switch.** The round orange button starts the Bridge (`vexdom start`) or stops it
-(`vexdom stop`). While a start or stop is in progress it reads **Starting** or **Stopping** and
-ignores clicks. Next to it, a lamp and one line give the state:
+The app opens in the menu bar, a switch-and-lamp icon, with no window (the very first launch also
+opens the window on General). Its menu, top to bottom:
+
+| Part | What it holds |
+| --- | --- |
+| State | One line ("Vexdom is off", "‹browser› is connected", "‹browser› wants to connect", "‹n› actions wait for your approval", …), then, while the Bridge runs, its **Address** (`127.0.0.1:<port>`), the **Agent** ("Claude Code ‹version› · ‹model›") and the browsers that are **Paired** |
+| Waiting | A submenu for each browser asking to connect and each action waiting for approval (below) |
+| Power | **Start Vexdom** or **Stop Vexdom** (`vexdom start`, `vexdom stop`; "Starting Vexdom…" and "Stopping Vexdom…" while under way), **Restart Vexdom** (`vexdom restart`, while the Bridge runs) |
+| The Bridge | **Model** (**Default** and every model Claude Code reports, the current one ticked), **Pairing** (**Auto**, **Ask**, **Code**, and **Get a Pairing Code…**, which opens Browsers with the code), **Notices** (the 10 newest; picking one asks the Bridge to bring that browser's tab back). Each shows only while it has something to offer |
+| Preferences | **Appearance** (System, Light, Dark), **Start Vexdom When the App Opens**, **Open at Login** (a bundled `Vexdom.app` only), **Show in Dock** |
+| The app | **Settings…** (the window), **Check for Updates…** or **Update to Vexdom ‹new›** (see [Updates](#updates)), **About Vexdom** |
+| | **Quit Vexdom** |
+
+The app asks the Bridge for its status every 2 seconds, and the menu follows it.
+
+**Start the Bridge when the app opens.** If **Start Vexdom When the App Opens** is on (the default),
+the app runs `vexdom start` once at launch when no Bridge is running. Otherwise the Bridge stays off
+until you press Start, or until a browser, the CLI or an MCP client starts it.
+
+**Show in Dock.** Off by default: the app stays in the menu bar alone, with no Dock icon and no
+place in the app switcher, even while its window is open. Turn it on (from the menu, or Settings →
+General) to give the app a Dock icon; it takes effect at once. If macOS cannot show the menu-bar
+item, the app opens its window and shows in the Dock anyway, so it stays reachable.
+
+**A browser asking to connect.** In [`ask` pairing mode](pair.md#2-choose-how-browsers-pair), each
+new browser gets a submenu **‹browser› wants to connect** with **Allow as “‹browser›”** (named after
+the browser), **Allow and Name…** and **Deny**, and a macOS notification ("‹browser› wants to
+connect to Vexdom"). **Allow and Name…** opens the window, where the request is pinned above every
+tab as **Allow ‹browser›?**, with a name field already filled in with the browser's name (40
+characters at most), **Deny** and **Allow**; in the field, Enter allows and Escape denies. When more
+than one browser is waiting, the window shows them one at a time and says how many are left. While
+the app is connected, it is the approver the Bridge names: `vexdom pairing` prints "The Vexdom app
+asks you about each new browser."
+
+**Actions waiting for your approval.** When a guardrail holds an action from the CLI or an MCP
+client, it gets a submenu **Allow ‹action› on ‹site›?**, with the action's summary and:
+
+| Item | Does |
+| --- | --- |
+| **Allow** | Allows it once |
+| **Always Allow on ‹site›** | Allows it, and stops asking for that action on that site. Shown only when the action has a site |
+| **Deny** | Refuses it; the caller gets `DECLINED` |
+
+The window pins the same actions above every tab under **Waiting for your approval**, with
+**Deny**, **Always on ‹site›** and **Allow**. Each new request also posts a notification. Answering
+a request that has stopped waiting reports "That action stopped waiting for an answer." Side-panel
+runs ask in the side panel, not here. See [Approvals](approvals.md#from-the-cli-or-an-mcp-client).
+
+**Notices.** When a monitor, scheduled task or reminder finishes while its browser is out of sight,
+the Bridge gives the notice to the app. The app posts a notification and adds the notice to the
+menu's **Notices**. Each notice is shown once.
+
+**The window.** **Settings…** opens it; so does opening the app again (Finder, Spotlight,
+`open -a Vexdom`). Closing it only hides it: the app keeps running in the menu bar. **Quit Vexdom**
+(or ⌘Q) quits the app but leaves the Bridge running: the Bridge is a separate process, so the side
+panel and MCP clients keep working. While the app is connected, the Bridge does not exit when idle.
+Once the app is gone, the Bridge exits after 30 minutes with no clients.
+
+Notifications come from Vexdom. If they never show up, allow them for Vexdom in System Settings →
+Notifications.
+
+---
+
+## General
+
+The first face is the Bridge: a lamp and one line give the state, with **Start** or **Stop** (and
+**Restart** while it runs) on the right. They read **Starting…**, **Stopping…** or **Restarting…**
+and ignore clicks while under way.
 
 | Lamp | Line |
 | --- | --- |
@@ -80,43 +147,25 @@ ignores clicks. Next to it, a lamp and one line give the state:
 | Amber | "Waiting for your browser", or "‹browser› wants to connect" |
 | Green | "‹browser› is connected", or "‹n› browsers are connected" |
 
-While the Bridge runs, the face also shows its **Address** (`127.0.0.1:<port>`), the **Agent**
-("Claude Code ‹version› · ‹model›", or "Claude Code is not ready"), the browsers that are
-**Paired**, and a **Restart** button (`vexdom restart`). The app asks the Bridge for its status
-every 2 seconds.
+While the Bridge runs, the face also lists its **Address**, the **Agent** and the browsers that are
+**Paired**, as the menu does.
 
-**Start the Bridge when the app opens.** If Settings → General → **Start Vexdom when the app opens**
-is on (the default), the app runs `vexdom start` once at launch when no Bridge is running.
-Otherwise the Bridge stays off until you press the switch, or until a browser, the CLI or an MCP
-client starts it.
-
-**A browser asking to connect.** In [`ask` pairing mode](pair.md#2-choose-how-browsers-pair), each
-new browser shows up as a face titled **Allow ‹browser›?**, with a name field already filled in
-with the browser's name (40 characters at most), **Deny** and **Allow**. In the field, Enter allows
-and Escape denies. When more than one browser is waiting, they come one at a time and the face
-says how many are left. Each new request also posts a macOS notification ("‹browser› wants to
-connect to Vexdom"). While the app is connected, it is the approver the Bridge names:
-`vexdom pairing` prints "The Vexdom app asks you about each new browser."
-
-**Actions waiting for your approval.** When a guardrail holds an action from the CLI or an MCP
-client, it appears under **Waiting for your approval** as **Allow ‹action› on ‹site›?**, with the
-action's summary and three buttons:
-
-| Button | Does |
+| Section | What it holds |
 | --- | --- |
-| **Deny** | Refuses it; the caller gets `DECLINED` |
-| **Always on ‹site›** | Allows it, and stops asking for that action on that site. Shown only when the action has a site |
-| **Allow** | Allows it once |
+| **This app** | **Appearance**: System, Light or Dark. **Start Vexdom when the app opens**. **Open at login**, which registers the app as a login item; it is shown only for a bundled `Vexdom.app`. If macOS turned the login item off, the row says to allow Vexdom in System Settings → General → Login Items. **Show in Dock** (above) |
+| **Browser theme** | The look of the side panel in every paired browser: Neon, Ember, Midnight, Phosphor or Daylight (`theme` in [config.json](configuration.md#appearance)) |
+| **Guardrails** | Each rule with **Allow**, **Ask** or **Block** ("Locked" for the rules you cannot change); **Fence page text**; **When nobody can answer**: **Refuse** or **Allow** (`guardrails.unattended`). See [Approvals](approvals.md#changing-the-policy) |
+| **Command line** | Where the app's `vexdom` is. **Link vexdom** puts a symlink to the bundle's `vexdom` in the first of `~/.local/bin`, `/opt/homebrew/bin` or `/usr/local/bin` that is on your login `PATH`. It never touches a `vexdom` file it did not create, and **Unlink** removes only its own link. The **Claude Code** row has the MCP registration line, `claude mcp add vexdom -- <path> mcp`, with **Copy** ([MCP clients](mcp-clients.md#register)) |
+| **Uninstall** | See [Uninstall](#uninstall) |
 
-Each new request also posts a notification, and an amber dot on the Overview tab shows that
-something is waiting while you are on another tab. Answering a request that has stopped waiting
-reports "That action stopped waiting for an answer." Side-panel runs ask in the side panel, not
-here. See [Approvals](approvals.md#from-the-cli-or-an-mcp-client).
+The app sends Browser theme and Guardrails changes to the Bridge, which writes them to
+`~/.vexdom/config.json`, the same keys the extension's settings page writes
+([Configuration](configuration.md#approvals-and-guardrails)). With the Bridge off, the app writes
+`config.json` itself.
 
-**Notices.** When a monitor, scheduled task or reminder finishes while its browser is out of sight,
-the Bridge gives the notice to the app. The app posts a notification and adds the notice to the
-**Notices** list. **Open** on a row asks the Bridge to bring that browser's tab back. Each notice
-is shown once.
+Light or dark follows macOS unless **Appearance** says otherwise. The app keeps its own settings in
+`~/.vexdom/desktop.json`: `appearance`, `startBridgeOnLaunch`, `showInDock`, and
+`finishUpdateOnLaunch` (set while an update is being installed).
 
 ---
 
@@ -170,41 +219,26 @@ Bridge off, the tab shows **Start Vexdom** and nothing else. See [The side-panel
 
 ---
 
-## Settings
-
-Settings has four pages, chosen from the list on the left.
-
-### General
-
-| Section | What it holds |
-| --- | --- |
-| **This app** | **Appearance**: System, Light or Dark. **Start Vexdom when the app opens**. **Open at login**, which registers the app as a login item; it is shown only for a bundled `Vexdom.app`. If macOS turned the login item off, the row says to allow Vexdom in System Settings → General → Login Items |
-| **Browser theme** | The look of the side panel in every paired browser: Neon, Ember, Midnight, Phosphor or Daylight (`theme` in [config.json](configuration.md#appearance)) |
-| **Guardrails** | Each rule with **Allow**, **Ask** or **Block** ("Locked" for the rules you cannot change); **Fence page text**; **When nobody can answer**: **Refuse** or **Allow** (`guardrails.unattended`). See [Approvals](approvals.md#changing-the-policy) |
-| **Command line** | Where the app's `vexdom` is. **Link vexdom** puts a symlink to the bundle's `vexdom` in the first of `~/.local/bin`, `/opt/homebrew/bin` or `/usr/local/bin` that is on your login `PATH`. It never touches a `vexdom` file it did not create, and **Unlink** removes only its own link. The **Claude Code** row has the MCP registration line, `claude mcp add vexdom -- <path> mcp`, with **Copy** ([MCP clients](mcp-clients.md#register)) |
-| **Uninstall** | See [Uninstall](#uninstall) |
-
-The app sends Browser theme and Guardrails changes to the Bridge, which writes them to
-`~/.vexdom/config.json`, the same keys the extension's settings page writes
-([Configuration](configuration.md#approvals-and-guardrails)). With the Bridge off, the app writes
-`config.json` itself.
-
-### Skills
+## Skills
 
 Every skill from `vexdom skills --json`, with its description and where it comes from. The field
 filters by name and description (Escape clears it); **All / Bundled / User / Uploaded** filters by
 source. See [Skills](features/skills.md).
 
-### Activity
+---
+
+## Activity
 
 - **Standing approvals**: one row per site, listing the actions you allowed with **Always on
   ‹site›**. **Forget** runs `vexdom approvals clear <host>`.
 - **Downloads**: the files agents captured (`vexdom downloads --json`), with size, site and date.
   **Show** reveals a file in Finder; **Clear all** runs `vexdom downloads clear`.
 
-### Logs
+---
 
-The last 400 lines of the Bridge's log, `~/.vexdom/daemon.log`, reread every second while the page
+## Logs
+
+The last 400 lines of the Bridge's log, `~/.vexdom/daemon.log`, reread every second while the tab
 is open. The view stays at the end of the log unless you scroll up.
 
 ---
@@ -221,7 +255,9 @@ is open. The view stays at the end of the log unless you scroll up.
 ### Updates
 
 The app checks GitHub's latest release when it opens and then every 6 hours. **Check for updates**
-checks right away. The card shows where the update stands:
+checks right away; so does the menu's **Check for Updates…**, which also opens About. While a newer
+release is out, the menu offers **Update to Vexdom ‹new›**, which does what the card's button does.
+The card shows where the update stands:
 
 | State | The card says | Button |
 | --- | --- | --- |
@@ -254,35 +290,9 @@ updates the app the same way; see [Maintenance](maintenance.md#updating).
 
 ---
 
-## The menu bar and the window
-
-The menu-bar item, a switch-and-lamp icon, has a menu with:
-
-- the state line: the same line as Overview, or "‹browser› wants to connect", or "‹n› actions wait
-  for your approval";
-- **Start Vexdom** or **Stop Vexdom**;
-- **Restart Vexdom** (only while the Bridge runs);
-- **Open Vexdom**;
-- **Quit Vexdom**.
-
-Closing the window only hides the app; it keeps running in the menu bar, and **Open Vexdom** brings
-it back. **Quit Vexdom** (or ⌘Q) quits the app but leaves the Bridge running: the Bridge is a
-separate process, so the side panel and MCP clients keep working. While the app is connected, the
-Bridge does not exit when idle. Once the app is gone, the Bridge exits after
-30 minutes with no clients.
-
-Notifications come from Vexdom. If they never show up, allow them for Vexdom in System Settings →
-Notifications.
-
-Light or dark follows macOS unless **Appearance** says otherwise. The app keeps its own settings in
-`~/.vexdom/desktop.json`: `appearance`, `startBridgeOnLaunch`, and `finishUpdateOnLaunch` (set
-while an update is being installed).
-
----
-
 ## Uninstall
 
-**Settings → General → Uninstall…** asks first, with **Keep my skills** ticked by default. Then it
+**General → Uninstall…** asks first, with **Keep my skills** ticked by default. Then it
 removes the app's `vexdom` links and runs `vexdom uninstall --yes`, adding `--keep-skills` when the
 box is ticked. That stops the Bridge and deletes `~/.vexdom` and `~/vexdom`: pairings, settings,
 approvals, logs and the unpacked extension. The window goes back to the first-run checks.

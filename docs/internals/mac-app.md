@@ -34,7 +34,7 @@ The modules that decide what to show do not depend on GPUI, so their tests run w
 
 | Module | GPUI | Holds |
 | --- | --- | --- |
-| [`main.rs`](../../desktop/src/main.rs) | yes | Loads `desktop.json`, starts the bridge thread, opens the window (760 × 600, min 680 × 520, transparent title bar), binds ⌘Q and ⌘1–⌘5, hides the window instead of closing it |
+| [`main.rs`](../../desktop/src/main.rs) | yes | Loads `desktop.json`, starts the bridge thread, opens the Settings window hidden (760 × 600, min 680 × 520, transparent title bar), binds ⌘Q and ⌘1–⌘7, hides the window instead of closing it, brings it back on reopen (`on_reopen`, through the `MainWindow` global) |
 | [`bridge.rs`](../../desktop/src/bridge.rs) | no | The bridge thread: the connection loop, `Command` in, `Update` out, every CLI call, the update flow |
 | [`model.rs`](../../desktop/src/model.rs) | no | Turns `Control` replies and `vexdom … --json` output into rows: headline and lamp, facts, pair requests, notices (`NoticeBook`), sessions, browsers, `reload_needed`, agent card, confirmations, preferences and guardrail rows, skills, approvals, downloads, `UpdateState`, the bug-report URL, `mcp_command` |
 | [`preflight.rs`](../../desktop/src/preflight.rs) | no | The four first-run checks: `evaluate(Findings)` decides pass/fail and the fix |
@@ -42,8 +42,8 @@ The modules that decide what to show do not depend on GPUI, so their tests run w
 | [`log_tail.rs`](../../desktop/src/log_tail.rs) | no | Incremental tail of `daemon.log`: the last 400 lines; the first read covers at most the last 256 KiB; a shrunk file is reread from its start |
 | [`shell.rs`](../../desktop/src/shell.rs) | no | The login shell's `PATH`, `which`, and **Link vexdom** (`link_dirs`, `link`, `unlink`, `linked_in`) |
 | [`login_item.rs`](../../desktop/src/login_item.rs) | no | **Open at login** through `SMAppService.mainAppService`; `None` when unbundled |
-| [`tray.rs`](../../desktop/src/tray.rs) | no | The menu-bar item, the notification sender, the Dock icon for `cargo run` |
-| [`ui.rs`](../../desktop/src/ui.rs) | yes | `AppView`: the five tabs, Settings' four pages, the first-run screen, the status strip |
+| [`tray.rs`](../../desktop/src/tray.rs) | no | The menu-bar item: `Pick` (each item's id), `MenuState`, the layout as data (`entries`) and its `muda` items; the Dock policy (`set_dock_visible`), the notification sender, the Dock icon for `cargo run` |
+| [`ui.rs`](../../desktop/src/ui.rs) | yes | `AppView`: the seven tabs, requests and approvals pinned above them, the first-run screen, the status strip, and the `MenuState` it hands the menu-bar item |
 | [`theme.rs`](../../desktop/src/theme.rs) | yes | Light and dark palettes, the bundled Archivo faces (`desktop/fonts/`), buttons and faces |
 | [`text_input.rs`](../../desktop/src/text_input.rs) | yes | A one-line field on the platform input handler (IME composition works), with Enter and Escape events; ported from GPUI's `examples/input.rs` |
 
@@ -61,7 +61,10 @@ that thread exchange messages over two unbounded channels:
 
 The window receives `ui::Inbound`, which is either a bridge `Update` or a menu-bar `Pick`. Both
 arrive on the same channel, so a menu click goes through the same code as the matching button.
-After each update the window refreshes the menu-bar line and the Start/Stop item.
+After each update or pick, and after a setting changes or a pending control settles, the window
+builds a `MenuState` and hands it to the menu-bar item, which rebuilds its menu only when it
+differs from the last one. A click on a check item flips its mark by itself, so a pick also makes
+the next state rebuild the menu (`Tray::forget`).
 
 A control that has sent a command (`Start`, `Stop`, `Restart`, a pairing `Decide`, a `Confirm`) is
 dimmed and ignores clicks until the matching update arrives, or for at most 20 seconds (60 for
@@ -178,15 +181,28 @@ notifies for:
 An `announced` set keeps a request or confirmation from being announced twice. Before the first
 notification, `tray::set_notification_sender` sets the sender to the bundle identifier. Unbundled,
 it uses `com.apple.Finder`, because left unset `notify-rust` runs an AppleScript lookup that
-opens a "Where is use_default?" chooser. Clicking a notification does nothing; **Open** on the
-Overview row sends `openNotice`.
+opens a "Where is use_default?" chooser. Clicking a notification does nothing; a notice
+picked from the menu's **Notices** sends `openNotice`.
 
 The menu-bar item is a `tray-icon` template image (`brand/MenuBarTemplate@2x.png`, so macOS tints
-it). Its menu has a disabled state line, **Start/Stop Vexdom**, **Restart Vexdom** (enabled while
-running), **Open Vexdom** (`NSApplication.unhide`, then activate) and **Quit Vexdom**.
-`on_window_should_close` hides the app and returns `false`, so the window is never destroyed. Run
-unbundled, the app sets its Dock icon from `brand/AppIcon-1024.png`. Both images come from
-`brand/build.py`.
+it) and the app's main surface. Its menu (`tray::entries`) holds the state line and facts, a
+submenu per pair request and per confirmation, Start/Stop and Restart, **Model**, **Pairing** and
+**Notices** submenus, **Appearance** and the app's switches as check items, **Settings…**
+(`NSApplication.unhide`, activate, raise the window), the update item, **About Vexdom** and
+**Quit Vexdom**. Each item's `MenuId` is its `Pick` encoded as `verb` or `verb:rest`
+(`allow:<request>`, `confirm-always:<id>`, `model:` for the default model, …); `Pick::parse` reads
+it back, so a click needs no lookup table.
+
+The window opens hidden (`show: false`) and is shown only on the first launch (no `desktop.json`
+yet), while a required first-run check fails, or when there is no menu-bar item.
+`on_window_should_close` hides the app and returns `false`, so the window is never destroyed.
+
+**Dock.** GPUI makes the app a regular one (`NSApplicationActivationPolicyRegular`) as it finishes
+launching; right after, `AppView::launch` calls `tray::set_dock_visible(showInDock)`, which switches
+to `Accessory` (menu bar only) unless `showInDock` is set or the menu-bar item failed. Toggling the
+setting switches the policy at once, and re-activates the window if it was in front. When the app
+shows in the Dock unbundled, it sets its Dock icon from `brand/AppIcon-1024.png`. Both images come
+from `brand/build.py`.
 
 ---
 
@@ -199,6 +215,7 @@ unbundled, the app sets its Dock icon from `brand/AppIcon-1024.png`. Both images
 | --- | --- | --- |
 | `appearance` | `"system"` | `system`, `light` or `dark` |
 | `startBridgeOnLaunch` | `true` | Run `vexdom start` at launch when no Bridge answers |
+| `showInDock` | `false` | Show the app in the Dock and the app switcher; off keeps it in the menu bar only |
 | `finishUpdateOnLaunch` | `false` | Set just before an update swaps the bundle; the next launch runs the setup that finishes the update, then clears it |
 
 A missing or wrongly typed key keeps its default. `settings::edit` rereads the file, changes one key
@@ -288,7 +305,7 @@ All of it is in `bridge.rs` and [`crates/vexdom-update`](../../crates/vexdom-upd
 
 ```sh
 cd desktop
-cargo test --locked                                  # model, preflight, settings, log_tail, shell, text_input
+cargo test --locked                                  # model, preflight, settings, log_tail, shell, text_input, tray
 cargo clippy --locked --all-targets -- -D warnings
 cargo fmt --check
 cargo run                                            # unbundled
@@ -297,9 +314,9 @@ cargo run                                            # unbundled
 CI runs those three checks in the `macos` job of `.github/workflows/ci.yml`, after `brew install
 capnp`. An unbundled `cargo run` has no bundle identifier, so:
 
-- **Open at login** is hidden;
+- **Open at login** is hidden (in the window and the menu);
 - notifications come from Finder;
-- the Dock icon is set by code;
+- the Dock icon, when **Show in Dock** is on, is set by code;
 - the updater answers `UPDATE_UNMANAGED`;
 - `vexdom` is taken from the login `PATH`, because there is none next to the executable.
 

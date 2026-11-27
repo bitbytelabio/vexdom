@@ -1,11 +1,7 @@
 ---
 name: Vexdom desktop
-description: The appliance face for the Bridge: one switch, one lamp, light enamel or dark islands.
+description: The appliance face for the Bridge: a menu-bar lamp first, a Settings window of light enamel or dark islands.
 colors:
-  power-orange: "#e8641b"
-  power-orange-hover: "#f0742d"
-  power-orange-pressed: "#d65a12"
-  power-orange-latched: "#c96a33"
   lamp-green: "#2fa84f"
   lamp-amber: "#d98a1a"
   lamp-unlit: "#c6c3bc"
@@ -30,12 +26,7 @@ colors:
 typography:
   headline:
     fontFamily: "Archivo"
-    fontSize: "28px"
-    fontWeight: 700
-    lineHeight: "34px"
-  switch-label:
-    fontFamily: "Archivo"
-    fontSize: "19px"
+    fontSize: "17px"
     fontWeight: 700
   title:
     fontFamily: "Archivo"
@@ -96,14 +87,6 @@ components:
     rounded: "{rounded.control}"
     padding: "7px 10px"
     width: "176px"
-  power-switch:
-    backgroundColor: "{colors.power-orange}"
-    textColor: "{colors.graphite}"
-    rounded: "{rounded.round}"
-    size: "112px"
-  power-switch-latched:
-    backgroundColor: "{colors.power-orange-latched}"
-    size: "104px"
   tab-selected:
     backgroundColor: "{colors.enamel-face}"
     textColor: "{colors.graphite}"
@@ -121,43 +104,39 @@ the `island-*` keys are the same roles in the dark palette.
 
 **Creative North Star: "The Appliance Face"**
 
-Vexdom is a household appliance for your browser: a round orange push switch and an indicator
-lamp say whether the Bridge is on and a browser is connected before anything else is read. The
-window is a glance utility, left in the background: a few raised faces on a ground, each a work
-area (the switch and its facts, a browser asking to connect, notices, browsers, the agent). It is
-not an admin dashboard: no grid of equal status cards, no charts, no decoration a utility does
-not need.
+Vexdom is a household appliance for your browser. Its face is the menu-bar item, the switch and
+lamp as a template image, whose native menu says whether the Bridge is on and a browser is
+connected before anything else is read, and holds the everyday actions (Start/Stop, answering a
+browser or an approval, the model, pairing, notices, appearance). The window is Settings, opened
+from that menu: a few raised faces on a ground, each a work area (the Bridge and its facts, this
+app, browsers, the agent). It is not an admin dashboard: no grid of equal status cards, no charts,
+no decoration a utility does not need.
 
 Two lights follow macOS's appearance, live. Light is warm grey enamel with off-white faces lifted
 by a soft shadow. Dark takes JetBrains Islands' layout: rounded islands on a near-black canvas,
 separated by gaps and lit by a hairline edge instead of a shadow.
 
 **Key Characteristics:**
-- One switch, one lamp, one line: the state is readable in a second.
-- Orange belongs to the power switch alone.
+- One lamp, one line: the state is readable in a second, in the menu bar and atop General.
+- The menu bar first; the window only for settings and what needs room (naming a browser, lists).
 - Faces (islands) hold work areas; nothing is nested inside a face but rows.
-- Standard controls: tabs, buttons, a text field, a menu-bar item.
+- Standard controls: tabs, buttons, a text field, a native menu.
 
 ## Colors
 
-Warm neutrals carry everything; orange and the three lamp colours are the only hues, and each
-means one thing.
-
-### Primary
-- **Power Orange** (#e8641b): the power switch, raised (off). Hover #f0742d, pressed #d65a12.
-- **Latched Orange** (#c96a33): the switch latched in while the Bridge runs; duller, so on and
-  off differ at a glance.
+Warm neutrals carry everything; the three lamp colours are the only hues in the window, and each
+means one thing. Orange lives in the icons alone (`../brand/build.py`).
 
 ### State
 - **Lamp Green** (#2fa84f; dark #3fbf62): a browser is connected; Claude Code is ready.
 - **Lamp Amber** (#d98a1a; dark #e39a2e): the Bridge runs and waits for a browser; a browser
-  asks to connect (the dot on the Overview tab).
+  asks to connect.
 - **Lamp Unlit** (#c6c3bc; dark #4a4c51): off, unknown, not paired.
 - **Fault Rust** (#b3361b; dark #f0785a): error text only.
 
 ### Neutral
 - **Enamel** (#e8e6e1) / **Island Canvas** (#131417): the window's ground, and recessed parts in
-  the light (fields, the switch's well, secondary buttons).
+  the light (fields, secondary buttons, the tab track).
 - **Enamel Face** (#f6f5f2) / **Island** (#1e1f22): a raised face.
 - **Island Edge** (#2b2d30): the dark islands' hairline, and their recessed parts.
 - **Graphite** (#2f2f2d) / **Island Ink** (#dfe1e5): text and the primary button.
@@ -165,11 +144,11 @@ means one thing.
   better on every surface they sit on, the tab track included.
 
 ### Named Rules
-**The One Orange Rule.** Orange is the power switch. Selection, focus, links and buttons never
-use it; text selection is graphite (light) or ink (dark) at low alpha.
+**The No Orange Rule.** Orange is the icons' switch. Selection, focus, links and buttons in the
+window never use it; text selection is graphite (light) or ink (dark) at low alpha.
 
 **The Lamp Means State Rule.** Green, amber and unlit are the only state colours and always mean
-connected, waiting, off. The switch's well is ringed in the lamp's colour while the Bridge runs.
+connected, waiting, off.
 
 ## Typography
 
@@ -180,9 +159,7 @@ the fallback if loading fails.
 panel; two weights do the work.
 
 ### Hierarchy
-- **Headline** (700, 28/34px): the one state line beside the switch.
-- **Switch label** (700, 19px): the switch's action, "Start" or "Stop" (large text, 3.4:1 or
-  better on every orange).
+- **Headline** (700, 17px): the one state line on the Bridge's face, under its lamp.
 - **Title** (500, 15px): a face's heading.
 - **Row title** (500, 14px): a browser, a paired session, a notice.
 - **Body** (400, 13px): facts, secondary text, button labels (500).
@@ -192,49 +169,46 @@ panel; two weights do the work.
 ## Layout
 
 A 760 x 600 window (minimum 680 x 520) with a transparent title bar: the traffic lights sit at the
-left of a 40px title strip, the five tabs centred in it (⌘1–⌘5: Overview, Browsers, Agent,
-Settings, About). The body scrolls under the strip with 22px side margins; faces stack with 14px
-gaps. The status strip at the bottom shows the last command's result for 8 seconds (45 seconds for
-the steps after the unpacked folder is copied). Overview: the state face (switch left, lamp +
-headline + facts + Restart right), then a request face when a browser asks, then the actions
-waiting for approval, then notices. Browsers: pairing (mode chips, a pairing code with its `mm:ss`
-countdown, Unpair all), the browsers on this Mac, the paired ones. Agent: one face, with Install
-Claude Code or Fix while it is not ready. Settings: a side list (General, Skills, Activity, Logs)
-beside its page. About: versions with Copy, the update card, help links.
+left of a 40px title strip, the seven tabs centred in it (⌘1–⌘7: General, Browsers, Agent,
+Skills, Activity, Logs, About). The window opens hidden and only from the menu bar (or on the very
+first launch). The body scrolls under the strip with 22px side margins; faces stack with 14px
+gaps. A request face when a browser asks, then the actions waiting for approval, are pinned above
+every tab. The status strip at the bottom shows the last command's result for 8 seconds (45
+seconds for the steps after the unpacked folder is copied). General: the Bridge's face (lamp +
+caption, headline, facts left; Restart and Start/Stop right), this app, browser theme, guardrails,
+command line, uninstall. Browsers: pairing (mode chips, a pairing code with its `mm:ss` countdown,
+Unpair all), the browsers on this Mac, the paired ones. Agent: one face, with Install Claude Code
+or Fix while it is not ready. About: versions with Copy, the update card, help links.
 
 While a required first-run check fails (the `vexdom` command, the browsers' wake-up), a first-run
 face of check rows stands in for the tabs, the title strip saying only "Vexdom"; it gives way by
 itself once they pass, or on Continue when opened from About.
 
-The app never starts the Bridge on its own unless Settings → General → "Start Vexdom when the app
-opens" is on (`~/.vexdom/desktop.json`, on by default); Appearance there can pin light or dark.
+The app never starts the Bridge on its own unless "Start Vexdom when the app opens" is on (General
+or the menu; `~/.vexdom/desktop.json`, on by default); Appearance there can pin light or dark.
+"Show in Dock" (off by default) is the only thing that puts the app in the Dock.
 
 ## Elevation & Depth
 
 Light: faces are lifted by a soft two-layer shadow and nothing else. Dark: islands have no shadow;
-a 1px edge in #2b2d30 separates them from the canvas. The switch is the one physical object: raised
-with a soft drop shadow while off, latched in (smaller, a 1px shadow) while on.
+a 1px edge in #2b2d30 separates them from the canvas.
 
 ### Shadow Vocabulary
 - **Lift** (`0 1px 2px rgba(0,0,0,.08), 0 6px 16px -4px rgba(0,0,0,.06)`): light faces, the
   selected tab.
-- **Switch raised** (`0 2px 3px rgba(0,0,0,.16), 0 8px 18px -6px rgba(0,0,0,.12)`).
-- **Switch latched** (`0 1px 1px rgba(0,0,0,.18)`).
 
 ## Shapes
 
-Faces round at 14px, controls at 7px, tab chips at 5px. Circles are kept for the switch (a 168px
-well, a 112px knob that shrinks to 104px when latched) and the lamps (10px beside the headline,
-8px in rows, 6px on a tab).
+Faces round at 14px, controls at 7px, tab chips at 5px. Circles are kept for the lamps (10px
+beside the caption, 8px in rows, 6px in a badge).
 
 ## Components
 
-### Power switch (signature)
-A round push switch in a recessed well. Off: bright orange, raised, says "Start". On: latched
-orange, smaller, says "Stop", the well ringed in the lamp's colour. While the window does not
-know the state yet, or a Start/Stop is under way ("Starting", "Stopping"), it is dimmed and ignores
-clicks. The same switch and lamp are the app icon, the extension icon and the menu-bar template
-(`../brand/build.py`).
+### The Bridge's face (General)
+The lamp and caption, the headline, and while running the facts (Address in figures); on the
+right, Restart (secondary, while running) and Start or Stop (primary). While a Start, Stop or
+Restart is under way they read "Starting…", "Stopping…", "Restarting…", dim to 50% and ignore
+clicks; until the state is known there are no buttons.
 
 ### Buttons
 - **Primary** (graphite on the face, 7px, 7 x 14px): the one action a face asks for (Allow, the
@@ -248,8 +222,8 @@ platform input handler, so IME composition works; the line scrolls to keep the c
 40 characters at most. Enter allows, Escape denies. It takes focus when a request arrives.
 
 ### Tabs
-A recessed track with five chips; the selected chip is a raised face. An amber dot on Overview
-marks a browser or an action waiting there.
+A recessed track with seven chips; the selected chip is a raised face. What waits on the user is
+pinned above every tab, so no tab needs a dot.
 
 ### Chips, switches, ticks, badges
 - **Chips:** the tab track reused for one-of-a-few choices (appearance, pairing mode, a
@@ -260,12 +234,16 @@ marks a browser or an action waiting there.
   ("Reload needed").
 
 ### Log
-Settings → Logs: the Bridge log's last 400 lines in Menlo 11/16 on a recessed 360px well, read every
-second while shown; it keeps to its end unless scrolled up.
+Logs: the Bridge log's last 400 lines in Menlo 11/16 on a recessed 360px well, read every second
+while shown; it keeps to its end unless scrolled up.
 
-### Menu-bar item
-A template image (switch + lamp) that macOS tints; the menu shows the state line (or who asks to
-connect, or how many actions wait), Start/Stop, Restart (while running), Open Vexdom, Quit. Closing the window hides the app; it keeps running here.
+### Menu-bar item (signature)
+A template image (switch + lamp) that macOS tints, over a native menu in CleanShot's manner: the
+state line (or who asks to connect, or how many actions wait) and its facts; a submenu per browser
+asking and per action waiting; Start/Stop and Restart; Model, Pairing and Notices submenus with a
+check on the current choice; Appearance and the app's switches as checked items; Settings…, the
+update item, About, Quit. Menu titles use macOS title case ("Show in Dock", "Get a Pairing Code…").
+Closing the window hides it; the app keeps running here.
 
 ## Do's and Don'ts
 
@@ -276,7 +254,7 @@ connect, or how many actions wait), Start/Stop, Restart (while running), Open Ve
 - **Do** use tabular figures for numbers.
 
 ### Don't:
-- **Don't** use orange anywhere but the power switch.
+- **Don't** use orange anywhere in the window.
 - **Don't** add equal status cards, metrics, charts or sparklines; this is a utility.
 - **Don't** put a shadow under a dark island; its edge does the work.
 - **Don't** claim a state the window does not know: show "Looking for the Bridge" until the first

@@ -1,5 +1,5 @@
 //! The app's own settings: `~/.vexdom/desktop.json`, `{appearance, startBridgeOnLaunch,
-//! finishUpdateOnLaunch}`. Read at launch; a change reads the file, changes one key and writes the
+//! finishUpdateOnLaunch, showInDock}`. Read at launch; a change reads the file, changes one key and writes the
 //! whole file through a temporary one renamed over it, so the window and an update in flight each
 //! write only their own key and a crash never leaves half a file. Kept apart from GPUI so it is
 //! tested without a window.
@@ -37,7 +37,7 @@ impl Appearance {
         }
     }
 
-    fn parse(id: &str) -> Option<Self> {
+    pub(crate) fn parse(id: &str) -> Option<Self> {
         Self::ALL
             .into_iter()
             .find(|appearance| appearance.id() == id)
@@ -60,6 +60,8 @@ pub struct Settings {
     pub start_bridge_on_launch: bool,
     /// A new Vexdom.app was put in place: finish it (`vexdom setup`) when it opens.
     pub finish_update_on_launch: bool,
+    /// Show the app's icon in the Dock; off keeps it in the menu bar only.
+    pub show_in_dock: bool,
 }
 
 impl Default for Settings {
@@ -68,6 +70,7 @@ impl Default for Settings {
             appearance: Appearance::System,
             start_bridge_on_launch: true,
             finish_update_on_launch: false,
+            show_in_dock: false,
         }
     }
 }
@@ -86,6 +89,7 @@ impl Settings {
                 .unwrap_or(defaults.appearance),
             start_bridge_on_launch: flag("startBridgeOnLaunch", defaults.start_bridge_on_launch),
             finish_update_on_launch: flag("finishUpdateOnLaunch", defaults.finish_update_on_launch),
+            show_in_dock: flag("showInDock", defaults.show_in_dock),
         }
     }
 
@@ -94,6 +98,7 @@ impl Settings {
             "appearance": self.appearance.id(),
             "startBridgeOnLaunch": self.start_bridge_on_launch,
             "finishUpdateOnLaunch": self.finish_update_on_launch,
+            "showInDock": self.show_in_dock,
         })
     }
 }
@@ -161,10 +166,11 @@ mod tests {
                 appearance: Appearance::System,
                 start_bridge_on_launch: true,
                 finish_update_on_launch: false,
+                show_in_dock: false,
             }
         );
         let mixed = Settings::from_json(
-            &json!({"appearance": "sepia", "startBridgeOnLaunch": "no", "finishUpdateOnLaunch": true}),
+            &json!({"appearance": "sepia", "startBridgeOnLaunch": "no", "finishUpdateOnLaunch": true, "showInDock": 1}),
         );
         assert_eq!(
             mixed,
@@ -183,6 +189,7 @@ mod tests {
             appearance: Appearance::Dark,
             start_bridge_on_launch: false,
             finish_update_on_launch: true,
+            show_in_dock: true,
         };
         write(&file, chosen).expect("written");
         assert_eq!(read(&file), chosen);

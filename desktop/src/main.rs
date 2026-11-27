@@ -1,6 +1,8 @@
-//! `vexdom-desktop`: the GPUI app (P10, ADR-013). It starts the Bridge as it opens only when
-//! Settings says to (`desktop.json`, on by default); otherwise Start does.
-//! Closing the window hides the app; it stays in the menu bar until Quit.
+//! `vexdom-desktop`: the GPUI app (P10, ADR-013). It starts in the menu bar, which is its main
+//! surface; the window is Settings, opened from the menu (and shown by itself only on the very
+//! first launch). It starts the Bridge as it opens only when Settings says to (`desktop.json`, on
+//! by default); otherwise Start does. Closing the window hides it; the app stays in the menu bar
+//! until Quit.
 
 mod bridge;
 mod log_tail;
@@ -25,15 +27,22 @@ actions!(
     vexdom,
     [
         Quit,
-        ShowOverview,
+        ShowGeneral,
         ShowBrowsers,
         ShowAgent,
-        ShowSettings,
+        ShowSkills,
+        ShowActivity,
+        ShowLogs,
         ShowAbout
     ]
 );
 
-/// ⌘1…⌘5 pick a tab wherever the focus is, even with none.
+/// The Settings window, for a launch of the app while it runs.
+struct MainWindow(WindowHandle<AppView>);
+
+impl gpui::Global for MainWindow {}
+
+/// ⌘1…⌘7 pick a tab wherever the focus is, even with none.
 fn on_tab<A: Action>(cx: &mut App, window: WindowHandle<AppView>, tab: Tab) {
     cx.on_action(move |_: &A, cx| {
         let _ = window.update(cx, |view, _, cx| view.show_tab(tab, cx));
@@ -41,6 +50,8 @@ fn on_tab<A: Action>(cx: &mut App, window: WindowHandle<AppView>, tab: Tab) {
 }
 
 fn main() {
+    // No settings file yet: the very first launch, which shows the window.
+    let first_launch = !settings::path().exists();
     let settings = settings::load();
     let (inbox, inbound) = tokio::sync::mpsc::unbounded_channel();
     let from_bridge = inbox.clone();
@@ -51,19 +62,27 @@ fn main() {
     let commands = bridge::spawn(launch, move |update| {
         let _ = from_bridge.send(ui::Inbound::Bridge(update));
     });
-    Application::new().run(move |cx: &mut App| {
+    let app = Application::new();
+    // Opening the app again (Finder, Spotlight, `open -a`) brings the window back.
+    app.on_reopen(|cx: &mut App| {
+        if let Some(handle) = cx.try_global::<MainWindow>().map(|main| main.0) {
+            let _ = handle.update(cx, |view, window, cx| view.reveal(None, window, cx));
+        }
+    });
+    app.run(move |cx: &mut App| {
         theme::load_fonts(cx);
-        tray::set_dock_icon();
         tray::set_notification_sender();
         text_input::bind_keys(cx);
         cx.set_global(theme::Chosen(settings.appearance));
         cx.bind_keys([
             KeyBinding::new("cmd-q", Quit, None),
-            KeyBinding::new("cmd-1", ShowOverview, None),
+            KeyBinding::new("cmd-1", ShowGeneral, None),
             KeyBinding::new("cmd-2", ShowBrowsers, None),
             KeyBinding::new("cmd-3", ShowAgent, None),
-            KeyBinding::new("cmd-4", ShowSettings, None),
-            KeyBinding::new("cmd-5", ShowAbout, None),
+            KeyBinding::new("cmd-4", ShowSkills, None),
+            KeyBinding::new("cmd-5", ShowActivity, None),
+            KeyBinding::new("cmd-6", ShowLogs, None),
+            KeyBinding::new("cmd-7", ShowAbout, None),
         ]);
         cx.on_action(|_: &Quit, cx| cx.quit());
 
@@ -78,16 +97,19 @@ fn main() {
                         traffic_light_position: Some(point(px(14.), px(13.))),
                     }),
                     window_min_size: Some(size(px(680.), px(520.))),
+                    show: false,
+                    focus: false,
                     ..Default::default()
                 },
                 move |window, cx| {
                     theme::paint(window, cx);
-                    cx.new(|cx| AppView::new(commands, inbound, inbox, settings, cx))
+                    cx.new(|cx| AppView::new(commands, inbound, inbox, settings, window, cx))
                 },
             )
             .expect("the window opens");
+        cx.set_global(MainWindow(window));
         window
-            .update(cx, |_, window, cx| {
+            .update(cx, |view, window, cx| {
                 window.on_window_should_close(cx, |_, cx| {
                     cx.hide();
                     false
@@ -99,13 +121,15 @@ fn main() {
                         window.refresh();
                     })
                     .detach();
+                view.launch(first_launch, window, cx);
             })
             .expect("the window is open");
-        on_tab::<ShowOverview>(cx, window, Tab::Overview);
+        on_tab::<ShowGeneral>(cx, window, Tab::General);
         on_tab::<ShowBrowsers>(cx, window, Tab::Browsers);
         on_tab::<ShowAgent>(cx, window, Tab::Agent);
-        on_tab::<ShowSettings>(cx, window, Tab::Settings);
+        on_tab::<ShowSkills>(cx, window, Tab::Skills);
+        on_tab::<ShowActivity>(cx, window, Tab::Activity);
+        on_tab::<ShowLogs>(cx, window, Tab::Logs);
         on_tab::<ShowAbout>(cx, window, Tab::About);
-        cx.activate(true);
     });
 }

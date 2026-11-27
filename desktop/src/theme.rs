@@ -1,9 +1,9 @@
 //! The appliance face (`.impeccable/surfaces/desktop-src-ui-rs.md`), in two lights that follow
 //! macOS's appearance. Light: warm grey enamel with raised off-white faces. Dark: JetBrains
 //! Islands' layout of the same idea, rounded islands floating on a near-black canvas, lit by a
-//! hairline edge instead of a shadow. Both keep one orange for the power switch and a lamp that is
-//! green when a browser is connected, amber while waiting and unlit when off. One grotesk,
-//! Archivo, bundled so the window looks the same on every Mac.
+//! hairline edge instead of a shadow. Both keep a lamp that is green when a browser is connected,
+//! amber while waiting and unlit when off. One grotesk, Archivo, bundled so the window looks the
+//! same on every Mac.
 
 use std::borrow::Cow;
 
@@ -50,14 +50,6 @@ pub struct Palette {
     pub ink_hover: Hsla,
     /// Labels and secondary text.
     pub label: Hsla,
-    /// Text on the power switch: graphite in both lights; set at 19 px bold (large text), it keeps
-    /// 4.0:1 on `power`, 3.4:1 on `power_pressed`, 3.6:1 on `power_latched`.
-    pub on_power: Hsla,
-    pub power: Hsla,
-    pub power_hover: Hsla,
-    pub power_pressed: Hsla,
-    /// The switch latched in while the Bridge runs: duller, so on and off differ at a glance.
-    pub power_latched: Hsla,
     pub lamp_on: Hsla,
     pub lamp_waiting: Hsla,
     pub lamp_off: Hsla,
@@ -82,11 +74,6 @@ impl Palette {
             ink_hover: rgb(0x484845).into(),
             // 6.1:1 on `face`, 5.4:1 on `ground` and `well`, 4.8:1 on `well_hover` (the tab track).
             label: rgb(0x5e5c56).into(),
-            on_power: rgb(0x2f2f2d).into(),
-            power: rgb(0xe8641b).into(),
-            power_hover: rgb(0xf0742d).into(),
-            power_pressed: rgb(0xd65a12).into(),
-            power_latched: rgb(0xc96a33).into(),
             lamp_on: rgb(0x2fa84f).into(),
             lamp_waiting: rgb(0xd98a1a).into(),
             lamp_off: rgb(0xc6c3bc).into(),
@@ -107,11 +94,6 @@ impl Palette {
             ink_hover: rgb(0xc9ccd2).into(),
             // 7.2:1 on `face`, 6.1:1 on `well`, 4.9:1 on `well_hover` (the tab track).
             label: rgb(0xa9acb2).into(),
-            on_power: rgb(0x2f2f2d).into(),
-            power: rgb(0xe8641b).into(),
-            power_hover: rgb(0xf0742d).into(),
-            power_pressed: rgb(0xd65a12).into(),
-            power_latched: rgb(0xc96a33).into(),
             lamp_on: rgb(0x3fbf62).into(),
             lamp_waiting: rgb(0xe39a2e).into(),
             lamp_off: rgb(0x4a4c51).into(),

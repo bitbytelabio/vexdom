@@ -66,7 +66,7 @@ backstop tick so a page that stops changing still gets checked.
 | The browser | The Vexdom app | Where it shows |
 | --- | --- | --- |
 | In front | Any | A card on the page you are on |
-| Behind other windows, or minimized | Running, with notifications allowed | A macOS notification from the app, and a notice on its Overview tab whose **Open** button brings the tab back |
+| Behind other windows, or minimized | Running, with notifications allowed | A macOS notification from the app, and a notice under **Notices** in its menu-bar menu that brings the tab back |
 | Behind, or minimized | Not running, or notifications off | A card on the page, or the browser's notification when no page can show one |
 
 The same goes for a scheduled task finishing and for a reminder. Allow notifications for Vexdom in

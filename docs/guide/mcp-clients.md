@@ -165,7 +165,7 @@ an action you listed in `requireApproval`…), the call waits up to 120 seconds 
 - **in the client itself**, when it supports elicitation: Claude Code shows *Allow ‹action› on
   ‹site›?* with **Allow once**, **Always allow on this site** and **Deny**. On the 2026-07-28 protocol
   the server answers `input-required` and finishes the call when the client sends the answer back;
-- **in the Vexdom app**, which lists it on Overview with a notification;
+- **in the Vexdom app**, which lists it in its menu-bar menu with a notification;
 - **from a terminal**: `vexdom requests` lists it as `c-1a2b3c4d  page.submitForm on example.com —
   Submits a form`, `vexdom approve c-1a2b3c4d [--always]` allows it, `vexdom deny c-1a2b3c4d`
   refuses it. Approving needs a terminal, but an agent with a shell can give itself one (`script`),

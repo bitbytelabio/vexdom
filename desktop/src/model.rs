@@ -9,7 +9,7 @@ fn str_of<'a>(value: &'a Value, key: &str) -> &'a str {
     value.get(key).and_then(Value::as_str).unwrap_or("")
 }
 
-/// The indicator lamp beside the power switch.
+/// The indicator lamp beside the Bridge's state line.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Lamp {
     /// No Bridge answers.
