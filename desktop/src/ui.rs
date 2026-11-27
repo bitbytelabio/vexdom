@@ -60,7 +60,7 @@ const LOG_POLL: Duration = Duration::from_secs(1);
 const LOG_HEIGHT: f32 = 360.;
 
 const GET_CHROME: &str = "https://www.google.com/chrome/";
-const DOCS: &str = "https://github.com/nguyenthdat/vexdom/tree/main/docs";
+const DOCS: &str = "https://github.com/bitbytelabio/vexdom/tree/main/docs";
 
 /// What reaches the window: the bridge thread's updates and the menu-bar item's clicks.
 pub enum Inbound {

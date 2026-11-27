@@ -7,13 +7,13 @@ Read it before you rely on Vexdom, and before you report anything.
 ## Reporting a vulnerability
 
 Report vulnerabilities privately through
-[GitHub security advisories](https://github.com/nguyenthdat/vexdom/security/advisories/new)
+[GitHub security advisories](https://github.com/bitbytelabio/vexdom/security/advisories/new)
 rather than a public issue: a public report on a tool that holds live browser sessions puts
 every user at risk before a fix exists. Reports are read and acknowledged as quickly as a
 one-maintainer project allows.
 
 Bugs that are not vulnerabilities, such as a tool that fails or a gate that prompts too often,
-belong in [ordinary issues](https://github.com/nguyenthdat/vexdom/issues).
+belong in [ordinary issues](https://github.com/bitbytelabio/vexdom/issues).
 
 ## Supported versions
 

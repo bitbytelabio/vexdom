@@ -7,7 +7,7 @@ body:
       value: |
         A capability ships as an MCP tool the moment it lands in the registry, so its name, shape
         and guardrails are API decisions. Two paragraphs here beat a rejected diff — and
-        [adding one](https://github.com/nguyenthdat/vexdom/tree/main/docs/internals/contributing/) is one file plus one
+        [adding one](https://github.com/bitbytelabio/vexdom/tree/main/docs/internals/contributing/) is one file plus one
         line in the registry once the shape is agreed.
   - type: textarea
     id: job

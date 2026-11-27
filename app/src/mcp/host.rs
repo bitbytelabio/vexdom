@@ -43,6 +43,41 @@ fn strip_agent_only(action: &str, input: &mut Map<String, Value>) {
     }
 }
 
+/// Types the string scalars an agent sends (`"maxPerKind": "1"`) by the action's own schema: the
+/// `act` schema leaves action arguments open, so a model cannot see what type each one takes.
+/// Anything that does not parse stays as sent, for the extension to refuse.
+fn coerce_scalars(schema: &Value, input: &mut Map<String, Value>) {
+    let Some(properties) = schema.get("properties").and_then(Value::as_object) else {
+        return;
+    };
+    for (key, value) in input.iter_mut() {
+        let Value::String(text) = value else {
+            continue;
+        };
+        let kind = properties
+            .get(key)
+            .and_then(|property| property.get("type"))
+            .and_then(Value::as_str);
+        let typed = match kind {
+            Some("integer") => text.parse::<i64>().ok().map(Value::from),
+            Some("number") => text
+                .parse::<f64>()
+                .ok()
+                .filter(|number| number.is_finite())
+                .map(Value::from),
+            Some("boolean") => match text.as_str() {
+                "true" => Some(Value::Bool(true)),
+                "false" => Some(Value::Bool(false)),
+                _ => None,
+            },
+            _ => None,
+        };
+        if let Some(typed) = typed {
+            *value = typed;
+        }
+    }
+}
+
 /// The input key that tags a call with the approver waiting on it (ADR-032).
 pub const APPROVER_KEY: &str = "_approver";
 
@@ -612,6 +647,9 @@ impl Host {
             Err(error) => return ToolReply::error(&error),
         };
         strip_agent_only(&action, &mut input);
+        if let Some(schema) = offer.tool(&action).and_then(|tool| tool.get("inputSchema")) {
+            coerce_scalars(schema, &mut input);
+        }
         let (result, image) = self.invoke(&action, Value::Object(input)).await;
         let result = self.with_schema(&action, result, &offer);
         self.present(&action, &result, image.as_deref())
@@ -648,6 +686,11 @@ impl Host {
             let (label, result) = match offer.resolve(&named) {
                 Ok(action) => {
                     strip_agent_only(&action, &mut input);
+                    if let Some(schema) =
+                        offer.tool(&action).and_then(|tool| tool.get("inputSchema"))
+                    {
+                        coerce_scalars(schema, &mut input);
+                    }
                     let (result, _) = self.invoke(&action, Value::Object(input)).await;
                     (tools::short_name(&action).to_owned(), result)
                 }
@@ -1256,6 +1299,27 @@ mod tests {
             compact(&json!({"result": {"a": 1}, "snapshot": "snapshot r2: unchanged"})),
             "{\"a\":1}\nsnapshot r2: unchanged"
         );
+    }
+
+    #[test]
+    fn coerce_scalars_types_strings_by_the_action_schema() {
+        let schema = json!({"properties": {
+            "maxPerKind": {"type": "integer"},
+            "geometry": {"type": "boolean"},
+            "q": {"type": "string"}}});
+        let mut input = json!({"maxPerKind": "1", "geometry": "true", "q": "7", "x": "2"})
+            .as_object()
+            .cloned()
+            .unwrap();
+        coerce_scalars(&schema, &mut input);
+        assert_eq!(
+            Value::Object(input),
+            json!({"maxPerKind": 1, "geometry": true, "q": "7", "x": "2"})
+        );
+
+        let mut fraction = json!({"maxPerKind": "1.5"}).as_object().cloned().unwrap();
+        coerce_scalars(&schema, &mut fraction);
+        assert_eq!(Value::Object(fraction), json!({"maxPerKind": "1.5"}));
     }
 }
 

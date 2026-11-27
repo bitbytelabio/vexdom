@@ -33,11 +33,11 @@ needs no agent: that path starts nothing.
 ## 1. Install the Bridge
 
 ```sh
-curl -fsSL https://github.com/nguyenthdat/vexdom/releases/latest/download/install.sh | sh
+curl -fsSL https://github.com/bitbytelabio/vexdom/releases/latest/download/install.sh | sh
 ```
 
 The script downloads `vexdom-<version>-<target>.tar.gz` from the latest
-[release](https://github.com/nguyenthdat/vexdom/releases), checks it against its `.sha256`, and
+[release](https://github.com/bitbytelabio/vexdom/releases), checks it against its `.sha256`, and
 unpacks it into `~/.local/share/vexdom`:
 
 ```
@@ -61,6 +61,17 @@ export PATH="$HOME/.local/share/vexdom/bin:$PATH"
 | `VEXDOM_INSTALL_DIR=<dir>` | Install somewhere other than `~/.local/share/vexdom` |
 | `VEXDOM_ARCHIVE=<file>.tar.gz` | Install an archive you already downloaded (offline; installs no `Vexdom.app`) |
 | `VEXDOM_NO_APP=1` | On macOS, skip `Vexdom.app` |
+
+**With Homebrew** (macOS), instead of the script:
+
+```sh
+brew install --cask bitbytelabio/tap/vexdom
+```
+
+The cask installs `Vexdom.app` into `/Applications`, clears its quarantine flag, and links the
+`vexdom` inside the app onto your `PATH`, so there is no `~/.local/share/vexdom`. Vexdom updates
+itself (`vexdom update`, or the app), so `brew upgrade` skips it unless you pass `--greedy`.
+`brew uninstall --cask vexdom` removes both.
 
 ## 2. Run setup
 
@@ -159,7 +170,7 @@ compiler (`capnp`), binaryen's `wasm-opt` and `cargo install boltffi_cli --versi
 [internals/contributing.md](../internals/contributing.md) has the full list.
 
 ```sh
-git clone https://github.com/nguyenthdat/vexdom.git
+git clone https://github.com/bitbytelabio/vexdom.git
 cd vexdom/packages/extension
 bun run setup
 ```

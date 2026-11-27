@@ -30,14 +30,21 @@ flowchart LR
 macOS (Apple silicon, Intel) or Linux with glibc (x64, arm64):
 
 ```sh
-curl -fsSL https://github.com/nguyenthdat/vexdom/releases/latest/download/install.sh | sh
+curl -fsSL https://github.com/bitbytelabio/vexdom/releases/latest/download/install.sh | sh
 vexdom setup
 ```
 
-The script installs `vexdom` into `~/.local/share/vexdom` and, on macOS, `Vexdom.app`. `vexdom
-setup` adds the extension to your browser (Chrome, Edge, Brave, Arc, Vivaldi, Opera, Chromium, or
-Firefox 140+) and pairs it. Details: [Install](docs/guide/install.md), [Pair](docs/guide/pair.md),
-[First run](docs/guide/first-run.md).
+The script installs `vexdom` into `~/.local/share/vexdom` and, on macOS, `Vexdom.app`. On macOS,
+Homebrew works too; it installs `Vexdom.app` and links the `vexdom` CLI onto your `PATH`:
+
+```sh
+brew install --cask bitbytelabio/tap/vexdom
+vexdom setup
+```
+
+`vexdom setup` adds the extension to your browser (Chrome, Edge, Brave, Arc, Vivaldi, Opera,
+Chromium, or Firefox 140+) and pairs it. Details: [Install](docs/guide/install.md),
+[Pair](docs/guide/pair.md), [First run](docs/guide/first-run.md).
 
 ## Use it
 

@@ -1,3 +1,4 @@
+import '@/lib/zod-locale';
 import { failure, isBridgeRequest, success } from '@/lib/actions/protocol';
 import { refusalFor } from '@/lib/bridge/site-guard';
 import { LIST_UNREADABLE_MESSAGE, SITE_BLOCKED } from '@/lib/settings/blocked-sites';

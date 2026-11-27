@@ -3,7 +3,7 @@
 # GitHub release, and on macOS the desktop app `Vexdom.app` (into /Applications when writable,
 # else ~/Applications):
 #
-#   curl -fsSL https://github.com/nguyenthdat/vexdom/releases/latest/download/install.sh | sh
+#   curl -fsSL https://github.com/bitbytelabio/vexdom/releases/latest/download/install.sh | sh
 #
 # Each download is checked against its `.sha256`. macOS (arm64, x64) and Linux with glibc (x64,
 # arm64). Environment:
@@ -14,7 +14,7 @@
 #   VEXDOM_NO_APP=1      on macOS, skip Vexdom.app
 set -eu
 
-REPO=nguyenthdat/vexdom
+REPO=bitbytelabio/vexdom
 DIR=${VEXDOM_INSTALL_DIR:-$HOME/.local/share/vexdom}
 
 fail() {

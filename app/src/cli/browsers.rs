@@ -138,7 +138,7 @@ pub fn source_for(id: &str) -> &'static str {
 
 fn releases() -> String {
     std::env::var("VEXDOM_RELEASES")
-        .unwrap_or_else(|_| "https://github.com/nguyenthdat/vexdom/releases".into())
+        .unwrap_or_else(|_| "https://github.com/bitbytelabio/vexdom/releases".into())
 }
 
 pub fn releases_page() -> String {

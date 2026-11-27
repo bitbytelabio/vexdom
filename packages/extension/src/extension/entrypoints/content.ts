@@ -1,3 +1,4 @@
+import '@/lib/zod-locale';
 import { exposeActions } from '@/lib/actions/host';
 import { exposeCues } from '@/lib/cues/host';
 import { exposeFrameProbe } from '@/lib/frames/host';

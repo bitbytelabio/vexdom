@@ -7,8 +7,8 @@ contribution goes, the one check every pull request must pass, and where the dee
 
 | You have | Do this |
 | --- | --- |
-| A bug | [Open a bug report](https://github.com/nguyenthdat/vexdom/issues/new?template=bug_report.yml) with `vexdom status` output |
-| A capability idea | [Open a proposal](https://github.com/nguyenthdat/vexdom/issues/new?template=capability.yml) before writing code |
+| A bug | [Open a bug report](https://github.com/bitbytelabio/vexdom/issues/new?template=bug_report.yml) with `vexdom status` output |
+| A capability idea | [Open a proposal](https://github.com/bitbytelabio/vexdom/issues/new?template=capability.yml) before writing code |
 | A security problem | **Not an issue.** [Report it privately](SECURITY.md): Vexdom holds live browser sessions |
 | A docs fix | Edit under `docs/` and open a PR straight away; no issue needed |
 | A small code fix | A PR straight away is fine too |

@@ -22,7 +22,7 @@ version = "0.10.1"
 edition = "2024"
 rust-version = "1.100"
 license = "Apache-2.0"
-repository = "https://github.com/nguyenthdat/vexdom"
+repository = "https://github.com/bitbytelabio/vexdom"
 publish = false
 
 [workspace.lints.rust]

@@ -1,16 +1,16 @@
 import { AGENTS, activeRunner, type AgentState } from '@/lib/agents/catalog';
 
-const REPOSITORY = 'https://github.com/nguyenthdat/vexdom';
+const REPOSITORY = 'https://github.com/bitbytelabio/vexdom';
 
 export const LINKS = {
   author: 'https://github.com/nguyenthdat',
   upstream: 'https://github.com/imshaikot/browsentic',
   repository: REPOSITORY,
   site: REPOSITORY,
-  guide: 'https://github.com/nguyenthdat/vexdom/tree/main/docs/guide/',
-  pairing: 'https://github.com/nguyenthdat/vexdom/blob/main/docs/guide/install.md#3-pair',
-  installGuide: 'https://github.com/nguyenthdat/vexdom/blob/main/docs/guide/install.md',
-  troubleshooting: 'https://github.com/nguyenthdat/vexdom/blob/main/docs/guide/troubleshooting.md',
+  guide: 'https://github.com/bitbytelabio/vexdom/tree/main/docs/guide/',
+  pairing: 'https://github.com/bitbytelabio/vexdom/blob/main/docs/guide/install.md#3-pair',
+  installGuide: 'https://github.com/bitbytelabio/vexdom/blob/main/docs/guide/install.md',
+  troubleshooting: 'https://github.com/bitbytelabio/vexdom/blob/main/docs/guide/troubleshooting.md',
   changelog: `${REPOSITORY}/releases`,
   feature: `${REPOSITORY}/issues/new?template=capability.yml`,
 } as const;

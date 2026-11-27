@@ -7,8 +7,8 @@ body:
       value: |
         Thanks for the report. Two things before the form:
         - **Security problems are not issues.** A vulnerability in a tool that holds live browser
-          sessions goes through a [private advisory](https://github.com/nguyenthdat/vexdom/security/advisories/new).
-        - The [troubleshooting guide](https://github.com/nguyenthdat/vexdom/blob/main/docs/guide/troubleshooting.md) resolves
+          sessions goes through a [private advisory](https://github.com/bitbytelabio/vexdom/security/advisories/new).
+        - The [troubleshooting guide](https://github.com/bitbytelabio/vexdom/blob/main/docs/guide/troubleshooting.md) resolves
           the common failures — worth two minutes first.
   - type: textarea
     id: what-happened

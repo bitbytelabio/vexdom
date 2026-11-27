@@ -21,12 +21,36 @@ export default defineConfig({
   vite: () => ({
     plugins: [tailwindcss()],
   }),
+  hooks: {
+    // WXT writes sidebar_action without an icon, so Firefox's sidebar launcher shows a puzzle piece.
+    'build:manifestGenerated': (_wxt, manifest) => {
+      if (manifest.sidebar_action) {
+        manifest.sidebar_action.default_icon = {
+          16: 'icon/16.png',
+          32: 'icon/32.png',
+          48: 'icon/48.png',
+          96: 'icon/96.png',
+        };
+      }
+    },
+  },
   manifest: ({ browser }) => ({
     name: 'Vexdom',
-    description: 'Your real, signed-in browser, driven by Claude Code or any MCP client. Runs on this computer: no account, no cloud.',
+    description:
+      'Your real, signed-in browser, driven by Claude Code or any MCP client. Runs on this computer: no account, no cloud.',
     permissions: [
-      'storage', 'unlimitedStorage', 'activeTab', 'contextMenus', 'alarms', 'scripting',
-      'notifications', 'downloads', 'nativeMessaging', 'cookies', 'clipboardRead', 'clipboardWrite',
+      'storage',
+      'unlimitedStorage',
+      'activeTab',
+      'contextMenus',
+      'alarms',
+      'scripting',
+      'notifications',
+      'downloads',
+      'nativeMessaging',
+      'cookies',
+      'clipboardRead',
+      'clipboardWrite',
       // Firefox has no sidePanel, debugger or offscreen permission, and addons.mozilla.org flags each name it does not know.
       // offscreen is the hidden page hands-free mode listens through once the side panel is closed.
       // userScripts runs a saved tool on every visit, once the user turns on Allow User Scripts.
@@ -55,7 +79,7 @@ export default defineConfig({
         gecko: {
           id: 'vexdom@nguyenthdat.github.io',
           strict_min_version: '140.0',
-          update_url: 'https://github.com/nguyenthdat/vexdom/releases/latest/download/updates.json',
+          update_url: 'https://github.com/bitbytelabio/vexdom/releases/latest/download/updates.json',
           data_collection_permissions: { required: ['websiteContent'] },
         },
       },

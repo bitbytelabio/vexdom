@@ -12,6 +12,8 @@
 #
 # Secrets: AMO_JWT_ISSUER and AMO_JWT_SECRET (addons.mozilla.org API keys) sign the add-on;
 # without them the release ships with a warning and no Firefox add-on. MINISIGN_SECRET_KEY (the passwordless minisign secret key file's content) signs SHA256SUMS.
+# HOMEBREW_TAP_TOKEN (fine-grained PAT, Contents read/write on bitbytelabio/homebrew-tap) bumps
+# Casks/vexdom.rb there via scripts/render-cask.sh; without it the release warns and skips.
 
 name: Release
 
@@ -104,7 +106,7 @@ jobs:
           mv "$xpi" "dist/release/vexdom-$VERSION-firefox.xpi"
           # The name browsers.rs `signed_addon_url` expects, and the update manifest Firefox polls.
           cat > dist/release/updates.json <<EOF
-          {"addons":{"vexdom@nguyenthdat.github.io":{"updates":[{"version":"$VERSION","update_link":"https://github.com/nguyenthdat/vexdom/releases/download/v$VERSION/vexdom-$VERSION-firefox.xpi"}]}}}
+          {"addons":{"vexdom@nguyenthdat.github.io":{"updates":[{"version":"$VERSION","update_link":"https://github.com/bitbytelabio/vexdom/releases/download/v$VERSION/vexdom-$VERSION-firefox.xpi"}]}}}
           EOF
 
       - uses: actions/upload-artifact@v7
@@ -274,3 +276,22 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh release create "$GITHUB_REF_NAME" --verify-tag --title "$GITHUB_REF_NAME" --generate-notes out/*
+
+      - name: Bump the Homebrew cask
+        env:
+          HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          VERSION: ${{ needs.extension.outputs.version }}
+        run: |
+          if [ -z "$HOMEBREW_TAP_TOKEN" ]; then
+            echo "::warning::HOMEBREW_TAP_TOKEN is not set; the Homebrew cask was not bumped"
+            exit 0
+          fi
+          arm=$(cut -d' ' -f1 "out/Vexdom-$VERSION-aarch64-apple-darwin.dmg.sha256")
+          x86=$(cut -d' ' -f1 "out/Vexdom-$VERSION-x86_64-apple-darwin.dmg.sha256")
+          git clone --depth 1 "https://x-access-token:$HOMEBREW_TAP_TOKEN@github.com/bitbytelabio/homebrew-tap.git" "$RUNNER_TEMP/tap"
+          scripts/render-cask.sh "$VERSION" "$arm" "$x86" > "$RUNNER_TEMP/tap/Casks/vexdom.rb"
+          cd "$RUNNER_TEMP/tap"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Casks/vexdom.rb
+          git diff --cached --quiet || { git commit -m "vexdom $VERSION"; git push; }

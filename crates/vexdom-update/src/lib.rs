@@ -10,7 +10,7 @@ use minisign_verify::{PublicKey, Signature};
 use serde_json::Value;
 use sha2::{Digest, Sha256};
 
-pub const REPO: &str = "nguyenthdat/vexdom";
+pub const REPO: &str = "bitbytelabio/vexdom";
 /// The release signing key's public half (`minisign -G`); the secret signs `SHA256SUMS` in CI.
 pub const PUBLIC_KEY: &str = include_str!("../assets/minisign.pub");
 /// The bundle identifier a staged `Vexdom.app` must carry.

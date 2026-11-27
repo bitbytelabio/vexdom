@@ -770,7 +770,7 @@ pub fn bug_report_url(app: &str, bridge: &str, extensions: &[String], macos: &st
     let macos = if macos.is_empty() { "unknown" } else { macos };
     let body = format!("vexdom app {app}, Bridge {bridge}, extension {extension}, macOS {macos}");
     format!(
-        "https://github.com/nguyenthdat/vexdom/issues/new?title=&body={}",
+        "https://github.com/bitbytelabio/vexdom/issues/new?title=&body={}",
         url_encode(&body)
     )
 }
@@ -1094,7 +1094,7 @@ mod tests {
         assert_eq!(url_encode("a b&c=ü"), "a%20b%26c%3D%C3%BC");
         assert_eq!(
             bug_report_url("0.9.2", "0.9.2", &["0.9.1".to_owned()], "27.2"),
-            "https://github.com/nguyenthdat/vexdom/issues/new?title=&body=vexdom%20app%200.9.2%2C%20Bridge%200.9.2%2C%20extension%200.9.1%2C%20macOS%2027.2"
+            "https://github.com/bitbytelabio/vexdom/issues/new?title=&body=vexdom%20app%200.9.2%2C%20Bridge%200.9.2%2C%20extension%200.9.1%2C%20macOS%2027.2"
         );
         assert!(
             bug_report_url("1", "", &[], "")

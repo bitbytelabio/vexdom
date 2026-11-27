@@ -1,0 +1,33 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/evilmartians/lefthook/master/schema.json
+pre-commit:
+  parallel: true
+  commands:
+    # rustfmt, not cargo fmt: cargo fmt formats the whole workspace on top of the files it is given.
+    # rustfmt.toml sets only style_edition, so the edition comes from the command line.
+    rust-fmt:
+      glob: '*.rs'
+      run: rustfmt --edition 2024 {staged_files}
+      stage_fixed: true
+    web-fmt:
+      glob: '*.{js,jsx,ts,tsx,mjs,cjs,css,html,json,jsonc,yml,yaml}'
+      exclude: ['crates/**/assets/**', 'bench/**', '**/dist/**', '**/target/**']
+      run: bun fmt --no-script --single-quote --print-width=120 {staged_files}
+      stage_fixed: true
+    shellcheck:
+      glob: '*.sh'
+      run: shellcheck {staged_files}
+    actionlint:
+      glob: '.github/workflows/*.{yml,yaml}'
+      run: actionlint {staged_files}
+    gitleaks:
+      run: gitleaks git --pre-commit --staged --no-banner
+    conflict-markers:
+      run: "! grep -nE '^(<{7}|>{7})( |$)' -- {staged_files}"
+pre-push:
+  parallel: true
+  commands:
+    clippy:
+      run: cargo clippy --workspace --all-targets -- -D warnings
+    tsc:
+      root: 'packages/extension/'
+      run: bun run compile

@@ -14,7 +14,7 @@ It needs macOS 14 or newer, on Apple silicon (`aarch64-apple-darwin`) or Intel (
 **With the install script** (recommended):
 
 ```sh
-curl -fsSL https://github.com/nguyenthdat/vexdom/releases/latest/download/install.sh | sh
+curl -fsSL https://github.com/bitbytelabio/vexdom/releases/latest/download/install.sh | sh
 ```
 
 On macOS the script installs the Bridge in `~/.local/share/vexdom` (see [Install](install.md)) and
@@ -24,7 +24,7 @@ write to `/Applications`. An existing `Vexdom.app` is kept until the new one is 
 then clears the quarantine flag on the new copy. `VEXDOM_NO_APP=1` skips the app;
 `VEXDOM_VERSION=0.9.2` installs a specific release.
 
-**From the release page.** Each [release](https://github.com/nguyenthdat/vexdom/releases) has the
+**From the release page.** Each [release](https://github.com/bitbytelabio/vexdom/releases) has the
 app twice for each target: `Vexdom-<version>-<target>.zip`, and `Vexdom-<version>-<target>.dmg`, a
 disk image that you open and drag **Vexdom** onto **Applications**. Each file has a `.sha256`
 next to it.

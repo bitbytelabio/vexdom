@@ -21,7 +21,7 @@ const WAIT: Duration = Duration::from_secs(5 * 60);
 const SPINNER: [char; 10] = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
 /// Offered when no browser is found, since detection can miss one installed somewhere unusual.
 const USUAL_BROWSERS: [&str; 4] = ["chrome", "edge", "brave", "firefox"];
-const AGENTS_GUIDE: &str = "https://github.com/nguyenthdat/vexdom/tree/main/docs/guide/agents.md";
+const AGENTS_GUIDE: &str = "https://github.com/bitbytelabio/vexdom/tree/main/docs/guide/agents.md";
 
 fn folder_picker() -> Option<&'static str> {
     if cfg!(target_os = "macos") {

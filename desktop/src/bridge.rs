@@ -29,7 +29,7 @@ const POLL: Duration = Duration::from_secs(2);
 const UPDATE_EVERY: Duration = Duration::from_secs(6 * 60 * 60);
 
 /// Where releases are published, for an app that cannot update itself.
-pub const RELEASES: &str = "https://github.com/nguyenthdat/vexdom/releases";
+pub const RELEASES: &str = "https://github.com/bitbytelabio/vexdom/releases";
 
 /// This app's version: the one a release has to beat.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");
