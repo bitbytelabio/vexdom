@@ -8,11 +8,7 @@
       "properties": {
         "as": {
           "type": "string",
-          "enum": [
-            "tree",
-            "markdown",
-            "image"
-          ]
+          "enum": ["tree", "markdown", "image"]
         },
         "interactive": {
           "type": "boolean",
@@ -45,7 +41,12 @@
           "description": "markdown: keep sections mentioning this text."
         },
         "maxChars": {
-          "type": "integer"
+          "type": "integer",
+          "description": "markdown: chars per answer, at most the server's limit."
+        },
+        "offset": {
+          "type": "integer",
+          "description": "markdown: start at this char; a cut answer names the next offset."
         },
         "url": {
           "type": "string",
@@ -61,17 +62,11 @@
         },
         "llms": {
           "type": "string",
-          "enum": [
-            "index",
-            "full"
-          ],
+          "enum": ["index", "full"],
           "description": "markdown with url: the site's llms.txt or llms-full.txt."
         },
         "target": {
-          "type": [
-            "string",
-            "object"
-          ],
+          "type": ["string", "object"],
           "description": "markdown or image: one element."
         },
         "fullPage": {
@@ -89,10 +84,7 @@
         },
         "format": {
           "type": "string",
-          "enum": [
-            "png",
-            "jpeg"
-          ]
+          "enum": ["png", "jpeg"]
         },
         "quality": {
           "type": "integer"
