@@ -300,7 +300,7 @@ async fn load(
     Ok(counts)
 }
 
-fn saved_files() -> Vec<PathBuf> {
+pub(super) fn saved_files() -> Vec<PathBuf> {
     let Ok(entries) = std::fs::read_dir(paths::states_dir()) else {
         return Vec::new();
     };

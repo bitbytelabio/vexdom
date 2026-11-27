@@ -18,7 +18,7 @@ use vexdom_client::{Bridge, block_on};
 use vexdom_snapshot::webmcp_text::Surface;
 
 /// Verbs that become one or two page actions.
-const VERBS: &[&str] = &[
+pub(super) const VERBS: &[&str] = &[
     "click",
     "dblclick",
     "fill",
@@ -62,7 +62,7 @@ const VERBS: &[&str] = &[
 ];
 
 /// Verbs that act on one element, so `find` can hand them a locator.
-const ELEMENT_VERBS: &[&str] = &[
+pub(super) const ELEMENT_VERBS: &[&str] = &[
     "click",
     "dblclick",
     "fill",
@@ -79,13 +79,14 @@ const ELEMENT_VERBS: &[&str] = &[
     "drag",
 ];
 
+/// Page commands with runners of their own rather than steps.
+pub(super) const OWN_VERBS: &[&str] = &["snapshot", "read", "screenshot", "batch", "diff", "state"];
+
 /// The longest `wait <ms>` may sleep.
 const MAX_SLEEP_MS: u64 = 60_000;
 
 pub fn is_page_command(verb: &str) -> bool {
-    VERBS.contains(&verb)
-        || verbs::VERBS.contains(&verb)
-        || ["snapshot", "read", "screenshot", "batch", "diff", "state"].contains(&verb)
+    VERBS.contains(&verb) || verbs::VERBS.contains(&verb) || OWN_VERBS.contains(&verb)
 }
 
 /// `@e5`, `e5` and `ref=e5` name a ref; anything else is a CSS selector.

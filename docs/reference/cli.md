@@ -331,8 +331,18 @@ See [Agents](../guide/agents.md), [Skills](../guide/features/skills.md),
 | `vexdom restart` | Stop it and bring up a fresh one |
 | `vexdom logs` | Print the Bridge's log |
 | `vexdom token` | Print the control token, for MCP clients, not the browser |
+| `vexdom completions <shell>` | Print the completion script for `bash`, `zsh`, `fish` or `powershell`. Tab completes commands, flags, files, and local names (saved states, plugins, scheduled tasks, agents, models, MCP tools, approved sites) |
 
 A running Bridge keeps the build it started with until `restart`.
+
+Load the completions from your shell's startup file:
+
+```sh
+eval "$(vexdom completions bash)"    # ~/.bashrc
+source <(vexdom completions zsh)     # ~/.zshrc, after compinit
+vexdom completions fish | source     # ~/.config/fish/config.fish
+vexdom completions powershell | Out-String | Invoke-Expression   # $PROFILE
+```
 
 ---
 

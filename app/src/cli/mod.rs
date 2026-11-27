@@ -1,6 +1,7 @@
 //! `vexdom` commands (`src/daemon/cli.ts`, plus the agent-browser-style page commands of ADR-025).
 
 mod browsers;
+mod completions;
 mod confirm;
 mod curl_cookies;
 pub(crate) mod diff;
@@ -138,6 +139,7 @@ fn usage() -> String {
   vexdom stop             stop the Bridge
   vexdom restart          stop the Bridge and bring up a fresh one
   vexdom token            print the control token (for MCP clients, not the browser)
+  vexdom completions <shell>   print the completion script for bash, zsh, fish or powershell
 
   setup, browsers, agent, skills, approvals, tasks and downloads take --json, which is what the apps read.
   vexdom --version        print the version
@@ -366,6 +368,8 @@ pub fn run(argv: Vec<std::ffi::OsString>) -> ExitCode {
         Some("tasks") => manage_tasks(&args),
         Some("logs") => show_logs(),
         Some("token") => print_token(),
+        Some("completions") => completions::print_script(args.all.get(1).map(String::as_str)),
+        Some("__complete") => completions::complete_command(&args.all[1..]),
         Some("--version" | "-v") => {
             println!("{VERSION}");
             ExitCode::SUCCESS
