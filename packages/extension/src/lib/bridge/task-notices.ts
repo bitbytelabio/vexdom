@@ -37,8 +37,17 @@ export async function announceTask(tag: TaskTag, result: TaskResult, tabId?: num
   const notice = taskNoticeFor(tag, result);
   if (!notice) return;
   const tone: NoticeTone = notice.tone === 'warn' ? 'warn' : 'live';
-  if (await noticeOnDevice({ id: `task:${tag.id}`, kind: 'task', title: notice.title, body: notice.body, tone }, tag.keepTab ? tabId : undefined)) return;
-  const shown = await showToast({ toastId: `task:${tag.id}:${Date.now()}`, ...notice, tabId: tag.keepTab ? tabId : undefined }, tabId);
+  if (
+    await noticeOnDevice(
+      { id: `task:${tag.id}`, kind: 'task', title: notice.title, body: notice.body, tone },
+      tag.keepTab ? tabId : undefined,
+    )
+  )
+    return;
+  const shown = await showToast(
+    { toastId: `task:${tag.id}:${Date.now()}`, ...notice, tabId: tag.keepTab ? tabId : undefined },
+    tabId,
+  );
   if (!shown) await notify(`${NOTIFICATION_PREFIX}${tag.id}`, notice.title, notice.body);
 }
 
@@ -56,8 +65,8 @@ const toastIdFor = (toolId: string) => `approval:${toolId}`;
 const clip = (text: string) => (text.length > DETAIL_CHARS ? `${text.slice(0, DETAIL_CHARS - 1)}…` : text);
 
 export function approvalDetail(input: unknown): string | undefined {
-  const args = input as { url?: unknown; target?: { text?: unknown; selector?: unknown } } | null;
-  const shown = [args?.url, args?.target?.text, args?.target?.selector].find(
+  const args = input as { reason?: unknown; url?: unknown; target?: { text?: unknown; selector?: unknown } } | null;
+  const shown = [args?.reason, args?.url, args?.target?.text, args?.target?.selector].find(
     (value): value is string => typeof value === 'string' && value.trim() !== '',
   );
   return shown ? clip(shown.trim()) : undefined;
@@ -101,7 +110,10 @@ export async function askTaskApproval(request: {
 }
 
 /** Only the page the card was drawn on can answer it, and only once. */
-export function takeApprovalAnswer(toastId: string, fromTabId: number | undefined): { sessionId: string; toolId: string } | null {
+export function takeApprovalAnswer(
+  toastId: string,
+  fromTabId: number | undefined,
+): { sessionId: string; toolId: string } | null {
   const held = approvals.get(toastId);
   if (!held || held.shownOn === null || held.shownOn !== fromTabId) return null;
   approvals.delete(toastId);
@@ -124,8 +136,10 @@ export function serveTaskNotices(): void {
   });
 }
 
-async function notify(id: string, title: string, message: string): Promise<void> {
-  await browser.notifications?.create(id, { type: 'basic', iconUrl: largestIcon(), title, message }).catch(() => undefined);
+export async function notify(id: string, title: string, message: string): Promise<void> {
+  await browser.notifications
+    ?.create(id, { type: 'basic', iconUrl: largestIcon(), title, message })
+    .catch(() => undefined);
 }
 
 function largestIcon(): string {

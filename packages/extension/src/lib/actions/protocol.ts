@@ -11,7 +11,10 @@ export const ACTION_CHANNEL = 'vexdom/action';
 export const BRIDGE_CHANNEL = 'vexdom/bridge';
 
 /** 27: the link is Cap'n Proto (crates/vexdom-schema/schema/vexdom.capnp) in binary frames, through ext-core. */
-export const SOCKET_PROTOCOL_VERSION = 27;
+export const SOCKET_PROTOCOL_VERSION = 28;
+
+/** The first protocol whose daemon lists and forgets the standing "Always on this site" approvals. */
+export const APPROVALS_PROTOCOL = 28;
 
 /** The first protocol whose daemon reads `RunContext.tabs`, the tabs a conversation spans as a turn begins. */
 export const TABS_PROTOCOL = 26;
@@ -65,11 +68,17 @@ export type BridgeRequest =
   | { channel: typeof BRIDGE_CHANNEL; op: 'saveTask'; task: unknown }
   | { channel: typeof BRIDGE_CHANNEL; op: 'deleteTask'; taskId: string }
   | { channel: typeof BRIDGE_CHANNEL; op: 'runTaskNow'; taskId: string }
-  | { channel: typeof BRIDGE_CHANNEL; op: 'pauseTasks'; paused: boolean };
+  | { channel: typeof BRIDGE_CHANNEL; op: 'pauseTasks'; paused: boolean }
+  /** The page's Stop pill: stops the run working in the sender's tab. */
+  | { channel: typeof BRIDGE_CHANNEL; op: 'stopRun' }
+  /** The page's hand-off pill: the user is done (`allow`) or stops instead. */
+  | { channel: typeof BRIDGE_CHANNEL; op: 'handBack'; allow: boolean }
+  /** Draw a box on the tab's page and capture what is inside it. */
+  | { channel: typeof BRIDGE_CHANNEL; op: 'captureRegion'; tabId: number }
+  | { channel: typeof BRIDGE_CHANNEL; op: 'approvals' }
+  | { channel: typeof BRIDGE_CHANNEL; op: 'forgetApprovals'; host?: string };
 
-export type ActionResult<T = unknown> =
-  | { ok: true; data: T }
-  | { ok: false; error: { code: string; message: string } };
+export type ActionResult<T = unknown> = { ok: true; data: T } | { ok: false; error: { code: string; message: string } };
 
 export type RunEvent =
   | { kind: 'started'; skill: string; attached?: string; overlays?: string[] }
@@ -242,9 +251,5 @@ export function isBridgeRequest(message: unknown): message is BridgeRequest {
 }
 
 function isOnChannel(message: unknown, channel: string): boolean {
-  return (
-    typeof message === 'object' &&
-    message !== null &&
-    (message as { channel?: unknown }).channel === channel
-  );
+  return typeof message === 'object' && message !== null && (message as { channel?: unknown }).channel === channel;
 }

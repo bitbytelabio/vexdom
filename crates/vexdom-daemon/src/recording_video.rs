@@ -19,6 +19,78 @@ use crate::contact_sheet::{
 const HIGH_FPS_THRESHOLD: u32 = 30;
 const WEBM_BITRATE_KBPS: u32 = 8000;
 const FINISH_TIMEOUT: Duration = Duration::from_secs(10);
+/// How long the second pass that turns the video into a GIF may take.
+const GIF_TIMEOUT: Duration = Duration::from_secs(60);
+const GIF_MAX_FPS: u32 = 12;
+/// The progress bar's colour: Vexdom's orange, `INDICATOR_COLOR` in the extension.
+const GIF_BAR_COLOR: &str = "0xff7a3d";
+
+/// The second pass's filter graph: at most 12 fps and 960 px wide, a 4 px bar along the bottom whose
+/// right edge reaches `W·t/D`, and a palette made for this clip.
+fn gif_filter(duration_s: f64, fps: u32) -> String {
+    let rate = fps.min(GIF_MAX_FPS);
+    format!(
+        "[0:v]fps={rate},scale='min(960,iw)':-2:flags=lanczos[v];\
+         [v][1:v]overlay=x='-w+W*t/{duration_s:.3}':y=H-h:shortest=1,split[a][b];\
+         [a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=5"
+    )
+}
+
+/// The last 400 characters of ffmpeg's error output.
+fn tail_of(text: &str) -> String {
+    let tail: String = text
+        .chars()
+        .rev()
+        .take(400)
+        .collect::<String>()
+        .chars()
+        .rev()
+        .collect();
+    tail.trim().to_owned()
+}
+
+/// Turns the finished `part` video into `output`, a looping GIF with a progress bar.
+async fn make_gif(
+    ffmpeg: &Path,
+    part: &Path,
+    output: &Path,
+    duration_ms: u64,
+    fps: u32,
+) -> Result<(), ActionError> {
+    let duration_s = (duration_ms as f64 / 1000.0).max(0.1);
+    let mut cmd = tokio::process::Command::new(ffmpeg);
+    cmd.args(["-y", "-hide_banner", "-loglevel", "error", "-i"])
+        .arg(part)
+        .args([
+            "-f",
+            "lavfi",
+            "-i",
+            &format!("color=c={GIF_BAR_COLOR}:s=4096x4"),
+        ])
+        .args(["-filter_complex", &gif_filter(duration_s, fps)])
+        .args(["-loop", "0"])
+        .arg(output)
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::piped())
+        .kill_on_drop(true);
+    match tokio::time::timeout(GIF_TIMEOUT, cmd.output()).await {
+        Ok(Ok(out)) if out.status.success() => Ok(()),
+        Ok(Ok(out)) => Err(error(
+            "ACTION_FAILED",
+            format!(
+                "ffmpeg could not make the GIF ({}): {}",
+                out.status,
+                tail_of(&String::from_utf8_lossy(&out.stderr))
+            ),
+        )),
+        Ok(Err(e)) => Err(error("ACTION_FAILED", format!("ffmpeg: {e}"))),
+        Err(_) => Err(error(
+            "ACTION_FAILED",
+            "ffmpeg did not finish the GIF within 60 s.",
+        )),
+    }
+}
 
 fn error(code: &str, message: impl Into<String>) -> ActionError {
     ActionError {
@@ -111,7 +183,10 @@ impl Video {
                 )
             })?;
         }
-        let mut child = ffmpeg_command(&ffmpeg, &start.path, start.fps)
+        // A GIF is made from an H.264 video once the recording stops.
+        let gif = (start.path.extension().and_then(|ext| ext.to_str()) == Some("gif"))
+            .then(|| start.path.with_extension("gif.part.mp4"));
+        let mut child = ffmpeg_command(&ffmpeg, gif.as_deref().unwrap_or(&start.path), start.fps)
             .spawn()
             .map_err(|e| error("FFMPEG_MISSING", format!("ffmpeg did not start: {e}")))?;
         let stdin = child.stdin.take();
@@ -119,7 +194,7 @@ impl Video {
         let id = format!("rec-{}-{}", std::process::id(), self.counter);
         let (frames, receiver) = mpsc::unbounded_channel();
         let (finished, done) = oneshot::channel();
-        tokio::task::spawn_local(encode(child, stdin, receiver, start, finished));
+        tokio::task::spawn_local(encode(child, stdin, receiver, start, ffmpeg, gif, finished));
         self.active = Some(Active {
             id: id.clone(),
             frames,
@@ -157,6 +232,8 @@ async fn encode(
     mut stdin: Option<tokio::process::ChildStdin>,
     mut receiver: mpsc::UnboundedReceiver<(Vec<u8>, f64)>,
     start: Start,
+    ffmpeg: PathBuf,
+    gif: Option<PathBuf>,
     finished: oneshot::Sender<Result<Value, ActionError>>,
 ) {
     let mut previous: Option<(Vec<u8>, f64)> = None;
@@ -218,17 +295,9 @@ async fn encode(
                 use tokio::io::AsyncReadExt as _;
                 let _ = stderr.read_to_string(&mut tail).await;
             }
-            let tail: String = tail
-                .chars()
-                .rev()
-                .take(400)
-                .collect::<String>()
-                .chars()
-                .rev()
-                .collect();
             Err(error(
                 "ACTION_FAILED",
-                format!("ffmpeg exited with {status}: {}", tail.trim()),
+                format!("ffmpeg exited with {status}: {}", tail_of(&tail)),
             ))
         }
         Ok(Err(e)) => Err(error("ACTION_FAILED", format!("ffmpeg: {e}"))),
@@ -240,10 +309,24 @@ async fn encode(
             ))
         }
     };
+    let outcome = match gif {
+        Some(part) => {
+            let duration_ms = written * 1000 / u64::from(start.fps.max(1));
+            let made = match outcome {
+                Ok(result) => make_gif(&ffmpeg, &part, &start.path, duration_ms, start.fps)
+                    .await
+                    .map(|()| result),
+                failed => failed,
+            };
+            let _ = tokio::fs::remove_file(&part).await;
+            made
+        }
+        None => outcome,
+    };
     let _ = finished.send(outcome);
 }
 
-/// `page.recordStart`'s input as the Bridge reads it: `path` must end in .webm or .mp4.
+/// `page.recordStart`'s input as the Bridge reads it: `path` must end in .webm, .mp4 or .gif.
 pub(crate) fn start_of(input: &Value) -> Result<Start, ActionError> {
     let path = input
         .get("path")
@@ -252,7 +335,7 @@ pub(crate) fn start_of(input: &Value) -> Result<Start, ActionError> {
         .ok_or_else(|| {
             error(
                 "INVALID_INPUT",
-                "recordStart needs a \"path\" ending in .webm or .mp4",
+                "recordStart needs a \"path\" ending in .webm, .mp4 or .gif",
             )
         })?;
     let path = PathBuf::from(path);
@@ -260,11 +343,11 @@ pub(crate) fn start_of(input: &Value) -> Result<Start, ActionError> {
         return Err(error("INVALID_INPUT", "path must be absolute"));
     }
     match path.extension().and_then(|ext| ext.to_str()) {
-        Some("webm" | "mp4") => {}
+        Some("webm" | "mp4" | "gif") => {}
         _ => {
             return Err(error(
                 "INVALID_INPUT",
-                "The recording path must end in .webm or .mp4",
+                "The recording path must end in .webm, .mp4 or .gif",
             ));
         }
     }
@@ -300,10 +383,11 @@ mod tests {
     }
 
     #[test]
-    fn a_recording_path_ends_in_webm_or_mp4() {
+    fn a_recording_path_ends_in_webm_mp4_or_gif() {
         assert!(start_of(&json!({"path": "/tmp/r.webm"})).is_ok());
+        assert!(start_of(&json!({"path": "/tmp/r.gif"})).is_ok());
         assert_eq!(
-            start_of(&json!({"path": "/tmp/r.gif"})).err().unwrap().code,
+            start_of(&json!({"path": "/tmp/r.avi"})).err().unwrap().code,
             "INVALID_INPUT"
         );
         assert_eq!(
@@ -314,5 +398,13 @@ mod tests {
             start_of(&json!({"path": "/tmp/r.mp4", "fps": 99, "contactSheet": true})).unwrap();
         assert_eq!(start.fps, 60);
         assert_eq!(start.contact_sheet, Some(DEFAULT_CONTACT_SHEET_THRESHOLD));
+    }
+
+    #[test]
+    fn a_gif_is_slowed_to_twelve_frames_with_a_bar_across_its_length() {
+        let filter = gif_filter(2.5, 30);
+        assert!(filter.contains("fps=12"), "{filter}");
+        assert!(filter.contains("overlay=x='-w+W*t/2.500'"), "{filter}");
+        assert!(gif_filter(2.5, 8).contains("fps=8"));
     }
 }

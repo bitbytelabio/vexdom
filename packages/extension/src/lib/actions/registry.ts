@@ -52,6 +52,7 @@ import { monitorStatus } from './page/monitor-status';
 import { navigate } from './page/navigate';
 import { openTab } from './page/open-tab';
 import { openWindow } from './page/open-window';
+import { resizeWindow } from './page/resize-window';
 import { pickElement } from './page/pick-element';
 import { pressKey } from './page/press-key';
 import { pushState } from './page/push-state';
@@ -162,6 +163,7 @@ export const actions: ReadonlyMap<string, AnyAction> = new Map(
       navigate,
       openTab,
       openWindow,
+      resizeWindow,
       pushState,
       tabKeep,
       switchTab,

@@ -35,7 +35,7 @@ Repeat with each new result until `solved`. `errors` on a result means the last 
 
 ## 4. When it needs the user
 
-`needsHuman` is the one case to hand over. `act {"do":"screenshot"}` to see it, tell the user plainly this one needs them and that they can solve it in the browser window in front of them, then poll `act {"do":"findCaptcha"}` every several seconds until `solved` and carry on. If they have not solved it after a reasonable while, say you are still waiting rather than looping in silence.
+`needsHuman` is the one case to hand over. In a side-panel run, call `vexdom.handOff` with a one-line reason (`{"reason":"Solve the puzzle on the page, then press Done."}`); it waits until the user says they are done, so snapshot after it returns and carry on. `DECLINED` from it means they stopped instead: say what you could not finish and stop. Where `vexdom.handOff` is not in your list, `act {"do":"screenshot"}` to see it, tell the user plainly this one needs them and that they can solve it in the browser window in front of them, then poll `act {"do":"findCaptcha"}` every several seconds until `solved` and carry on. If they have not solved it after a reasonable while, say you are still waiting rather than looping in silence.
 
 ## 5. When the tools cannot run
 

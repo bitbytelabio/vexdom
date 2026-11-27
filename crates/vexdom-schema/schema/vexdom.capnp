@@ -116,6 +116,9 @@ interface ExtensionSession {
   notice @28 (notice :Json) -> (delivered :Bool);
   # One screencast frame (JPEG) of a `page.recordStart` recording; the Bridge encodes them.
   recordFrame @29 (recordingId :Text, frame :Data, atMs :Float64);
+  # The standing "Always on this site" approvals, and forgetting them ("" = all of them). From 28.
+  approvals @30 () -> (result :ActionResult);
+  forgetApprovals @31 (host :Text) -> (result :ActionResult);
 }
 
 struct RunEvent {

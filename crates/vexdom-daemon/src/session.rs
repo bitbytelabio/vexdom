@@ -4,7 +4,8 @@ use std::future::Future;
 use std::rc::{Rc, Weak};
 use std::time::Instant;
 
-use serde_json::Value;
+use serde_json::{Value, json};
+use vexdom_core::approvals;
 use vexdom_core::config::{self, read_agent_config};
 use vexdom_core::notices::as_device_notice;
 use vexdom_core::preferences::{apply_preference, preferences_now};
@@ -437,6 +438,31 @@ impl extension_session::Server for Session {
             let result = outcome(apply_preference(&change));
             self.daemon.config_changed(Some(link.serial));
             reply!(results, result)
+        })())
+    }
+
+    fn approvals(
+        self: capnp::capability::Rc<Self>,
+        _: extension_session::ApprovalsParams,
+        mut results: extension_session::ApprovalsResults,
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
+        std::future::ready((|| {
+            self.source(false)?;
+            reply!(results, Ok(json!({ "grants": approvals::list_grants() })))
+        })())
+    }
+
+    fn forget_approvals(
+        self: capnp::capability::Rc<Self>,
+        params: extension_session::ForgetApprovalsParams,
+        mut results: extension_session::ForgetApprovalsResults,
+    ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
+        std::future::ready((|| {
+            self.source(false)?;
+            let host = text(params.get()?.get_host());
+            // An empty host forgets every site's.
+            let removed = approvals::forget_grants((!host.is_empty()).then_some(host.as_str()));
+            reply!(results, Ok(json!({ "removed": removed })))
         })())
     }
 

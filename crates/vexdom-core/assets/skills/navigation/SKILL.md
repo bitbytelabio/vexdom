@@ -27,6 +27,8 @@ Every action runs on the tab vexdom is working in: the active tab, or the one th
 - `act {"do":"closeTab","label":"docs"}` closes one; with no input it closes the current tab and
   follows the browser to whichever tab comes forward.
 - `act {"do":"openWindow","url":"https://…"}` opens a new window and works in its tab.
+- `act {"do":"resizeWindow","width":1280,"height":800}` resizes or moves the window (`left`, `top`),
+  or sets `state` (`maximized`, `minimized`, …); use `emulate` for a device viewport instead.
 
 Label tabs when a task juggles several sites; refs are per tab, so snapshot after switching.
 

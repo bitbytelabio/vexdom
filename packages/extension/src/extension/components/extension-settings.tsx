@@ -10,7 +10,11 @@ import {
   useContextMenuChoice,
   useNewTabChoice,
   usePushToTalk,
+  useRunGlow,
+  useRunNotices,
+  useRunSound,
   useShortcuts,
+  useTabGroups,
 } from '@/lib/bridge/use-extension-settings';
 import { useHandsFreeSupported } from '@/lib/bridge/use-speech';
 import { cn } from '@/lib/utils';
@@ -21,6 +25,8 @@ export function ExtensionSettings() {
     <>
       <NewTab />
       <ActionCues />
+      <TabGroups />
+      <RunNotices />
       <ContextMenuItems handsFree={handsFree} />
       <KeyboardShortcuts handsFree={handsFree} />
       {handsFree && <HandsFree />}
@@ -40,7 +46,11 @@ function NewTab() {
         title="Open Vexdom Home on new tabs"
         note="A composer, your frequent sites and your recent conversations. Sending from it opens the side panel, which keeps the conversation when the agent takes the tab to a site."
       >
-        <Switch checked={choice.home} label="Open Vexdom Home on new tabs" onChange={(home) => setChoice({ ...choice, home })} />
+        <Switch
+          checked={choice.home}
+          label="Open Vexdom Home on new tabs"
+          onChange={(home) => setChoice({ ...choice, home })}
+        />
       </Row>
       <Row
         title="Show frequent sites"
@@ -52,7 +62,11 @@ function NewTab() {
               Show hidden
             </Button>
           )}
-          <Switch checked={choice.sites} label="Show frequent sites" onChange={(sites) => setChoice({ ...choice, sites })} />
+          <Switch
+            checked={choice.sites}
+            label="Show frequent sites"
+            onChange={(sites) => setChoice({ ...choice, sites })}
+          />
         </div>
       </Row>
     </SettingsGroup>
@@ -61,6 +75,7 @@ function NewTab() {
 
 function ActionCues() {
   const [on, setOn] = useActionCues();
+  const [glow, setGlow] = useRunGlow();
   return (
     <SettingsGroup
       title="On the page"
@@ -71,6 +86,47 @@ function ActionCues() {
         note="A glowing ring marks each element the agent clicks, types into or reads, with a short caption. It never takes a click, and screenshots leave it out."
       >
         <Switch checked={on} label="Show what the agent does" onChange={setOn} />
+      </Row>
+      <Row
+        title="Glow and Stop button while it works"
+        note="A soft frame around the page and a Stop button at the bottom, on every tab the agent is working in. Screenshots leave it out."
+      >
+        <Switch checked={glow} label="Glow and Stop button while it works" onChange={setGlow} />
+      </Row>
+    </SettingsGroup>
+  );
+}
+
+function TabGroups() {
+  const [on, setOn] = useTabGroups();
+  return (
+    <SettingsGroup
+      title="Tab groups"
+      note="Each conversation keeps its tabs in a group of its own, named after its site, coloured by what it is doing: grey idle, orange working, yellow waiting for you, green done, red failed. Tabs opened from an MCP client or the CLI share a purple Vexdom · MCP group."
+    >
+      <Row
+        title="Group each conversation's tabs"
+        note="Drag a tab into a Vexdom group to add it to that conversation; drag it out to take it out. A tab you keep in a group of your own stays there, and pinned tabs stay pinned. Turning this off ungroups them."
+      >
+        <Switch checked={on} label="Group each conversation's tabs" onChange={setOn} />
+      </Row>
+    </SettingsGroup>
+  );
+}
+
+function RunNotices() {
+  const [notices, setNotices] = useRunNotices();
+  const [sound, setSound] = useRunSound();
+  return (
+    <SettingsGroup
+      title="When a run needs you"
+      note="Only while you are on another tab or app; the conversation's own tabs already show it."
+    >
+      <Row title="Notify me" note="When a run finishes, fails, or waits for your OK.">
+        <Switch checked={notices} label="Notify me" onChange={setNotices} />
+      </Row>
+      <Row title="Play a sound" note="A short chime with each notice.">
+        <Switch checked={sound} label="Play a sound" onChange={setSound} />
       </Row>
     </SettingsGroup>
   );

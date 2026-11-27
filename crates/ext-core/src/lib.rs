@@ -135,6 +135,10 @@ pub enum ExtensionRequest {
     SetPreference {
         change: String,
     },
+    Approvals,
+    ForgetApprovals {
+        host: String,
+    },
     Tasks,
     SaveTask {
         task: String,
@@ -1099,6 +1103,14 @@ async fn request(session: extension_session::Client, request: ExtensionRequest) 
         ExtensionRequest::SetPreference { change } => {
             let mut call = session.set_preference_request();
             call.get().set_change(&change);
+            call!(call, |reply| result_json(reply.get_result()))
+        }
+        ExtensionRequest::Approvals => call!(session.approvals_request(), |reply| result_json(
+            reply.get_result()
+        )),
+        ExtensionRequest::ForgetApprovals { host } => {
+            let mut call = session.forget_approvals_request();
+            call.get().set_host(&host);
             call!(call, |reply| result_json(reply.get_result()))
         }
         ExtensionRequest::Tasks => call!(session.tasks_request(), |reply| result_json(

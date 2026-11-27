@@ -5,6 +5,7 @@ import { Input } from '@/extension/components/ui/input';
 import { Switch } from '@/extension/components/ui/switch';
 import { Textarea } from '@/extension/components/ui/textarea';
 import { readRecordingBody, type StoredRecordingMeta } from '@/lib/bridge/recording-store';
+import { useShortcuts } from '@/lib/bridge/use-shortcuts';
 import { isSecretVariable, variablesNeeded } from '@/lib/recordings/replay';
 import type { RecordingVariable } from '@/lib/recordings/workflow';
 import {
@@ -34,7 +35,17 @@ export interface TaskSeed {
   url?: string;
 }
 
-type Mode = 'once' | 'every' | 'weekly';
+type Mode = 'once' | 'every' | 'weekly' | 'monthly' | 'yearly';
+
+interface YearDate {
+  month: number;
+  day: number;
+}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MONTH_DAYS = Array.from({ length: 31 }, (_, index) => index + 1);
+const MAX_DATES_PER_YEAR = 12;
+
 type Stop = 'never' | 'after' | 'until';
 
 interface Form {
@@ -54,6 +65,8 @@ interface Form {
   windowTo: string;
   days: Weekday[];
   times: string[];
+  monthDays: number[];
+  dates: YearDate[];
   missed: MissedPolicy;
   notify: NotifyPolicy;
   keepTab: boolean;
@@ -105,6 +118,8 @@ function blankForm(seed: TaskSeed | undefined, tabUrl: string, recordings: Store
     windowTo: '22:00',
     days: [...WORKDAYS],
     times: ['09:00'],
+    monthDays: [1],
+    dates: [{ month: 1, day: 1 }],
     missed: 'runOnce',
     notify: 'always',
     keepTab: false,
@@ -139,6 +154,8 @@ function formOf(task: ScheduledTask, fallback: Form): Form {
         }
       : {}),
     ...(rule.kind === 'weekly' ? { days: rule.days, times: rule.times } : {}),
+    ...(rule.kind === 'monthly' ? { monthDays: rule.days, times: rule.times } : {}),
+    ...(rule.kind === 'yearly' ? { dates: rule.dates, times: rule.times } : {}),
     missed: task.missed,
     notify: task.notify,
     keepTab: task.keepTab,
@@ -153,8 +170,12 @@ function ruleOf(form: Form): ScheduleRule {
   if (form.mode === 'once') return { kind: 'once', at: new Date(form.onceAt).getTime() };
   if (form.mode === 'every') {
     const minutes = Math.round(form.every * (form.everyUnit === 'h' ? 60 : 1));
-    return form.windowOn ? { kind: 'every', minutes, window: { from: form.windowFrom, to: form.windowTo } } : { kind: 'every', minutes };
+    return form.windowOn
+      ? { kind: 'every', minutes, window: { from: form.windowFrom, to: form.windowTo } }
+      : { kind: 'every', minutes };
   }
+  if (form.mode === 'monthly') return { kind: 'monthly', days: form.monthDays, times: form.times };
+  if (form.mode === 'yearly') return { kind: 'yearly', dates: form.dates, times: form.times };
   return { kind: 'weekly', days: form.days, times: form.times };
 }
 
@@ -197,6 +218,7 @@ export function TaskEditor({
   onDelete?: () => void;
 }) {
   const ready = useMemo(() => recordings.filter((recording) => recording.status === 'ready'), [recordings]);
+  const shortcuts = useShortcuts();
   const [form, setForm] = useState<Form>(() => {
     const blank = blankForm(seed, tabUrl, ready);
     return task ? formOf(task, blank) : blank;
@@ -276,6 +298,30 @@ export function TaskEditor({
             <Clapperboard className="size-3" /> Recording
           </Chip>
         </div>
+        {form.kind === 'instruction' && shortcuts.length > 0 && (
+          <select
+            aria-label="Start from a shortcut"
+            value=""
+            onChange={(e) => {
+              const shortcut = shortcuts.find((candidate) => candidate.id === e.target.value);
+              if (!shortcut) return;
+              // A copy of the prompt: editing the shortcut later leaves this task as it is.
+              setForm((current) => ({
+                ...current,
+                text: shortcut.prompt,
+                name: !current.name || current.name === nameFrom(current.text) ? shortcut.name : current.name,
+              }));
+            }}
+            className="mt-1.5 h-8 rounded-lg border border-line-strong bg-ground/60 px-2 text-xs text-ink-dim"
+          >
+            <option value="">Start from a shortcut…</option>
+            {shortcuts.map((shortcut) => (
+              <option key={shortcut.id} value={shortcut.id}>
+                /{shortcut.name}
+              </option>
+            ))}
+          </select>
+        )}
         {form.kind === 'instruction' ? (
           <Textarea
             value={form.text}
@@ -307,12 +353,16 @@ export function TaskEditor({
                 }
                 className={cn(
                   'flex min-w-0 items-center gap-2 rounded-lg border px-2.5 py-1.5 text-left text-xs transition-colors',
-                  candidate.id === form.recordingId ? 'border-brand/50 bg-brand/10 text-ink' : 'border-line text-ink-dim hover:bg-surface/60',
+                  candidate.id === form.recordingId
+                    ? 'border-brand/50 bg-brand/10 text-ink'
+                    : 'border-line text-ink-dim hover:bg-surface/60',
                 )}
               >
                 <Clapperboard className="size-3 shrink-0" />
                 <span className="truncate">{candidate.name}</span>
-                <span className="ml-auto shrink-0 font-mono text-[10px] text-ink-faint">{candidate.steps ?? 0} steps</span>
+                <span className="ml-auto shrink-0 font-mono text-[10px] text-ink-faint">
+                  {candidate.steps ?? 0} steps
+                </span>
               </button>
             ))}
             {needed.map((variable) => (
@@ -328,8 +378,8 @@ export function TaskEditor({
             ))}
             {form.recordingId && (
               <p className="text-[11px] leading-relaxed text-ink-faint">
-                Replayed step by step with no agent and no tokens. If a step no longer fits the page, the agent takes over
-                from there.
+                Replayed step by step with no agent and no tokens. If a step no longer fits the page, the agent takes
+                over from there.
               </p>
             )}
           </div>
@@ -353,6 +403,12 @@ export function TaskEditor({
           </Chip>
           <Chip active={form.mode === 'weekly'} onClick={() => set('mode', 'weekly')}>
             On days
+          </Chip>
+          <Chip active={form.mode === 'monthly'} onClick={() => set('mode', 'monthly')}>
+            Monthly
+          </Chip>
+          <Chip active={form.mode === 'yearly'} onClick={() => set('mode', 'yearly')}>
+            Yearly
           </Chip>
           <Chip active={form.mode === 'every'} onClick={() => set('mode', 'every')}>
             Every…
@@ -383,7 +439,10 @@ export function TaskEditor({
                   key={day}
                   active={form.days.includes(day)}
                   onClick={() =>
-                    set('days', form.days.includes(day) ? form.days.filter((kept) => kept !== day) : [...form.days, day])
+                    set(
+                      'days',
+                      form.days.includes(day) ? form.days.filter((kept) => kept !== day) : [...form.days, day],
+                    )
                   }
                   className="w-10 justify-center"
                 >
@@ -396,33 +455,96 @@ export function TaskEditor({
               <Chip onClick={() => set('days', [...WORKDAYS])}>Weekdays</Chip>
               <Chip onClick={() => set('days', [6, 0])}>Weekends</Chip>
             </div>
-            <div className="flex flex-wrap items-center gap-1.5">
-              {form.times.map((time, index) => (
-                <span key={index} className="flex items-center gap-0.5">
-                  <Input
-                    type="time"
-                    value={time}
-                    onChange={(e) => set('times', form.times.map((kept, at) => (at === index ? e.target.value : kept)))}
-                    className="h-8 w-[6.5rem] text-xs"
-                  />
-                  {form.times.length > 1 && (
-                    <button
-                      type="button"
-                      aria-label={`Remove ${time}`}
-                      onClick={() => set('times', form.times.filter((_, at) => at !== index))}
-                      className="rounded-full p-1 text-ink-faint hover:bg-surface hover:text-ink"
-                    >
-                      <X className="size-3" />
-                    </button>
-                  )}
-                </span>
-              ))}
-              {form.times.length < MAX_TIMES_PER_DAY && (
-                <Chip onClick={() => set('times', [...form.times, '17:00'])}>
-                  <Plus className="size-3" /> Time
+            <TimesEditor times={form.times} onChange={(times) => set('times', times)} />
+          </div>
+        )}
+
+        {form.mode === 'monthly' && (
+          <div className="mt-2 flex flex-col gap-2">
+            <div className="grid grid-cols-7 gap-1" role="group" aria-label="Days of the month">
+              {MONTH_DAYS.map((day) => (
+                <Chip
+                  key={day}
+                  active={form.monthDays.includes(day)}
+                  onClick={() =>
+                    set(
+                      'monthDays',
+                      form.monthDays.includes(day)
+                        ? form.monthDays.filter((kept) => kept !== day)
+                        : [...form.monthDays, day],
+                    )
+                  }
+                  className="justify-center"
+                >
+                  {day}
                 </Chip>
-              )}
+              ))}
             </div>
+            <p className="text-[11px] text-ink-faint">In a month without that day, it runs on the month’s last day.</p>
+            <TimesEditor times={form.times} onChange={(times) => set('times', times)} />
+          </div>
+        )}
+
+        {form.mode === 'yearly' && (
+          <div className="mt-2 flex flex-col gap-2">
+            {form.dates.map((date, index) => (
+              <div key={index} className="flex items-center gap-1.5">
+                <select
+                  aria-label="Month"
+                  value={date.month}
+                  onChange={(e) =>
+                    set(
+                      'dates',
+                      form.dates.map((kept, at) => (at === index ? { ...kept, month: Number(e.target.value) } : kept)),
+                    )
+                  }
+                  className="h-8 rounded-lg border border-line-strong bg-ground/60 px-2 text-xs text-ink"
+                >
+                  {MONTHS.map((name, month) => (
+                    <option key={name} value={month + 1}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+                <Input
+                  type="number"
+                  aria-label="Day"
+                  min={1}
+                  max={31}
+                  value={date.day}
+                  onChange={(e) =>
+                    set(
+                      'dates',
+                      form.dates.map((kept, at) => (at === index ? { ...kept, day: Number(e.target.value) } : kept)),
+                    )
+                  }
+                  className="h-8 w-16 text-xs"
+                />
+                {form.dates.length > 1 && (
+                  <button
+                    type="button"
+                    aria-label={`Remove ${date.day} ${MONTHS[date.month - 1] ?? ''}`}
+                    onClick={() =>
+                      set(
+                        'dates',
+                        form.dates.filter((_, at) => at !== index),
+                      )
+                    }
+                    className="rounded-full p-1 text-ink-faint hover:bg-surface hover:text-ink"
+                  >
+                    <X className="size-3" />
+                  </button>
+                )}
+              </div>
+            ))}
+            {form.dates.length < MAX_DATES_PER_YEAR && (
+              <div>
+                <Chip onClick={() => set('dates', [...form.dates, { month: 1, day: 1 }])}>
+                  <Plus className="size-3" /> Date
+                </Chip>
+              </div>
+            )}
+            <TimesEditor times={form.times} onChange={(times) => set('times', times)} />
           </div>
         )}
 
@@ -511,7 +633,12 @@ export function TaskEditor({
           </div>
         )}
         {form.stop === 'until' && (
-          <Input type="date" value={form.until} onChange={(e) => set('until', e.target.value)} className="h-8 w-40 text-xs" />
+          <Input
+            type="date"
+            value={form.until}
+            onChange={(e) => set('until', e.target.value)}
+            className="h-8 w-40 text-xs"
+          />
         )}
         <label className="mt-1 flex items-center gap-2 text-[11px] text-ink-dim">
           <Switch checked={form.keepTab} onChange={(on) => set('keepTab', on)} label="Keep the tab open afterwards" />
@@ -533,12 +660,12 @@ export function TaskEditor({
             About {perWeek} agent {perWeek === 1 ? 'run' : 'runs'} a week — each one spends tokens.
           </p>
         )}
-        <p className="mt-0.5 text-ink-faint">Runs only while this browser is open, in a background tab that closes when it is done.</p>
+        <p className="mt-0.5 text-ink-faint">
+          Runs only while this browser is open, in a background tab that closes when it is done.
+        </p>
       </div>
 
-      {(attempted && problem) || refused ? (
-        <p className="text-[11px] text-destructive">{refused ?? problem}</p>
-      ) : null}
+      {(attempted && problem) || refused ? <p className="text-[11px] text-destructive">{refused ?? problem}</p> : null}
 
       <div className="flex items-center gap-2">
         {onDelete && (
@@ -554,7 +681,42 @@ export function TaskEditor({
           {task ? 'Save' : 'Schedule it'}
         </Button>
       </div>
-      {!connected && <p className="text-right text-[11px] text-ink-faint">The daemon keeps the schedule — connect it to save.</p>}
+      {!connected && (
+        <p className="text-right text-[11px] text-ink-faint">The daemon keeps the schedule — connect it to save.</p>
+      )}
+    </div>
+  );
+}
+
+/** The clock times a weekly, monthly or yearly rule runs at. */
+function TimesEditor({ times, onChange }: { times: string[]; onChange: (times: string[]) => void }) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {times.map((time, index) => (
+        <span key={index} className="flex items-center gap-0.5">
+          <Input
+            type="time"
+            value={time}
+            onChange={(e) => onChange(times.map((kept, at) => (at === index ? e.target.value : kept)))}
+            className="h-8 w-[6.5rem] text-xs"
+          />
+          {times.length > 1 && (
+            <button
+              type="button"
+              aria-label={`Remove ${time}`}
+              onClick={() => onChange(times.filter((_, at) => at !== index))}
+              className="rounded-full p-1 text-ink-faint hover:bg-surface hover:text-ink"
+            >
+              <X className="size-3" />
+            </button>
+          )}
+        </span>
+      ))}
+      {times.length < MAX_TIMES_PER_DAY && (
+        <Chip onClick={() => onChange([...times, '17:00'])}>
+          <Plus className="size-3" /> Time
+        </Chip>
+      )}
     </div>
   );
 }
@@ -592,7 +754,9 @@ function Chip({
       aria-pressed={active}
       className={cn(
         'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] transition-colors disabled:opacity-45',
-        active ? 'border-brand/50 bg-brand/12 text-brand' : 'border-line text-ink-dim hover:bg-surface/60 hover:text-ink',
+        active
+          ? 'border-brand/50 bg-brand/12 text-brand'
+          : 'border-line text-ink-dim hover:bg-surface/60 hover:text-ink',
         className,
       )}
     >

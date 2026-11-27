@@ -1,5 +1,6 @@
 import { browser } from 'wxt/browser';
 import { INDICATOR_COLOR, isIndicatorCommand } from './events';
+import { hideGlow, hushGlow, showGlow } from './glow';
 
 export { INDICATOR_CHANNEL } from './events';
 
@@ -11,11 +12,25 @@ export function exposeIndicator(): void {
   let original: string | null = null;
   let marked = false;
 
-  browser.runtime.onMessage.addListener((message: unknown) => {
+  /* Answered through sendResponse: Chrome's raw `chrome` honours only a literal `true`. A hush is
+     answered two frames later, once the page has painted without the glow, so a screenshot taken
+     after the answer never shows it. */
+  browser.runtime.onMessage.addListener((message: unknown, _sender, sendResponse) => {
     if (!isIndicatorCommand(message)) return;
-    if (message.op === 'busy') void mark();
-    else restore();
-    return Promise.resolve({ ok: true });
+    if (message.op === 'busy') {
+      void mark();
+      showGlow(message);
+    } else if (message.op === 'idle') {
+      restore();
+      hideGlow();
+    } else {
+      hushGlow(message.op === 'hush');
+      if (message.op === 'hush') {
+        requestAnimationFrame(() => requestAnimationFrame(() => sendResponse({ ok: true })));
+        return true;
+      }
+    }
+    sendResponse({ ok: true });
   });
 
   async function mark(): Promise<void> {

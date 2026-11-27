@@ -41,7 +41,12 @@ vi.mock('./core', () => ({
   },
   linkProve: () => {
     if (core.withholdWelcome) return;
-    const claims = { daemonVersion: '0.9.2', manifestHash: core.transcript!.manifestHash, manifestInSync: true, sealedSessionKey: '' };
+    const claims = {
+      daemonVersion: '0.9.2',
+      manifestHash: core.transcript!.manifestHash,
+      manifestInSync: true,
+      sealedSessionKey: '',
+    };
     void serverProof(SESSION_KEY, core.transcript!, claims).then((proof) =>
       arrive({ tag: 'Welcome', ...claims, protocolVersion: 27, proof }),
     );
@@ -49,8 +54,10 @@ vi.mock('./core', () => ({
   linkRequest: () => 1,
   linkTrust: () => undefined,
   linkReply: (callId: number, result: string) => core.replies.push([callId, JSON.parse(result)]),
-  linkReplyScreenshot: (callId: number, result: string, image: Uint8Array) => core.shots.push([callId, JSON.parse(result), image]),
-  linkReplyArtifact: (callId: number, result: string, data: Uint8Array) => core.shots.push([callId, JSON.parse(result), data]),
+  linkReplyScreenshot: (callId: number, result: string, image: Uint8Array) =>
+    core.shots.push([callId, JSON.parse(result), image]),
+  linkReplyArtifact: (callId: number, result: string, data: Uint8Array) =>
+    core.shots.push([callId, JSON.parse(result), data]),
 }));
 
 vi.mock('./invoke', () => ({
@@ -112,7 +119,15 @@ describe('the link through ext-core', () => {
   test('is welcomed, then answers a page call with the page result', async () => {
     await worker!.connectDaemon();
     await until(() => (worker!.daemonSpeaks(27) ? true : undefined));
-    arrive({ tag: 'PageCall', callId: 7, kind: 'invoke', action: 'page.clickElement', input: '{"target":"#go"}', tabId: 3, runId: '' });
+    arrive({
+      tag: 'PageCall',
+      callId: 7,
+      kind: 'invoke',
+      action: 'page.clickElement',
+      input: '{"target":"#go"}',
+      tabId: 3,
+      runId: '',
+    });
     const [callId, result] = await until(() => core.replies[0]);
     expect(callId).toBe(7);
     expect(result).toEqual({ ok: true, data: { action: 'page.clickElement', input: { target: '#go' }, tabId: 3 } });
@@ -121,7 +136,15 @@ describe('the link through ext-core', () => {
   test('sends a screenshot as bytes, its result without the data URL', async () => {
     await worker!.connectDaemon();
     await until(() => (worker!.daemonSpeaks(27) ? true : undefined));
-    arrive({ tag: 'PageCall', callId: 9, kind: 'screenshot', action: 'page.screenshot', input: '{}', tabId: -1, runId: '' });
+    arrive({
+      tag: 'PageCall',
+      callId: 9,
+      kind: 'screenshot',
+      action: 'page.screenshot',
+      input: '{}',
+      tabId: -1,
+      runId: '',
+    });
     const [callId, result, image] = await until(() => core.shots[0]);
     expect(callId).toBe(9);
     expect(result).toEqual({ ok: true, data: { format: 'png', width: 1, height: 1 } });
@@ -133,10 +156,25 @@ describe('the link through ext-core', () => {
     void worker!.connectDaemon();
     await until(() => core.transcript);
     await new Promise((resolve) => setTimeout(resolve, 20));
-    arrive({ tag: 'PageCall', callId: 11, kind: 'invoke', action: 'page.getPageInfo', input: '{}', tabId: -1, runId: '' });
+    arrive({
+      tag: 'PageCall',
+      callId: 11,
+      kind: 'invoke',
+      action: 'page.getPageInfo',
+      input: '{}',
+      tabId: -1,
+      runId: '',
+    });
     const [callId, result] = await until(() => core.replies.find(([id]) => id === 11));
     expect(callId).toBe(11);
     expect(result).toMatchObject({ ok: false, error: { code: 'UNAUTHORIZED' } });
     expect(worker!.daemonSpeaks(27)).toBe(false);
+  });
+
+  test('asks a Bridge from before approvals were listed to update instead of calling it', async () => {
+    expect(await worker!.readApprovals()).toMatchObject({ ok: false, error: { code: 'UNSUPPORTED' } });
+    await worker!.connectDaemon();
+    await until(() => (worker!.daemonSpeaks(27) ? true : undefined));
+    expect(await worker!.readApprovals()).toMatchObject({ ok: false, error: { code: 'UNSUPPORTED' } });
   });
 });

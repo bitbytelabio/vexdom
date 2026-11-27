@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { browser } from 'wxt/browser';
 import { BLOCKED_SITES_KEY, NO_BLOCKED_SITES, blockedBy, compileBlockedSites } from '@/lib/settings/blocked-sites';
 import { NEW_TAB_KEY, asNewTabChoice, type NewTabChoice } from '@/lib/settings/new-tab';
+import { RUN_GLOW_KEY, RUN_NOTICES_KEY, RUN_SOUND_KEY, TAB_GROUPS_KEY, settingOn } from '@/lib/settings/run-surface';
 import { shortcutsOf, shortcutsPageFor, type Shortcut } from '@/lib/settings/shortcuts';
 import { ACTION_CUES_KEY, actionCuesOn } from './action-cues';
 import { CONTEXT_MENU_KEY, asContextMenuChoice, type ContextMenuChoice } from './context-menu';
@@ -47,6 +48,14 @@ export const usePushToTalk = (): [boolean, (on: boolean) => void] => useLocalSet
 
 export const useActionCues = (): [boolean, (on: boolean) => void] => useLocalSetting(ACTION_CUES_KEY, actionCuesOn);
 
+export const useTabGroups = (): [boolean, (on: boolean) => void] => useLocalSetting(TAB_GROUPS_KEY, settingOn);
+
+export const useRunNotices = (): [boolean, (on: boolean) => void] => useLocalSetting(RUN_NOTICES_KEY, settingOn);
+
+export const useRunSound = (): [boolean, (on: boolean) => void] => useLocalSetting(RUN_SOUND_KEY, settingOn);
+
+export const useRunGlow = (): [boolean, (on: boolean) => void] => useLocalSetting(RUN_GLOW_KEY, settingOn);
+
 export function useNewTabChoice(): [NewTabChoice, (next: NewTabChoice) => void] {
   const [choice, write] = useLocalSetting(NEW_TAB_KEY, asNewTabChoice);
   const change = useCallback(
@@ -63,7 +72,8 @@ const asPatterns = (value: unknown): string[] =>
   Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : [];
 
 /** The one writer of the blocked-sites list. Nothing on the daemon's side of the socket can reach this key. */
-export const useBlockedSites = (): [string[], (next: string[]) => void] => useLocalSetting(BLOCKED_SITES_KEY, asPatterns);
+export const useBlockedSites = (): [string[], (next: string[]) => void] =>
+  useLocalSetting(BLOCKED_SITES_KEY, asPatterns);
 
 export function useBlockedPattern(url: string | undefined): string | null {
   const [patterns] = useBlockedSites();

@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use serde_json::{Map, Value, json};
 
 use crate::guardrails::GuardrailConfig;
-use crate::guardrails::settings::{FENCE_SETTING, UNATTENDED_SETTING};
+use crate::guardrails::settings::{FENCE_SETTING, MODE_SETTING, UNATTENDED_SETTING};
 use crate::{agents, log, pairing, paths};
 
 pub fn config_path() -> PathBuf {
@@ -326,6 +326,13 @@ pub fn write_guardrail_setting(setting: &str, value: &Value) {
                 "deny"
             };
             guardrails.insert("unattended".into(), Value::String(effect.into()));
+        }
+    } else if setting == MODE_SETTING {
+        // `setting_writable` has already checked it is null or a mode's name.
+        if value.is_null() {
+            guardrails.shift_remove("mode");
+        } else {
+            guardrails.insert("mode".into(), value.clone());
         }
     } else {
         let mut rules = match guardrails.get("rules") {

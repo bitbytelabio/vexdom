@@ -3,6 +3,7 @@ import { fakeBrowser } from 'wxt/testing';
 import { success } from '@/lib/actions/protocol';
 import { BLOCKED_SITES_KEY, SITE_BLOCKED } from '@/lib/settings/blocked-sites';
 import { invokeForHarness } from './invoke';
+import { OUTSIDE_CALLER, rememberSeen } from './seen-sites';
 
 const HOME = 'chrome-extension://abcdef/newtab.html';
 
@@ -57,5 +58,17 @@ describe('navigating away from a page that is not a web page', () => {
       ok: false,
       error: { code: 'INVALID_INPUT', message: expect.stringContaining('absolute http(s) URL') },
     });
+  });
+});
+
+describe('acting on a page the caller has not looked at', () => {
+  test('a click on a site other than the one last seen there is refused until it looks again', async () => {
+    const tabId = await tabOn('https://b.com/');
+    await rememberSeen(tabId, 'a.com', OUTSIDE_CALLER);
+    expect(await invokeForHarness('page.clickElement', { target: { text: 'x' } }, tabId)).toMatchObject({
+      ok: false,
+      error: { code: 'PAGE_CHANGED' },
+    });
+    expect(sent).not.toHaveBeenCalled();
   });
 });

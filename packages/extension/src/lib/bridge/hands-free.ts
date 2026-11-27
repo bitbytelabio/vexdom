@@ -21,10 +21,23 @@ import { pickFocusIn } from './aeye';
 import { putBytes } from './file-store';
 import { openMicPermissionPage } from './mic-permission';
 import { ACTION_CUES_KEY, readActionCues } from './action-cues';
-import { HANDS_FREE_KEY, PUSH_TO_TALK_KEY, endHandsFree, readHandsFree, writeHandsFree, type HandsFreeState } from './panel-view';
+import {
+  HANDS_FREE_KEY,
+  PUSH_TO_TALK_KEY,
+  endHandsFree,
+  readHandsFree,
+  writeHandsFree,
+  type HandsFreeState,
+} from './panel-view';
 import { attachFile, closePanels, onPanelPresence, onTurnSettled, runCommand } from './run-port';
 import { openSidePanel } from './side-panel';
-import { TAB_SESSIONS_KEY, readTabSessions, type PendingApproval, type TabAnchor, type TabSession } from './tab-sessions';
+import {
+  TAB_SESSIONS_KEY,
+  readTabSessions,
+  type PendingApproval,
+  type TabAnchor,
+  type TabSession,
+} from './tab-sessions';
 import { THEME_KEY, readTheme, type ThemeId } from './theme';
 import { SPEECH_SERVICE_KEY, handsFreeSupported, noteSpeechService } from './speech-support';
 import { showToast } from './toast';
@@ -183,7 +196,8 @@ async function paint(): Promise<void> {
       const painted = JSON.stringify(view);
       if (sent.get(tab.id) === painted) return;
       sent.set(tab.id, painted);
-      if (await post(tab.id, { channel: HANDS_FREE_CHANNEL, op: 'show', view }, tab.id === frontId)) orbTabs.add(tab.id);
+      if (await post(tab.id, { channel: HANDS_FREE_CHANNEL, op: 'show', view }, tab.id === frontId))
+        orbTabs.add(tab.id);
       else orbTabs.delete(tab.id);
     }),
   );
@@ -194,7 +208,9 @@ async function paint(): Promise<void> {
 
 /** Each approval once: raised in a tab nobody is looking at, it is said where they are. */
 async function announce(sessions: TabSession[], frontId: number | null): Promise<void> {
-  const pending = sessions.flatMap((session) => (session.pendingApproval ? [{ session, ask: session.pendingApproval }] : []));
+  const pending = sessions.flatMap((session) =>
+    session.pendingApproval ? [{ session, ask: session.pendingApproval }] : [],
+  );
   const stored = (await browser.storage.session.get(ANNOUNCED_KEY))[ANNOUNCED_KEY];
   const told = new Set(Array.isArray(stored) ? (stored as string[]) : []);
   const ids = pending.map(({ ask }) => ask.toolId);
@@ -211,7 +227,9 @@ async function clearOrbs(): Promise<void> {
   if (showing === false) return;
   await browser.storage.session.remove(ANNOUNCED_KEY);
   const tabs = await browser.tabs.query({});
-  await Promise.all(tabs.map((tab) => tab.id != null && !tab.discarded && post(tab.id, { channel: HANDS_FREE_CHANNEL, op: 'hide' })));
+  await Promise.all(
+    tabs.map((tab) => tab.id != null && !tab.discarded && post(tab.id, { channel: HANDS_FREE_CHANNEL, op: 'hide' })),
+  );
   sent.clear();
   orbTabs.clear();
   showing = false;
@@ -225,12 +243,18 @@ async function aimMic(tabId: number | null, hold: boolean): Promise<void> {
   if (tabId != null) await openDictation(hold);
 }
 
-async function dictationUrl(): Promise<URL | null> {
+async function offscreenUrl(): Promise<URL | null> {
   if (import.meta.env.FIREFOX) return null;
   const [open] = await browser.runtime
     .getContexts({ contextTypes: [browser.runtime.ContextType.OFFSCREEN_DOCUMENT] })
     .catch(() => []);
   return open?.documentUrl ? new URL(open.documentUrl) : null;
+}
+
+/** The one offscreen page Chrome allows may be a chime instead, which is not listening. */
+async function dictationUrl(): Promise<URL | null> {
+  const url = await offscreenUrl();
+  return url?.pathname.endsWith('/dictation.html') ? url : null;
 }
 
 async function hasDictation(): Promise<boolean> {
@@ -247,6 +271,8 @@ async function openDictation(hold: boolean): Promise<void> {
   if (open?.searchParams.has('hold') === hold) return;
   if (!open && (await readPhase()) === 'failed') return;
   await closeDictation();
+  if ((await offscreenUrl())?.pathname.endsWith('/chime.html'))
+    await browser.offscreen.closeDocument().catch(() => undefined);
   await browser.offscreen
     .createDocument({
       url: hold ? HOLD_DICTATION_PAGE : DICTATION_PAGE,
@@ -301,7 +327,13 @@ async function askElsewhere(session: TabSession, pending: PendingApproval, brows
   const body = `The agent wants to ${spoken(pending.action)}${pending.site ? ` on ${pending.site}` : ''} — open the tab and tap the mic.`;
   const shown =
     browserInFront &&
-    (await showToast({ toastId: `approval-${pending.toolId}`, tone: 'warn', title, body, tabId: session.currentTabId }));
+    (await showToast({
+      toastId: `approval-${pending.toolId}`,
+      tone: 'warn',
+      title,
+      body,
+      tabId: session.currentTabId,
+    }));
   if (shown) return;
   await browser.notifications
     ?.create(`${NOTIFICATION_PREFIX}${session.currentTabId}:${pending.toolId}`, {
@@ -386,7 +418,10 @@ async function listen(on: boolean): Promise<void> {
   await syncHandsFree();
 }
 
-async function attach(request: Extract<OrbRequest, { op: 'attach' }>, tab: TabAnchor): Promise<{ ok: boolean; fileId?: string; error?: string }> {
+async function attach(
+  request: Extract<OrbRequest, { op: 'attach' }>,
+  tab: TabAnchor,
+): Promise<{ ok: boolean; fileId?: string; error?: string }> {
   const { name, mime, size, content } = request.file;
   const id = crypto.randomUUID();
   try {
@@ -398,7 +433,11 @@ async function attach(request: Extract<OrbRequest, { op: 'attach' }>, tab: TabAn
   return attached.ok ? { ok: true, fileId: id } : attached;
 }
 
-function answer(request: OrbRequest, tab: Browser.tabs.Tab & { id: number }, respond: (reply: unknown) => void): boolean {
+function answer(
+  request: OrbRequest,
+  tab: Browser.tabs.Tab & { id: number },
+  respond: (reply: unknown) => void,
+): boolean {
   switch (request.op) {
     case 'sync':
       sent.delete(tab.id);
@@ -407,7 +446,13 @@ function answer(request: OrbRequest, tab: Browser.tabs.Tab & { id: number }, res
       return false;
     case 'submit':
       if (request.text.trim()) {
-        runCommand({ op: 'instruct', text: request.text.trim(), tab: anchorOf(tab), focus: request.focus, liveTools: request.liveTools });
+        runCommand({
+          op: 'instruct',
+          text: request.text.trim(),
+          tab: anchorOf(tab),
+          focus: request.focus,
+          liveTools: request.liveTools,
+        });
       }
       respond({ ok: true });
       return false;
@@ -419,7 +464,13 @@ function answer(request: OrbRequest, tab: Browser.tabs.Tab & { id: number }, res
       void sessionIdFor(tab.id).then(
         (sessionId) =>
           sessionId &&
-          runCommand({ op: 'decision', sessionId, toolId: request.toolId, allow: request.allow, remember: request.remember }),
+          runCommand({
+            op: 'decision',
+            sessionId,
+            toolId: request.toolId,
+            allow: request.allow,
+            remember: request.remember,
+          }),
       );
       respond({ ok: true });
       return false;
@@ -503,9 +554,12 @@ export function serveHandsFree(): void {
     if (!notificationId.startsWith(NOTIFICATION_PREFIX)) return;
     const tabId = Number(notificationId.slice(NOTIFICATION_PREFIX.length).split(':')[0]);
     void browser.notifications.clear(notificationId);
-    void browser.tabs.update(tabId, { active: true }).then((tab) => {
-      if (tab?.windowId != null) void browser.windows.update(tab.windowId, { focused: true });
-    }).catch(() => undefined);
+    void browser.tabs
+      .update(tabId, { active: true })
+      .then((tab) => {
+        if (tab?.windowId != null) void browser.windows.update(tab.windowId, { focused: true });
+      })
+      .catch(() => undefined);
   });
 
   browser.tabs.onActivated.addListener(() => void syncHandsFree());
@@ -532,7 +586,8 @@ export function serveHandsFree(): void {
       handsFree ||
       DICTATION_KEY in changes ||
       (sessions && orbFacts(sessions.oldValue) !== orbFacts(sessions.newValue)) ||
-      (daemon && linkOf(daemon.oldValue as DaemonState | undefined) !== linkOf(daemon.newValue as DaemonState | undefined))
+      (daemon &&
+        linkOf(daemon.oldValue as DaemonState | undefined) !== linkOf(daemon.newValue as DaemonState | undefined))
     ) {
       void syncHandsFree();
     }

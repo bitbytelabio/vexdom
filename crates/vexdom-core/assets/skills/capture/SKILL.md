@@ -18,7 +18,7 @@ first, use the `emulation` playbook (`media: {"type":"print"}`) and look with
 
 ## Video
 
-1. `act {"do":"recordStart","path":"/Users/…/repro.webm"}` — `.webm` or `.mp4`; `fps` 1–60
+1. `act {"do":"recordStart","path":"/Users/…/repro.webm"}` — `.webm`, `.mp4` or `.gif`; `fps` 1–60
    (default 30); `cursor:true` draws the pointer; `contactSheet:true` also writes a PNG grid of
    the frames where the page changed (`contactSheetThreshold` 0–1 tunes what counts as a change).
 2. Do the steps at a human pace — a pause before and after each action, a longer one on the
@@ -31,6 +31,10 @@ running. Frames come only while the tab paints; a still page makes a short video
 recording even when a step fails.
 
 The contact sheet is the quick way to check what the video shows without watching it.
+
+Use a .gif path for a short shareable clip of what you did; keep it under ~30 s. It is made when
+you stop (at most 12 fps, 960 px wide, a progress bar along the bottom), and every action you take
+while recording is ringed and captioned in it.
 
 ## From a shell
 

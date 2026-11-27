@@ -1,5 +1,5 @@
 import { useEffect, useState, type ComponentType, type ReactNode } from 'react';
-import { Ban, Info, Link2, Puzzle, ShieldCheck, Sparkles, UserRound, type LucideIcon } from 'lucide-react';
+import { Ban, Info, Link2, Puzzle, ShieldCheck, Sparkles, SquareSlash, UserRound, type LucideIcon } from 'lucide-react';
 import { browser } from 'wxt/browser';
 
 import { About } from '@/extension/components/about';
@@ -10,48 +10,61 @@ import { DaemonLink } from '@/extension/components/daemon-link';
 import { ExtensionSettings, SettingsGroup } from '@/extension/components/extension-settings';
 import { GuardrailSettings } from '@/extension/components/guardrail-settings';
 import { ProfileSettings } from '@/extension/components/profile-settings';
+import { ShortcutSettings } from '@/extension/components/shortcut-settings';
 import { StatusPill, describeStatus } from '@/extension/components/status-pill';
 import { ThemePicker } from '@/extension/components/theme-picker';
 import { useDaemonState } from '@/lib/bridge/use-daemon-state';
 import { useTheme } from '@/lib/bridge/use-theme';
 import { cn } from '@/lib/utils';
 
-type SectionId = 'extension' | 'profile' | 'guardrails' | 'blocked' | 'agent' | 'connection' | 'about';
+type SectionId = 'extension' | 'shortcuts' | 'profile' | 'guardrails' | 'blocked' | 'agent' | 'connection' | 'about';
 
 const SECTIONS: { id: SectionId; label: string; icon: LucideIcon; blurb: string; View: ComponentType }[] = [
   {
     id: 'extension',
     label: 'Extension',
     icon: Puzzle,
-    blurb: 'How the extension looks and how you reach it. Every paired browser and the desktop app share the look; the right-click menu, the shortcuts and the rest belong to this browser.',
+    blurb:
+      'How the extension looks and how you reach it. Every paired browser and the desktop app share the look; the right-click menu, the shortcuts and the rest belong to this browser.',
     View: Extension,
+  },
+  {
+    id: 'shortcuts',
+    label: 'Shortcuts',
+    icon: SquareSlash,
+    blurb: 'Prompts you reuse: type / in the composer and pick one.',
+    View: ShortcutSettings,
   },
   {
     id: 'profile',
     label: 'Profile',
     icon: UserRound,
-    blurb: 'What the agent may use about you — for forms, sign-ups and checkouts — and rules it keeps to on every task. Anything filled in here reaches the model with each run, so it uses these exact values instead of guessing.',
+    blurb:
+      'What the agent may use about you — for forms, sign-ups and checkouts — and rules it keeps to on every task. Anything filled in here reaches the model with each run, so it uses these exact values instead of guessing.',
     View: ProfileSettings,
   },
   {
     id: 'guardrails',
     label: 'Guardrails',
     icon: ShieldCheck,
-    blurb: 'What the agent may do without asking you first. A run takes its policy when it starts, so a change applies to the next one. The desktop app’s Settings tab edits the same rows.',
+    blurb:
+      'What the agent may do without asking you first. A run takes its policy when it starts, so a change applies to the next one. The desktop app’s Settings tab edits the same rows.',
     View: GuardrailSettings,
   },
   {
     id: 'blocked',
     label: 'Blocked sites',
     icon: Ban,
-    blurb: 'Sites Vexdom will never read or act on — no agent, schedule or saved tool can override it. Kept in this browser only; the daemon, the agent and the desktop app cannot see or change it.',
+    blurb:
+      'Sites Vexdom will never read or act on — no agent, schedule or saved tool can override it. Kept in this browser only; the daemon, the agent and the desktop app cannot see or change it.',
     View: BlockedSitesSettings,
   },
   {
     id: 'agent',
     label: 'Agent',
     icon: Sparkles,
-    blurb: 'Which agent CLI the side panel drives, and on which model. A switch here or in the desktop app reaches every paired browser.',
+    blurb:
+      'Which agent CLI the side panel drives, and on which model. A switch here or in the desktop app reaches every paired browser.',
     View: Agent,
   },
   {
@@ -202,7 +215,8 @@ function Connection() {
         <DaemonLink />
       </Card>
       <p className="text-xs leading-relaxed text-ink-faint">
-        The Vexdom app’s Browsers tab lists every paired browser, and its Settings choose whether a new browser connects by itself, asks you first, or needs a code.
+        The Vexdom app’s Browsers tab lists every paired browser, and its Settings choose whether a new browser connects
+        by itself, asks you first, or needs a code.
       </p>
     </div>
   );

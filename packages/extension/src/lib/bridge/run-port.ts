@@ -6,7 +6,6 @@ import {
   TABS_PROTOCOL,
   type ActionResult,
   type AttachedFile,
-  type ConversationTab,
   type FocusedElement,
   type RunEvent,
   type SavedRecording,
@@ -37,6 +36,7 @@ import {
   type NewFile,
 } from './file-store';
 import { invokeForHarness } from './invoke';
+import { markRosterSent, rosterOf } from './roster';
 import {
   acknowledgeCompleted,
   activeMonitorStates,
@@ -47,7 +47,6 @@ import {
 import { currentRecording, onRecordingState, startActiveTabRecording, stopRecording } from './recorder';
 import { asSavedRecording, listRecordings, readRecordingBody } from './recording-store';
 import { redactInput } from './redact';
-import { sealForPage } from './secret-vault';
 import { forgetTab, syncRunIndicator } from './run-indicator';
 import { attachPreview, monitorNotice, nextId, notice, patchTool, reduce, type RunItem } from './run-items';
 import { onScreenshotPreview, type ScreenshotPreview } from './screenshot-preview';
@@ -63,6 +62,7 @@ import { isBlockedRefusal, refusalFor, siteBlocked, siteCheck, tabUrls } from '.
 import { recordGeneratedSkill } from './skill-store';
 import { dropTimersForSession, onTimerFire, type TimerHandoff } from './timer';
 import { announceTask, askTaskApproval, dropTaskApproval, takeApprovalAnswer } from './task-notices';
+import { announceRunEnd, noticeRunApproval } from './run-notices';
 import { handOverPrompt, replayVerdict, verdictOf, type TaskVerdict } from './task-outcome';
 import { putTaskTranscript } from './task-run-store';
 import { onToastAnswer } from './toast';
@@ -97,6 +97,7 @@ import {
   sessionForTab,
   siteUrlOf,
   type TabAnchor,
+  type TabRemoval,
   type TabSession,
   type TaskTag,
 } from './tab-sessions';
@@ -113,10 +114,6 @@ const PERSIST_DEBOUNCE_MS = 800;
 const MAX_EXTERNAL_ITEMS = 100;
 
 const TAB_LOAD_WAIT_MS = 15_000;
-
-const MAX_ROSTER = 20;
-
-const MAX_ROSTER_TITLE = 120;
 
 export type RunCommand =
   | { op: 'instruct'; text: string; tab: TabAnchor; agentSkillId?: string; focus?: FocusedElement; liveTools?: boolean }
@@ -315,20 +312,38 @@ export function addTabsTo(sessionId: string, tabIds: number[]): Promise<void> {
   return serialized(() => gather(sessionId, tabIds));
 }
 
+/** The user took a tab out of a conversation, from the panel or by dragging it out of its tab group. */
+export function takeTabOut(sessionId: string, tabId: number): Promise<TabRemoval> {
+  return serialized(async () => {
+    const removal = await removeTab(sessionId, tabId);
+    if (removal === 'removed') await syncRunIndicator();
+    return removal;
+  });
+}
+
 /** Tabs the user put in a conversation: only web pages they have not blocked, and none another conversation is working in. */
 async function gather(sessionId: string, tabIds: number[]): Promise<void> {
   const blocked = await siteCheck();
   const tabs = await Promise.all(tabIds.map((tabId) => browser.tabs.get(tabId).catch(() => null)));
-  const usable = tabs.flatMap((tab) => (tab?.id != null && hostOf(tab.url) && !blocked(...tabUrls(tab)) ? [tab.id] : []));
+  const usable = tabs.flatMap((tab) =>
+    tab?.id != null && hostOf(tab.url) && !blocked(...tabUrls(tab)) ? [tab.id] : [],
+  );
   const outcome = await addTabs(sessionId, usable);
   if (!outcome) return;
   for (const absorbed of outcome.absorbed) {
     await fileAway(absorbed);
-    if (absorbed.turns > 0) await append(sessionId, notice('info', `“${absorbed.title}” joined. Its own conversation is in History.`));
+    if (absorbed.turns > 0)
+      await append(sessionId, notice('info', `“${absorbed.title}” joined. Its own conversation is in History.`));
   }
   if (outcome.refused.length) {
     const count = outcome.refused.length;
-    await append(sessionId, notice('info', `${count === 1 ? 'A tab' : `${count} tabs`} stayed where ${count === 1 ? 'it was' : 'they were'}: another conversation is working there.`));
+    await append(
+      sessionId,
+      notice(
+        'info',
+        `${count === 1 ? 'A tab' : `${count} tabs`} stayed where ${count === 1 ? 'it was' : 'they were'}: another conversation is working there.`,
+      ),
+    );
   }
   await syncRunIndicator();
 }
@@ -356,7 +371,9 @@ export function runCommand(command: RunCommand): void {
 function handle(command: RunCommand): void {
   switch (command.op) {
     case 'instruct':
-      void serialized(() => instruct(command.text, command.tab, command.agentSkillId, command.focus, command.liveTools));
+      void serialized(() =>
+        instruct(command.text, command.tab, command.agentSkillId, command.focus, command.liveTools),
+      );
       return;
     case 'cancel':
       void serialized(() => stopRun(command.sessionId));
@@ -379,13 +396,16 @@ function handle(command: RunCommand): void {
       void serialized(async () => {
         const ensured = await ensureSessionForTab(command.tab);
         if (ensured.ok) await gather(ensured.session.sessionId, command.tabIds);
-        else broadcast({ op: 'event', runId: LOCAL_RUN, event: { kind: 'error', code: 'SESSION_LIMIT', message: ensured.message } });
+        else
+          broadcast({
+            op: 'event',
+            runId: LOCAL_RUN,
+            event: { kind: 'error', code: 'SESSION_LIMIT', message: ensured.message },
+          });
       });
       return;
     case 'removeTab':
-      void serialized(async () => {
-        if ((await removeTab(command.sessionId, command.tabId)) === 'removed') await syncRunIndicator();
-      });
+      void takeTabOut(command.sessionId, command.tabId);
       return;
     case 'activateMap':
     case 'discardMap': {
@@ -492,7 +512,11 @@ async function attach(file: NewFile, anchor: TabAnchor): Promise<Attached> {
   const ensured = await ensureSessionForTab(anchor);
   if (!ensured.ok) {
     await removeFile(file.id);
-    broadcast({ op: 'event', runId: LOCAL_RUN, event: { kind: 'error', code: 'SESSION_LIMIT', message: ensured.message } });
+    broadcast({
+      op: 'event',
+      runId: LOCAL_RUN,
+      event: { kind: 'error', code: 'SESSION_LIMIT', message: ensured.message },
+    });
     return { ok: false, error: ensured.message };
   }
   await indexFile(file, ensured.session.sessionId);
@@ -546,6 +570,7 @@ async function absorb(runId: string, event: RunEvent): Promise<void> {
     await patchSession(sessionId, {
       pendingApproval: { toolId: event.toolId, action: event.action, input: event.input, site: event.site },
     });
+    await syncRunIndicator();
     if (session.task) {
       void askTaskApproval({
         sessionId,
@@ -556,16 +581,26 @@ async function absorb(runId: string, event: RunEvent): Promise<void> {
         site: event.site,
         tabId: session.currentTabId,
       });
-    }
+    } else void noticeRunApproval(session, event);
   } else if (event.kind === 'toolResult') {
     await patchSession(sessionId, { pendingApproval: undefined });
-    if (session.task) dropTaskApproval(event.toolId);
+    await syncRunIndicator();
+    dropTaskApproval(event.toolId);
   } else if (event.kind === 'usage') {
     await patchSession(sessionId, { usage: event.usage });
   }
 
-  if (event.kind === 'done' || event.kind === 'error') await settle(sessionId);
-  else schedulePersist(sessionId);
+  if (event.kind === 'done' || event.kind === 'error') {
+    await patchSession(sessionId, { outcome: outcomeOf(event) });
+    await settle(sessionId);
+  } else schedulePersist(sessionId);
+}
+
+/** How a turn ended, as its tab group shows it; a stop the user asked for shows nothing. */
+function outcomeOf(event: Extract<RunEvent, { kind: 'done' | 'error' }>): TabSession['outcome'] {
+  if (event.kind === 'error') return 'failed';
+  if (event.stopReason === 'cancelled') return undefined;
+  return event.stopReason === 'end_turn' ? 'done' : 'failed';
 }
 
 /** A finished turn put its reports in the agent's own session, so the next turn need not carry them. */
@@ -594,6 +629,7 @@ async function settle(sessionId: string): Promise<void> {
   await persist(sessionId);
 
   const settled = (await readTabSessions())[sessionId];
+  if (settled && !settled.task) void announceRunEnd(settled, verdictOf(await bufferFor(sessionId)));
   if (settled?.task && !settled.task.done) {
     await loadCore();
     return finishTask(settled, verdictOf(await bufferFor(sessionId)));
@@ -635,7 +671,10 @@ async function instruct(
   if (outcome === 'busy') {
     await append(
       sessionId,
-      notice('error', 'RUN_IN_PROGRESS: This conversation is still running — stop it before sending another instruction.'),
+      notice(
+        'error',
+        'RUN_IN_PROGRESS: This conversation is still running — stop it before sending another instruction.',
+      ),
     );
   }
   if (outcome !== 'started') turnOver(anchor.tabId, await bufferFor(sessionId));
@@ -646,7 +685,13 @@ type TurnOutcome = 'started' | 'local' | 'busy' | 'offline';
 async function startTurn(
   session: TabSession,
   text: string,
-  options: { agentSkillId?: string; focus?: FocusedElement; liveTools?: boolean; fastPath: boolean; task?: TaskContext },
+  options: {
+    agentSkillId?: string;
+    focus?: FocusedElement;
+    liveTools?: boolean;
+    fastPath: boolean;
+    task?: TaskContext;
+  },
 ): Promise<TurnOutcome> {
   const { agentSkillId, focus, liveTools, fastPath, task } = options;
   const { sessionId } = session;
@@ -667,6 +712,7 @@ async function startTurn(
     const current = await browser.tabs.get(session.currentTabId).catch(() => null);
     const hidden = await siteBlocked(session.url, ...tabUrls(current), focus?.url);
     const tabs = daemonSpeaks(TABS_PROTOCOL) ? await rosterOf(session, current) : undefined;
+    if (daemonSpeaks(TABS_PROTOCOL)) markRosterSent(sessionId, tabs);
     const runId = sendInstruction(text, {
       url: hidden ? undefined : siteUrlOf(session.url),
       tabId: session.currentTabId,
@@ -692,42 +738,12 @@ async function startTurn(
       await persist(sessionId);
       return 'offline';
     }
-    await patchSession(sessionId, { runId });
+    await patchSession(sessionId, { runId, outcome: undefined });
     await syncRunIndicator();
     return 'started';
   } finally {
     busy.delete(sessionId);
   }
-}
-
-/** The conversation's tabs as the agent may use them: this window's, in tab-strip order, with blocked sites left out entirely. */
-async function rosterOf(session: TabSession, current: Browser.tabs.Tab | null): Promise<ConversationTab[] | undefined> {
-  if (session.tabIds.length < 2 || current?.windowId == null) return undefined;
-  const blocked = await siteCheck();
-  const tabs = (await browser.tabs.query({ windowId: current.windowId }))
-    .filter((tab) => tab.id != null && session.tabIds.includes(tab.id) && !blocked(...tabUrls(tab)))
-    .sort((a, b) => a.index - b.index);
-  const roster: ConversationTab[] = [];
-  for (const tab of tabs) {
-    const host = hostOf(tab.url);
-    const isCurrent = tab.id === session.currentTabId;
-    if (!host && !isCurrent) continue;
-    const { value: sealed } = await sealForPage((tab.title ?? '').replace(/\s+/g, ' ').trim(), host);
-    roster.push({
-      tabId: tab.id!,
-      title: sealed.slice(0, MAX_ROSTER_TITLE),
-      ...(host ? { host } : {}),
-      ...(isCurrent ? { current: true as const } : {}),
-      ...(session.userTabIds.includes(tab.id!) ? { chosen: true as const } : {}),
-    });
-  }
-  return roster.length > 1 ? keepingCurrent(roster) : undefined;
-}
-
-/** The first tabs in tab-strip order, up to the limit, with the one the run is on kept wherever it sits. */
-function keepingCurrent(roster: ConversationTab[]): ConversationTab[] {
-  const current = roster.findIndex((tab) => tab.current);
-  return current < MAX_ROSTER ? roster.slice(0, MAX_ROSTER) : [...roster.slice(0, MAX_ROSTER - 1), roster[current]];
 }
 
 async function handledLocally(text: string, session: TabSession): Promise<boolean> {
@@ -815,10 +831,7 @@ async function restore(sessionId: string, anchor: TabAnchor): Promise<void> {
   const meta = (await listSessions()).find((s) => s.id === sessionId);
   if (!meta) return;
   const transcript = await readTranscript(sessionId);
-  buffers.set(
-    sessionId,
-    transcript?.items ?? [notice('error', 'That conversation’s messages are no longer stored.')],
-  );
+  buffers.set(sessionId, transcript?.items ?? [notice('error', 'That conversation’s messages are no longer stored.')]);
 
   const session = await bindStoredSession(
     {
@@ -919,7 +932,10 @@ export function serveTabSessions(): void {
   });
 
   /** The tabs that could carry a conversation on once its main tab closes: still open, and not going with their window. */
-  async function survivors(tabId: number, removeInfo: { windowId: number; isWindowClosing: boolean }): Promise<number[]> {
+  async function survivors(
+    tabId: number,
+    removeInfo: { windowId: number; isWindowClosing: boolean },
+  ): Promise<number[]> {
     const session = await sessionForTab(tabId);
     if (session?.mainTabId !== tabId) return [];
     const open = await Promise.all(heirsOf(session, tabId).map((id) => browser.tabs.get(id).catch(() => null)));
@@ -938,9 +954,15 @@ export function serveTabSessions(): void {
     });
     if (session.runId && wasCurrent) {
       await stopRun(session.sessionId);
-      await append(session.sessionId, notice('error', 'CANCELLED: The tab it was working in was closed, so that run is over.'));
+      await append(
+        session.sessionId,
+        notice('error', 'CANCELLED: The tab it was working in was closed, so that run is over.'),
+      );
     }
-    await append(session.sessionId, notice('info', `The tab it began on was closed. It carries on in “${tab?.title ?? session.title}”.`));
+    await append(
+      session.sessionId,
+      notice('info', `The tab it began on was closed. It carries on in “${tab?.title ?? session.title}”.`),
+    );
   }
 
   browser.tabs.onReplaced.addListener((added, removed) => {
@@ -985,7 +1007,12 @@ async function startTaskRun(order: TaskOrder): Promise<ActionResult> {
 async function openTaskSession(order: TaskOrder): Promise<ActionResult<{ sessionId: string; tabId: number }>> {
   const tab = await openBackgroundTab(order.url);
   if (tab?.id == null) return failure('TAB_UNREACHABLE', 'The browser would not open a tab for the task.');
-  const ensured = await ensureSessionForTab({ tabId: tab.id, url: order.url, windowId: tab.windowId, title: order.name });
+  const ensured = await ensureSessionForTab({
+    tabId: tab.id,
+    url: order.url,
+    windowId: tab.windowId,
+    title: order.name,
+  });
   if (!ensured.ok) {
     await browser.tabs.remove(tab.id).catch(() => undefined);
     return failure('SESSION_LIMIT', ensured.message);
@@ -1074,7 +1101,9 @@ async function replay(
   recording: { name: string; goal: string },
   calls: ReplayCall[],
 ): Promise<void> {
-  await serialized(() => append(sessionId, { kind: 'user', id: nextId(), text: `Replay the recording “${recording.name}”.` }));
+  await serialized(() =>
+    append(sessionId, { kind: 'user', id: nextId(), text: `Replay the recording “${recording.name}”.` }),
+  );
   let extracted: string | undefined;
   for (const call of calls) {
     const tabId = (await readTabSessions())[sessionId]?.currentTabId;
@@ -1095,7 +1124,10 @@ async function replay(
     );
     if (!result.ok) {
       const error = `${result.error.code}: ${result.error.message}`;
-      const verdict: TaskVerdict = { outcome: 'failed', reason: `Step ${call.ordinal} (${call.intent}) failed — ${error}` };
+      const verdict: TaskVerdict = {
+        outcome: 'failed',
+        reason: `Step ${call.ordinal} (${call.intent}) failed — ${error}`,
+      };
       if (isBlockedRefusal(result)) return endTask(sessionId, verdict);
       return handOver(sessionId, order, handOverPrompt({ ...recording, ...call, total: calls.length, error }), verdict);
     }

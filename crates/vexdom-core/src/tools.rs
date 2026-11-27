@@ -97,13 +97,19 @@ pub const STOP_RECORDING_ACTION: &str = "vexdom.stopRecording";
 pub const READ_SITEMAP_ACTION: &str = "vexdom.readSitemap";
 pub const FOCUS_SHOT_ACTION: &str = "vexdom.focusShot";
 pub const READ_FILE_ACTION: &str = "vexdom.readFile";
-pub const RESERVED_ACTIONS: [&str; 6] = [
+/// A side-panel run hands the page to the user (a sign-in, a CAPTCHA) and waits for them.
+pub const HAND_OFF_ACTION: &str = "vexdom.handOff";
+/// In Follow-a-plan mode, a side-panel run shows its sites and steps before it acts.
+pub const PROPOSE_PLAN_ACTION: &str = "vexdom.proposePlan";
+pub const RESERVED_ACTIONS: [&str; 8] = [
     SAVE_SITE_MAP_ACTION,
     START_RECORDING_ACTION,
     STOP_RECORDING_ACTION,
     READ_SITEMAP_ACTION,
     FOCUS_SHOT_ACTION,
     READ_FILE_ACTION,
+    HAND_OFF_ACTION,
+    PROPOSE_PLAN_ACTION,
 ];
 
 /// Extension actions the Bridge uses itself and never offers or forwards from a control client.

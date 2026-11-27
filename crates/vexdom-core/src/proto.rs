@@ -1,8 +1,9 @@
 //! Protocol constants shared with the extension: `src/lib/actions/protocol.ts`, `reserved.ts`,
 //! `src/lib/notices.ts` and `src/lib/pairing.ts`.
 
-/// The wire protocol this Bridge speaks (ADR-025: Cap'n Proto from 27 on).
-pub const SOCKET_PROTOCOL_VERSION: u32 = 27;
+/// The wire protocol this Bridge speaks (ADR-025: Cap'n Proto from 27 on; 28 lists and forgets
+/// standing approvals).
+pub const SOCKET_PROTOCOL_VERSION: u32 = 28;
 /// The oldest extension the Bridge lets in; older extensions speak JSON and cannot connect.
 pub const MIN_EXTENSION_PROTOCOL: u32 = 27;
 /// The run id of a tool call that arrives from outside any agent run.

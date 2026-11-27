@@ -225,6 +225,25 @@ fn reserved_descriptor(action: &str) -> Option<Value> {
             "description": "Show the screenshot of the element the user pointed at with A-Eye, taken at the instant they picked it. Only answers when the current instruction arrived with a pick attached.",
             "inputSchema": {"type": "object", "properties": {}},
         })),
+        tools::HAND_OFF_ACTION => Some(json!({
+            "name": action,
+            "description": "Hand the page to the user for something only they can do — signing in, a CAPTCHA you cannot solve, a payment or 2FA step — and wait until they say they are done. Give a one-line reason telling them what to do.",
+            "inputSchema": object_schema(
+                json!({"reason": {"type": "string", "maxLength": 300, "description": "What the user should do, e.g. \"Sign in to GitHub, then press Done.\""}}),
+                &["reason"],
+            ),
+        })),
+        tools::PROPOSE_PLAN_ACTION => Some(json!({
+            "name": action,
+            "description": "Before acting in Follow-a-plan mode: show the user the sites you need and your steps. Acting on a listed site needs no further approval once they accept.",
+            "inputSchema": object_schema(
+                json!({
+                    "domains": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": 10},
+                    "steps": {"type": "array", "items": {"type": "string", "maxLength": 200}, "minItems": 1, "maxItems": 7},
+                }),
+                &["domains", "steps"],
+            ),
+        })),
         _ => None,
     }
 }
@@ -525,6 +544,7 @@ impl Host {
                 vec![
                     tools::SAVE_SITE_MAP_ACTION.into(),
                     tools::FOCUS_SHOT_ACTION.into(),
+                    tools::HAND_OFF_ACTION.into(),
                 ]
             } else {
                 described.reserved.clone()

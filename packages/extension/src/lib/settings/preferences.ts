@@ -5,7 +5,13 @@
  */
 
 import { isThemeId, type ThemeId } from './theme';
-import { isRuleEffect, type GuardrailSettings, type GuardrailValue } from './guardrails';
+import {
+  MODE_SETTING,
+  isPermissionMode,
+  isRuleEffect,
+  type GuardrailSettings,
+  type GuardrailValue,
+} from './guardrails';
 import { isUserProfile, type UserProfile } from './profile';
 import type { PairingMode } from '@/lib/pairing';
 
@@ -31,6 +37,9 @@ export function isPreferenceChange(value: unknown): value is PreferenceChange {
   return (
     change.kind === 'guardrail' &&
     typeof change.setting === 'string' &&
-    (change.value === null || typeof change.value === 'boolean' || isRuleEffect(change.value))
+    (change.value === null ||
+      typeof change.value === 'boolean' ||
+      isRuleEffect(change.value) ||
+      (change.setting === MODE_SETTING && isPermissionMode(change.value)))
   );
 }

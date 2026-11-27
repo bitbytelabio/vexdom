@@ -7,6 +7,7 @@ import { exposeIndicator } from '@/lib/indicator/host';
 import { exposeMonitor } from '@/lib/monitor/watch';
 import { exposeRail } from '@/lib/rail/host';
 import { exposeRecorder } from '@/lib/recordings/host';
+import { exposeRegionPicker } from '@/lib/region/host';
 import { exposeToast } from '@/lib/toast/host';
 
 export default defineContentScript({
@@ -25,5 +26,6 @@ export default defineContentScript({
     exposeRail();
     exposeToast();
     exposeHandsFree();
+    exposeRegionPicker();
   },
 });

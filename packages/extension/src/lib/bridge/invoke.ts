@@ -22,8 +22,10 @@ import { monitorStatus } from '@/lib/actions/page/monitor-status';
 import { navigate, resolveNavigation, type NavigateInput } from '@/lib/actions/page/navigate';
 import { openTab } from '@/lib/actions/page/open-tab';
 import { openWindow } from '@/lib/actions/page/open-window';
+import { resizeWindow } from '@/lib/actions/page/resize-window';
 import { pickElement } from '@/lib/actions/page/pick-element';
 import { pushState } from '@/lib/actions/page/push-state';
+import { query } from '@/lib/actions/page/query';
 import { readConsole } from '@/lib/actions/page/read-console';
 import { readNetwork } from '@/lib/actions/page/read-network';
 import { readRecording } from '@/lib/actions/page/read-recording';
@@ -84,15 +86,14 @@ import { blockedRefusal, refusalFor, refusalForTab, siteCheck, tabUrls } from '@
 import { switchFrameInTab } from '@/lib/bridge/frames';
 import { refFrameOf, screenshotWithLabels, snapshotTab } from '@/lib/bridge/snapshot-frames';
 import { listMeta, readBytes } from '@/lib/bridge/file-store';
-import {
-  readConsoleFor,
-  readNetworkFor,
-  startTabDiagnostics,
-  stopTabDiagnostics,
-} from '@/lib/bridge/diagnostics';
+import { readConsoleFor, readNetworkFor, startTabDiagnostics, stopTabDiagnostics } from '@/lib/bridge/diagnostics';
 import { awaitMonitorDone, monitorStatusFor, startTabMonitor, stopTabMonitor } from '@/lib/bridge/monitor';
 import { startJobTimer, stopJobTimer, timerStatusFor } from '@/lib/bridge/timer';
-import { listRecordings as listStoredMeta, readRecordingBody, recordedOnBlockedSite } from '@/lib/bridge/recording-store';
+import {
+  listRecordings as listStoredMeta,
+  readRecordingBody,
+  recordedOnBlockedSite,
+} from '@/lib/bridge/recording-store';
 import { pickInTab } from '@/lib/bridge/pick';
 import { cued } from '@/lib/bridge/action-cues';
 import { cueFor } from '@/lib/cues/plan';
@@ -108,6 +109,9 @@ import { a11yInTab, reactInTab, vitalsInTab } from '@/lib/bridge/devtools';
 import { tabKeepInTab, thawIfFrozen } from '@/lib/bridge/tab-keep';
 import { closeOpenTab, openNewTab, switchToTab, watchForLoad, type TabRef } from '@/lib/bridge/tabs';
 import { adoptSubtab, sessionForRun, sessionForTab, setCurrentTab, type TabSession } from '@/lib/bridge/tab-sessions';
+import { adoptMcpTab } from '@/lib/bridge/mcp-tabs';
+import { LOOKS, OUTSIDE_CALLER, PAGE_CHANGERS, rememberSeen, seenHost } from '@/lib/bridge/seen-sites';
+import { rosterUpdate } from '@/lib/bridge/roster';
 
 /**
  * The sanitizer's client-side half, wrapped around every action the harness runs.
@@ -133,10 +137,34 @@ export async function invokeForHarness(
   const result = await dispatch(action, release.input, tabId, runId, cueFor(action, input));
   const landed = await guardLanding(action, result, tabId, runId);
   if (landed) return landed;
+  if (result.ok) await noteSeen(action, result.data, tabId, runId);
   // Cookies read for their own url are that site's, not the tab's.
   const ownUrl = cookiesUrl(action, input);
   const { value } = await sealForPage(result, ownUrl ? hostOf(ownUrl) : await targetOrigin(tabId, runId));
-  return value;
+  // The Bridge's own address check asks page.query and reads only its value, so the roster waits for the next result.
+  return action === query.name ? value : withRoster(value, runId);
+}
+
+/** What the caller has now seen: a page it looked at, or the one it moved to itself (a frame included). */
+async function noteSeen(action: string, data: unknown, tabId?: number, runId?: string): Promise<void> {
+  const moved = [navigate.name, openTab.name, switchTab.name, switchFrame.name].includes(action);
+  if (!LOOKS.has(action) && !moved) return;
+  const reported = data as { tabId?: unknown; activeTabId?: unknown } | undefined;
+  const landedOn =
+    action === openTab.name ? reported?.tabId : action === switchTab.name ? reported?.activeTabId : undefined;
+  const owner = runId ? await sessionForRun(runId) : null;
+  const tab = typeof landedOn === 'number' ? await pinnedTab(landedOn) : await resolveTab(tabId, owner);
+  if (tab?.id == null) return;
+  const url = await focusedUrl(tab.id, tab.url);
+  await rememberSeen(tab.id, url ? hostOf(url) : undefined, owner?.sessionId ?? OUTSIDE_CALLER);
+}
+
+/** A conversation whose tabs changed mid-turn hears of it with the next result it gets. */
+async function withRoster(value: ActionResult, runId?: string): Promise<ActionResult> {
+  const owner = runId ? await sessionForRun(runId) : null;
+  if (!owner || !value.ok || !value.data || typeof value.data !== 'object' || Array.isArray(value.data)) return value;
+  const tabsNow = await rosterUpdate(owner);
+  return tabsNow ? { ...value, data: { ...value.data, tabsNow } } : value;
 }
 
 /** Answered from extension storage alone — they never touch a tab, and what they hand back is filtered where it is kept. */
@@ -157,6 +185,8 @@ const TAB_FREE = new Set(
     siteToolResult,
     cancelSiteTool,
     checkSites,
+    // Moves the window, never reads or acts on its page.
+    resizeWindow,
   ].map((action) => action.name),
 );
 
@@ -177,7 +207,12 @@ const WATCHES_A_TAB = new Set([startMonitor, startDiagnostics].map((action) => a
  * where it is about to go, every frame on the focused path, and wherever the action itself
  * would send the browser.
  */
-async function guardTarget(action: string, input: unknown, tabId?: number, runId?: string): Promise<ActionResult | null> {
+async function guardTarget(
+  action: string,
+  input: unknown,
+  tabId?: number,
+  runId?: string,
+): Promise<ActionResult | null> {
   if (TAB_FREE.has(action) || PICKS_ITS_TAB.has(action)) return null;
   const ownUrl = cookiesUrl(action, input);
   if (ownUrl) return refusalFor(ownUrl);
@@ -197,12 +232,28 @@ async function guardTarget(action: string, input: unknown, tabId?: number, runId
       `Tab ${tab.id} is a browser page, not a web page — page actions cannot read or act on it. page.navigate to an absolute http(s) URL first.`,
     );
   }
+  if (PAGE_CHANGERS.has(action)) {
+    const liveUrl = await focusedUrl(tab.id, tab.url);
+    const live = liveUrl ? hostOf(liveUrl) : undefined;
+    const seen = await seenHost(tab.id, owner?.sessionId ?? OUTSIDE_CALLER);
+    if (seen && live && seen !== live) {
+      return failure(
+        'PAGE_CHANGED',
+        `Tab ${tab.id} is on ${live} now, not ${seen} where you last looked. Look at it again (snapshot) before acting.`,
+      );
+    }
+  }
   const frames = (await framePath(tab.id)).map((step) => step.url);
   return refusalFor(...tabUrls(tab), ...frames, ...destinationsOf(action, input, tab.url));
 }
 
 /** A redirect, a form or a slow screenshot can leave the tab somewhere blocked; nothing read there goes back. */
-async function guardLanding(action: string, result: ActionResult, tabId?: number, runId?: string): Promise<ActionResult | null> {
+async function guardLanding(
+  action: string,
+  result: ActionResult,
+  tabId?: number,
+  runId?: string,
+): Promise<ActionResult | null> {
   if (!result.ok || TAB_FREE.has(action) || WATCHES_A_TAB.has(action)) return null;
   if (action === switchTab.name || action === closeTab.name) return null;
   const reported = result.data as { tabId?: unknown; finalUrl?: unknown; landedOn?: unknown } | undefined;
@@ -282,6 +333,7 @@ async function dispatch(
   const owner = runId ? await sessionForRun(runId) : null;
   if (action === openTab.name) return openSessionTab(input, owner);
   if (action === openWindow.name) return openSessionWindow(input, owner);
+  if (action === resizeWindow.name) return resizeSessionWindow(input, tabId, owner);
   const ownUrl = cookiesUrl(action, input);
   if (ownUrl) return cookiesFor(input);
   if (action === startDiagnostics.name) return beginDiagnostics(input, tabId ?? owner?.currentTabId, owner?.sessionId);
@@ -318,7 +370,8 @@ async function routeInTab(
 ): Promise<ActionResult> {
   if (action === tabKeep.name) return tabKeepInTab(tab.id, input);
   await thawIfFrozen(tab.id);
-  if (action === navigate.name) return isWebPage(tab.url) ? navigateTab(tab.id, input) : navigateViaTabsApi(tab.id, input);
+  if (action === navigate.name)
+    return isWebPage(tab.url) ? navigateTab(tab.id, input) : navigateViaTabsApi(tab.id, input);
   if (action === searchSite.name) return searchTab(tab.id, input);
   if (action === switchTab.name) return switchSessionTab({ id: tab.id, windowId: tab.windowId }, input, owner);
   if (action === switchFrame.name) return switchFrameInTab(tab.id, tab.url, input);
@@ -389,7 +442,12 @@ async function resolveTab(tabId: number | undefined, owner: TabSession | null) {
 }
 
 async function openSessionTab(input: unknown, owner: TabSession | null): Promise<ActionResult> {
-  if (!owner) return openNewTab(input);
+  if (!owner) {
+    const result = await openNewTab(input);
+    const opened = result.ok ? (result.data as { tabId?: unknown }).tabId : undefined;
+    if (typeof opened === 'number') await adoptMcpTab(opened);
+    return result;
+  }
   const anchor = (await pinnedTab(owner.currentTabId)) ?? (await pinnedTab(owner.mainTabId));
   const result = await openNewTab(input, anchor?.id != null ? { id: anchor.id, windowId: anchor.windowId } : undefined);
   if (!result.ok) return result;
@@ -413,7 +471,9 @@ async function openSessionWindow(input: unknown, owner: TabSession | null): Prom
       if (plan.kind !== 'url') return failure('INVALID_INPUT', 'page.openWindow opens a URL.');
       href = plan.href;
     } catch (error) {
-      return error instanceof ActionError ? failure(error.code, error.message) : failure('ACTION_FAILED', String(error));
+      return error instanceof ActionError
+        ? failure(error.code, error.message)
+        : failure('ACTION_FAILED', String(error));
     }
     const refused = await refusalFor(href);
     if (refused) return refused;
@@ -425,9 +485,47 @@ async function openSessionWindow(input: unknown, owner: TabSession | null): Prom
     return failure('ACTION_FAILED', error instanceof Error ? error.message : String(error));
   }
   const tabId = created?.tabs?.[0]?.id;
-  if (created?.id == null || tabId == null) return failure('ACTION_FAILED', 'The browser opened a window but reported no tab in it.');
+  if (created?.id == null || tabId == null)
+    return failure('ACTION_FAILED', 'The browser opened a window but reported no tab in it.');
   if (owner) await adoptSubtab(owner.sessionId, tabId, { activate: true, opened: true });
+  else await adoptMcpTab(tabId);
   return success({ windowId: created.id, tabId });
+}
+
+async function resizeSessionWindow(
+  input: unknown,
+  tabId: number | undefined,
+  owner: TabSession | null,
+): Promise<ActionResult> {
+  const parsed = resizeWindow.input.safeParse(input ?? {});
+  if (!parsed.success) return failure('INVALID_INPUT', z.prettifyError(parsed.error));
+  const tab = await resolveTab(tabId, owner);
+  if (tab?.windowId == null) return failure('NO_ACTIVE_TAB', 'No tab to find the window of.');
+  const { state, width, height, left, top } = parsed.data;
+  try {
+    const before = await browser.windows.get(tab.windowId);
+    if (state) {
+      await browser.windows.update(tab.windowId, { state });
+    } else {
+      if (before.state !== 'normal') await browser.windows.update(tab.windowId, { state: 'normal' });
+      const geometry = Object.fromEntries(
+        Object.entries({ width, height, left, top }).filter(([, value]) => value !== undefined),
+      );
+      await browser.windows.update(tab.windowId, geometry);
+    }
+    const now = await browser.windows.get(tab.windowId);
+    return success({
+      performed: 'resized the window',
+      windowId: now.id,
+      width: now.width,
+      height: now.height,
+      left: now.left,
+      top: now.top,
+      state: now.state,
+    });
+  } catch (error) {
+    return failure('ACTION_FAILED', error instanceof Error ? error.message : String(error));
+  }
 }
 
 async function evaluateCode(tabId: number, input: unknown): Promise<ActionResult> {
@@ -456,7 +554,8 @@ async function switchSessionTab(current: TabRef, input: unknown, owner: TabSessi
   if (typeof landed !== 'number' || landed === current.id) return result;
 
   if (owner.tabIds.includes(landed)) await setCurrentTab(owner.sessionId, landed);
-  else if (!(await sessionForTab(landed))) await adoptSubtab(owner.sessionId, landed, { activate: true, opened: false });
+  else if (!(await sessionForTab(landed)))
+    await adoptSubtab(owner.sessionId, landed, { activate: true, opened: false });
   return result;
 }
 
@@ -531,7 +630,15 @@ async function listStoredFiles(input: unknown): Promise<ActionResult> {
   const needle = typeof filter === 'string' ? filter.toLowerCase() : null;
   const files = (await listMeta())
     .filter((f) => !needle || f.name.toLowerCase().includes(needle))
-    .map(({ id, name, mime, size, status, report, addedAt }) => ({ id, name, mime, size, status, summary: report?.summary, addedAt }));
+    .map(({ id, name, mime, size, status, report, addedAt }) => ({
+      id,
+      name,
+      mime,
+      size,
+      status,
+      summary: report?.summary,
+      addedAt,
+    }));
   return success({ files });
 }
 
@@ -642,9 +749,7 @@ async function navigateViaTabsApi(tabId: number, input: unknown): Promise<Action
   try {
     plan = resolveNavigation(parsed.data as NavigateInput);
   } catch (error) {
-    return error instanceof ActionError
-      ? failure(error.code, error.message)
-      : failure('ACTION_FAILED', String(error));
+    return error instanceof ActionError ? failure(error.code, error.message) : failure('ACTION_FAILED', String(error));
   }
 
   const loaded = watchForLoad(tabId);
@@ -666,9 +771,7 @@ async function navigateViaTabsApi(tabId: number, input: unknown): Promise<Action
 
   const completed = await loaded.settled;
   return success(
-    plan.kind === 'url'
-      ? { navigatedTo: plan.href, loaded: completed }
-      : { performed: plan.action, loaded: completed },
+    plan.kind === 'url' ? { navigatedTo: plan.href, loaded: completed } : { performed: plan.action, loaded: completed },
   );
 }
 

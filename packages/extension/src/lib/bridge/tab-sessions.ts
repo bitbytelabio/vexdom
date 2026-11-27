@@ -54,6 +54,8 @@ export interface TabSession {
   handing?: string[];
   /** Set when a schedule opened this conversation; it files to the task's runs, not History. */
   task?: TaskTag;
+  /** How its last agent turn ended, until the user looks at one of its tabs or the next turn starts. */
+  outcome?: 'done' | 'failed';
 }
 
 export type TabSessionMap = Record<string, TabSession>;
@@ -192,7 +194,11 @@ export function bindStoredSession(
 }
 
 /** A tab one of the conversation's runs reached: `opened` when the run opened it, which makes it one a finished task closes. */
-export function adoptSubtab(sessionId: string, tabId: number, { activate, opened }: { activate: boolean; opened: boolean }): Promise<void> {
+export function adoptSubtab(
+  sessionId: string,
+  tabId: number,
+  { activate, opened }: { activate: boolean; opened: boolean },
+): Promise<void> {
   return mutateTabSessions((map) => {
     const session = map[sessionId];
     if (!session) return;
@@ -337,6 +343,14 @@ export function patchSession(sessionId: string, patch: Partial<TabSession>): Pro
   });
 }
 
+/** The user looked at the conversation's result: its tabs stop showing how the last turn ended. */
+export function clearOutcome(sessionId: string): Promise<void> {
+  return mutateTabSessions((map) => {
+    const session = map[sessionId];
+    if (session) delete session.outcome;
+  });
+}
+
 export function dropSession(sessionId: string): Promise<TabSession | null> {
   return mutateTabSessions((map) => {
     const session = map[sessionId] ?? null;
@@ -404,3 +418,12 @@ export function hostOf(url: string | undefined): string | undefined {
 
 /** The page a turn is about, as the Bridge scopes the run: a site, or nowhere in particular, as on a blank tab. */
 export const siteUrlOf = (url: string | undefined): string | undefined => (hostOf(url) ? url : undefined);
+
+const MAX_LABEL = 20;
+
+/** What a conversation is called in its tab group and notices: its task, its site, its page, or just a chat. */
+export function sessionLabel(session: TabSession): string {
+  const label = session.task?.name || session.host?.replace(/^www\./, '') || session.title || 'Chat';
+  const points = [...label];
+  return points.length > MAX_LABEL ? `${points.slice(0, MAX_LABEL - 1).join('')}…` : label;
+}

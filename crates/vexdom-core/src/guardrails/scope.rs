@@ -10,7 +10,7 @@ use vexdom_pure::secrets::WS;
 
 /// Actions whose `url` names where they reach: a page to load, a file to fetch, a cookie jar, a
 /// page read over HTTP (`page.checkSites`, asked before each fetch).
-const NAVIGATIONS: [&str; 6] = [
+pub const NAVIGATIONS: [&str; 6] = [
     "page.checkSites",
     "page.navigate",
     "page.openTab",

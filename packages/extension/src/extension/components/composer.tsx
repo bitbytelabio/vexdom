@@ -2,6 +2,7 @@ import { useEffect, useId, useMemo, useRef, useState, type MouseEvent, type Reac
 import {
   CalendarClock,
   Code2,
+  Crop,
   FileText,
   Loader2,
   Mic,
@@ -16,8 +17,10 @@ import {
   X,
 } from 'lucide-react';
 
+import { ModePicker } from '@/extension/components/mode-picker';
 import { SkillMenu, skillMenuItems, skillOptionId, type SkillMenuItem } from '@/extension/components/skill-menu';
 import type { SavedToolMeta } from '@/lib/bridge/saved-tools';
+import type { Shortcut } from '@/lib/bridge/shortcuts';
 import { Button } from '@/extension/components/ui/button';
 import { Textarea } from '@/extension/components/ui/textarea';
 import { focusName, type FocusedElement, type SkillCatalog } from '@/lib/actions/protocol';
@@ -26,6 +29,8 @@ import type { useVoiceComposer } from '@/lib/bridge/use-voice-composer';
 import { cn } from '@/lib/utils';
 
 type Voice = ReturnType<typeof useVoiceComposer>;
+
+const NO_SHORTCUTS: Shortcut[] = [];
 
 export interface AttachedSkill {
   id: string;
@@ -63,11 +68,13 @@ export function Composer({
   onAttachSkill,
   onCommand,
   tools,
+  shortcuts = NO_SHORTCUTS,
   onRunTool,
   onSend,
   onStop,
   onToggleVoice,
   onPick,
+  onCaptureRegion,
   onClearFocus,
   onAttachFile,
   onRemoveFile,
@@ -102,12 +109,16 @@ export function Composer({
   onAttachSkill: (skill: AttachedSkill | null) => void;
   onCommand: (command: string) => void;
   tools: SavedToolMeta[];
+  /** The user's saved prompts, offered first in the slash menu. */
+  shortcuts?: Shortcut[];
   onRunTool: (id: string) => void;
   onSend: () => void;
   onStop: () => void;
   onToggleVoice: () => void;
   /** Absent where there is no page to point at, which takes A-Eye away. */
   onPick?: () => void;
+  /** Absent where there is no page to draw on, which takes the crop button away. */
+  onCaptureRegion?: () => void;
   onClearFocus: () => void;
   onAttachFile: (file: File) => void;
   onRemoveFile: (fileId: string) => void;
@@ -121,8 +132,8 @@ export function Composer({
   const [highlight, setHighlight] = useState(0);
   const menuId = useId();
   const menuItems = useMemo(
-    () => (menuOpen ? skillMenuItems(catalog, tabUrl, slash ?? '', tools, { handsFree, tabs: !!tabs }) : []),
-    [menuOpen, catalog, tabUrl, slash, tools, handsFree, tabs],
+    () => (menuOpen ? skillMenuItems(catalog, tabUrl, slash ?? '', tools, { handsFree, tabs: !!tabs, shortcuts }) : []),
+    [menuOpen, catalog, tabUrl, slash, tools, handsFree, tabs, shortcuts],
   );
 
   useEffect(() => setHighlight(0), [slash]);
@@ -133,6 +144,11 @@ export function Composer({
   }, [menuOpen, cancelPending]);
 
   function choose(item: SkillMenuItem) {
+    if (item.prompt !== undefined) {
+      voice.setInput(item.prompt);
+      composerRef.current?.focus();
+      return;
+    }
     if (item.savedToolId) {
       voice.setInput('');
       onRunTool(item.savedToolId);
@@ -186,8 +202,8 @@ export function Composer({
         <div className="enters mb-2 flex items-center gap-2 rounded-xl border border-ember/40 bg-ember/8 px-2.5 py-1.5 text-xs">
           <Code2 className="size-3.5 shrink-0 text-ember" />
           <span className="min-w-0 flex-1 text-ink-dim">
-            <span className="font-medium text-ink">Live tool on</span> — the agent may write a script for this page.
-            You approve the code first.
+            <span className="font-medium text-ink">Live tool on</span> — the agent may write a script for this page. You
+            approve the code first.
           </span>
           <button
             type="button"
@@ -227,6 +243,12 @@ export function Composer({
           aria-activedescendant={menuOpen && menuItems.length > 0 ? skillOptionId(menuId, highlight) : undefined}
           value={voice.input}
           onChange={(event) => voice.setInput(event.target.value)}
+          onPaste={(event) => {
+            const images = [...event.clipboardData.files].filter((file) => file.type.startsWith('image/'));
+            if (!images.length) return;
+            event.preventDefault();
+            for (const file of images) onAttachFile(file);
+          }}
           onKeyDown={(event) => {
             if (menuOpen) {
               if (event.key === 'Escape') {
@@ -258,7 +280,11 @@ export function Composer({
             }
           }}
           placeholder={
-            !connected ? 'Pair the browser to get started' : scheduling ? 'Say what to do, then pick when…' : placeholder
+            !connected
+              ? 'Pair the browser to get started'
+              : scheduling
+                ? 'Say what to do, then pick when…'
+                : placeholder
           }
           aria-label="Instruction for Vexdom"
           disabled={!connected}
@@ -278,6 +304,18 @@ export function Composer({
               className={cn(focus || picking ? 'text-ember' : undefined)}
             >
               <ScanEye className={cn('size-3.5', picking && 'animate-pulse')} />
+            </Button>
+          )}
+          {onCaptureRegion && (
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              title="Drag a box on the page and attach that picture"
+              aria-label="Capture part of the page"
+              onClick={onCaptureRegion}
+              disabled={!connected}
+            >
+              <Crop className="size-3.5" />
             </Button>
           )}
           <Button
@@ -341,6 +379,7 @@ export function Composer({
           >
             <SquareDashedMousePointer className="size-3.5" />
           </Button>
+          <ModePicker />
           <Button
             variant={voiceEnabled && !voice.error ? 'subtle' : 'ghost'}
             size="icon-sm"

@@ -3,10 +3,12 @@
 use serde::Serialize;
 use serde_json::Value;
 
-use super::{DEFAULT_RULES, Effect, GuardrailConfig, policy_from};
+use super::{DEFAULT_RULES, Effect, GuardrailConfig, PermissionMode, policy_from};
 
 pub const FENCE_SETTING: &str = "fence";
 pub const UNATTENDED_SETTING: &str = "unattended";
+/// The side panel's permission mode: `rules`, `ask`, `plan` or `auto`.
+pub const MODE_SETTING: &str = "mode";
 
 /// Not preferences: shown, explained, not changeable from the panel.
 const LOCKED: [&str; 4] = [
@@ -48,6 +50,7 @@ pub struct GuardrailSettings {
     pub unattended: Unattended,
     pub hosts: Vec<String>,
     pub config_path: String,
+    pub mode: PermissionMode,
 }
 
 pub fn guardrail_settings(
@@ -95,6 +98,7 @@ pub fn guardrail_settings(
         },
         hosts: config.hosts.clone().unwrap_or_default(),
         config_path: config_path.to_owned(),
+        mode: baseline.mode,
     }
 }
 
@@ -103,6 +107,7 @@ pub fn setting_writable(setting: &str, value: &Value) -> bool {
     match setting {
         FENCE_SETTING => value.is_null() || value.is_boolean(),
         UNATTENDED_SETTING => value.is_null() || matches!(value.as_str(), Some("allow" | "deny")),
+        MODE_SETTING => value.is_null() || value.as_str().and_then(PermissionMode::parse).is_some(),
         _ => {
             DEFAULT_RULES.iter().any(|rule| rule.id == setting)
                 && !LOCKED.contains(&setting)

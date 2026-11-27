@@ -60,7 +60,11 @@ describe('nextAfter', () => {
 describe('upcoming', () => {
   it('lists the next runs in order', () => {
     const rule: ScheduleRule = { kind: 'weekly', days: [1, 3, 5], times: ['07:15'] };
-    expect(upcoming(rule, at(2026, 9, 25, 8), 3)).toEqual([at(2026, 9, 28, 7, 15), at(2026, 9, 30, 7, 15), at(2026, 10, 2, 7, 15)]);
+    expect(upcoming(rule, at(2026, 9, 25, 8), 3)).toEqual([
+      at(2026, 9, 28, 7, 15),
+      at(2026, 9, 30, 7, 15),
+      at(2026, 10, 2, 7, 15),
+    ]);
   });
 
   it('stops at a one-off', () => {
@@ -73,12 +77,23 @@ describe('describeRule', () => {
     [{ kind: 'weekly', days: [...WORKDAYS], times: ['09:00'] }, 'Weekdays at 09:00'],
     [{ kind: 'weekly', days: [0, 1, 2, 3, 4, 5, 6], times: ['17:30', '09:00'] }, 'Every day at 09:00 and 17:30'],
     [{ kind: 'weekly', days: [0, 6], times: ['10:00'] }, 'Weekends at 10:00'],
-    [{ kind: 'weekly', days: [5, 1, 3], times: ['07:15', '12:00', '18:45'] }, 'Mon, Wed, Fri at 07:15, 12:00 and 18:45'],
+    [
+      { kind: 'weekly', days: [5, 1, 3], times: ['07:15', '12:00', '18:45'] },
+      'Mon, Wed, Fri at 07:15, 12:00 and 18:45',
+    ],
     [{ kind: 'every', minutes: 180, window: { from: '08:00', to: '22:00' } }, 'Every 3 h, 08:00–22:00'],
     [{ kind: 'every', minutes: 45 }, 'Every 45 min'],
     [{ kind: 'every', minutes: 60 }, 'Every hour'],
     [{ kind: 'once', at: at(2026, 9, 25, 18) }, 'Once, Fri 25 Sep at 18:00'],
+    [{ kind: 'monthly', days: [15, 1], times: ['09:00'] }, 'Monthly on the 1st and 15th at 09:00'],
+    [{ kind: 'yearly', dates: [{ month: 2, day: 14 }], times: ['09:00'] }, 'Every year on 14 Feb at 09:00'],
   ])('%j reads as “%s”', (rule, words) => {
     expect(describeRule(rule)).toBe(words);
+  });
+});
+
+describe('monthly rules', () => {
+  it('run on the last day of a month without the day asked for', () => {
+    expect(nextAfter({ kind: 'monthly', days: [31], times: ['09:00'] }, at(2026, 4, 15))).toBe(at(2026, 4, 30, 9));
   });
 });

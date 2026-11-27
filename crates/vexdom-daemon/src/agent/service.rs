@@ -13,7 +13,7 @@ use regex::Regex;
 use serde_json::{Value, json};
 use tokio::sync::oneshot;
 use vexdom_core::agents::agent_label;
-use vexdom_core::approvals::{is_granted, remember_grant};
+use vexdom_core::approvals::{ANY_ACTION, is_granted, remember_grant, site_granted};
 use vexdom_core::config::{
     AgentConfig, SiteMapSettings, max_concurrent_runs, read_agent_config, site_map_settings,
 };
@@ -22,13 +22,16 @@ use vexdom_core::guardrails::scope::{self, Scope, ScopeSeed, SharedTab};
 use vexdom_core::guardrails::secrets::seal_secrets;
 use vexdom_core::guardrails::{
     self, CAPTCHA_ACTION, Caller, DECLINED_MESSAGE, Effect, GuardrailRequest, INJECT_ACTION,
-    Policy, RUN_CODE_ACTION, UNANSWERED_MESSAGE,
+    PermissionMode, Policy, RUN_CODE_ACTION, UNANSWERED_MESSAGE, needs_site,
 };
 use vexdom_core::log;
 use vexdom_core::profile::read_profile;
-use vexdom_core::result::{ActionResult, failure};
+use vexdom_core::result::{ActionError, ActionResult, failure};
 use vexdom_core::skills::{self, Skill};
-use vexdom_core::tools::{FOCUS_SHOT_ACTION, READ_SITEMAP_ACTION, SAVE_SITE_MAP_ACTION};
+use vexdom_core::tools::{
+    FOCUS_SHOT_ACTION, HAND_OFF_ACTION, PROPOSE_PLAN_ACTION, READ_SITEMAP_ACTION,
+    SAVE_SITE_MAP_ACTION,
+};
 use vexdom_pure::schedules::{TASK_APPROVAL_WAIT_MS, TASK_RUN_MAX_MS};
 
 use super::abort::{Abort, RunError, abort_after, run_error};
@@ -68,6 +71,14 @@ const MAX_SITE_MAP_REPORT: usize = 256 * 1024;
 const SUMMARY_LIMIT: usize = 80;
 
 const LIVE_TOOLS_OFF: &str = "Writing and running your own page code is switched off for this message. The user turns it on with the “Live tool” switch beside the message box, and only they can. Do the job with the ordinary page tools, or say that this one needs that switch and why.";
+
+const PLAN_REQUIRED: &str = "This conversation is in Follow-a-plan mode. Call vexdom.proposePlan with the sites you will use and 3–7 short steps, and wait for the user's approval, before acting on any page.";
+/// Bridge actions that act on a site through the browser without going through `invoke_for_run`.
+const SITE_BRIDGE_ACTIONS: [&str; 2] = ["bridge.authLogin", "bridge.flowRun"];
+const MAX_HAND_OFF_REASON: usize = 300;
+const MAX_PLAN_DOMAINS: usize = 10;
+const MAX_PLAN_STEPS: usize = 7;
+const MAX_PLAN_STEP: usize = 200;
 
 const MAPPING_NOT_REQUESTED: &str = "Mapping a site takes several minutes and drives this tab. Ask for it explicitly with the Map this site button, or by starting your message with @site-mapper.";
 
@@ -111,9 +122,25 @@ struct ActiveRun {
     approved: RefCell<HashSet<String>>,
     /// A schedule started it: an approval nobody answers is declined rather than awaited forever.
     scheduled: bool,
+    /// In Follow-a-plan mode, the user accepted the plan this run proposed.
+    plan_approved: Cell<bool>,
 }
 
 impl ActiveRun {
+    /// How this run asks before acting: the panel's mode, except that a schedule keeps to the rules.
+    fn mode(&self) -> PermissionMode {
+        if self.scheduled {
+            PermissionMode::Rules
+        } else {
+            self.policy.mode
+        }
+    }
+
+    /// The conversation a site the user allowed belongs to.
+    fn conversation(&self) -> &str {
+        self.session_id.as_deref().unwrap_or(&self.id)
+    }
+
     /// How long an approval waits for its answer; an unscheduled run waits as long as the user
     /// takes.
     fn approval_wait(&self) -> Option<Duration> {
@@ -280,6 +307,8 @@ pub struct AgentSession {
     /// agent caches, so it may grow once within a conversation and never shrink: a follow-up
     /// lands while the cache is warm, and a changed list re-bills its history.
     code_listed: RefCell<HashSet<String>>,
+    /// Per conversation, the sites the user allowed it to act on in Ask and Follow-a-plan modes.
+    allowed_sites: RefCell<HashMap<String, Vec<String>>>,
 }
 
 impl AgentSession {
@@ -289,6 +318,7 @@ impl AgentSession {
             held: RefCell::default(),
             runs: RefCell::default(),
             code_listed: RefCell::default(),
+            allowed_sites: RefCell::default(),
         })
     }
 
@@ -324,11 +354,13 @@ impl AgentSession {
                     Some(id) => {
                         self.held.borrow_mut().remove(id);
                         self.code_listed.borrow_mut().remove(id);
+                        self.allowed_sites.borrow_mut().remove(id);
                         log::log(&format!("agent conversation reset for session {id}"));
                     }
                     None => {
                         self.held.borrow_mut().clear();
                         self.code_listed.borrow_mut().clear();
+                        self.allowed_sites.borrow_mut().clear();
                         log::log("agent conversations reset");
                     }
                 }
@@ -367,6 +399,12 @@ impl AgentSession {
             reserved.push(SAVE_SITE_MAP_ACTION.to_owned());
         }
         reserved.push(FOCUS_SHOT_ACTION.to_owned());
+        if run.map.borrow().is_none() {
+            reserved.push(HAND_OFF_ACTION.to_owned());
+        }
+        if run.mode() == PermissionMode::Plan {
+            reserved.push(PROPOSE_PLAN_ACTION.to_owned());
+        }
         Some(Offer { withheld, reserved })
     }
 
@@ -426,6 +464,10 @@ impl AgentSession {
             return reply;
         }
 
+        if action == HAND_OFF_ACTION {
+            return self.hand_off(&run, call, &input).await;
+        }
+
         if !run.live_tools && (action == INJECT_ACTION || action == RUN_CODE_ACTION) {
             call.report(false, "live tools are switched off".into());
             return failure("LIVE_TOOLS_OFF", LIVE_TOOLS_OFF).into();
@@ -433,6 +475,21 @@ impl AgentSession {
 
         if run.map.borrow().is_some() {
             return self.invoke_mapping(&run, call, &action, input).await;
+        }
+
+        if action == PROPOSE_PLAN_ACTION {
+            return self.propose_plan(&run, call, &input).await;
+        }
+        let mode = run.mode();
+        let asking = matches!(mode, PermissionMode::Ask | PermissionMode::Plan);
+        // A saved login or flow drives a site the Bridge alone knows: in these modes each one asks.
+        let bridge_site = SITE_BRIDGE_ACTIONS.contains(&action.as_str());
+        if mode == PermissionMode::Plan
+            && !run.plan_approved.get()
+            && (needs_site(&action) || bridge_site)
+        {
+            call.report(false, "no approved plan yet".into());
+            return failure("PLAN_REQUIRED", PLAN_REQUIRED).into();
         }
 
         let decision = {
@@ -458,11 +515,37 @@ impl AgentSession {
             );
             return failure("BLOCKED", guardrails::blocked_message(&decision)).into();
         }
+        // In Ask and Follow-a-plan modes the first action on a site the conversation has not been
+        // allowed asks first; that answer is this call's approval too.
+        let mut asked = false;
+        if asking && needs_site(&action) {
+            let site = match self.action_site(&run, &action, &input).await {
+                Ok(site) => site,
+                Err(error) => {
+                    call.report(false, "could not tell which site the tab is on".into());
+                    return Reply::from(Err::<Value, _>(error));
+                }
+            };
+            if let Some(site) = site
+                && !self.site_allowed(&run, &site)
+                && !site_granted(&site)
+            {
+                if let Err(reply) = self
+                    .ask_for_site(&run, &mut call, &action, &input, &site)
+                    .await
+                {
+                    return reply;
+                }
+                asked = true;
+            }
+        }
         let granted = run
             .site
             .as_deref()
             .is_some_and(|site| is_granted(&action, site));
-        if decision.effect == Effect::Confirm
+        if (decision.effect == Effect::Confirm || (asking && bridge_site))
+            && mode != PermissionMode::Auto
+            && !asked
             && !granted
             && !run.approved.borrow().contains(&action)
         {
@@ -508,6 +591,242 @@ impl AgentSession {
             run.approved.borrow_mut().insert(action.to_owned());
         }
         self.perform(run, call, action, input).await
+    }
+
+    /// The agent hands the page to the user and waits until they say they are done, or stop.
+    async fn hand_off(&self, run: &ActiveRun, mut call: Call, input: &Value) -> Reply {
+        let reason = input
+            .get("reason")
+            .and_then(Value::as_str)
+            .map(js_trim)
+            .unwrap_or_default();
+        if reason.is_empty() || utf16_len(reason) > MAX_HAND_OFF_REASON {
+            call.report(false, "no reason given".into());
+            return failure(
+                "INVALID_INPUT",
+                "Give a one-line reason (up to 300 characters) saying what the user should do.",
+            )
+            .into();
+        }
+        (self.deps.emit)(
+            &run.id,
+            RunEvent::Approval {
+                tool_id: call.tool_id.clone(),
+                action: HAND_OFF_ACTION.into(),
+                input: json!({ "reason": reason }),
+                site: None,
+            },
+        );
+        call.waiting = Some("waiting for the user to take over".into());
+        let answer = run.decision(&call.tool_id).await;
+        call.waiting = None;
+        if answer.unanswered {
+            call.report(false, "nobody answered in time".into());
+            return failure("APPROVAL_TIMEOUT", UNANSWERED_MESSAGE).into();
+        }
+        if !answer.allow {
+            call.report(false, "handed over; user stopped".into());
+            return failure(
+                "DECLINED",
+                "The user stopped instead of taking over. Say what you could not finish and stop.",
+            )
+            .into();
+        }
+        call.report(true, "handed over; user is back".into());
+        Ok(json!({
+            "resumed": true,
+            "note": "The user says they are done. Look at the page again before you act; it may have changed.",
+        }))
+        .into()
+    }
+
+    /// In Follow-a-plan mode, the agent's sites and steps, put to the user before it acts.
+    async fn propose_plan(&self, run: &ActiveRun, mut call: Call, input: &Value) -> Reply {
+        let domains: Option<Vec<String>> = input
+            .get("domains")
+            .and_then(Value::as_array)
+            .filter(|domains| (1..=MAX_PLAN_DOMAINS).contains(&domains.len()))
+            .and_then(|domains| domains.iter().map(plan_domain).collect());
+        let Some(mut domains) = domains else {
+            call.report(false, "not a list of sites".into());
+            return failure(
+                "INVALID_INPUT",
+                "List sites as host names, like github.com.",
+            )
+            .into();
+        };
+        domains.dedup();
+        let steps: Option<Vec<String>> = input
+            .get("steps")
+            .and_then(Value::as_array)
+            .filter(|steps| (1..=MAX_PLAN_STEPS).contains(&steps.len()))
+            .and_then(|steps| {
+                steps
+                    .iter()
+                    .map(|step| {
+                        let step = js_trim(step.as_str()?);
+                        (!step.is_empty() && utf16_len(step) <= MAX_PLAN_STEP)
+                            .then(|| step.to_owned())
+                    })
+                    .collect()
+            });
+        let Some(steps) = steps else {
+            call.report(false, "not a list of steps".into());
+            return failure(
+                "INVALID_INPUT",
+                "Give 1 to 7 short steps, each up to 200 characters.",
+            )
+            .into();
+        };
+        (self.deps.emit)(
+            &run.id,
+            RunEvent::Approval {
+                tool_id: call.tool_id.clone(),
+                action: PROPOSE_PLAN_ACTION.into(),
+                input: json!({ "domains": domains, "steps": steps }),
+                site: None,
+            },
+        );
+        call.waiting = Some("waiting for the user to accept the plan".into());
+        let answer = run.decision(&call.tool_id).await;
+        call.waiting = None;
+        if answer.unanswered {
+            call.report(false, "nobody answered in time".into());
+            return failure("APPROVAL_TIMEOUT", UNANSWERED_MESSAGE).into();
+        }
+        if !answer.allow {
+            call.report(false, "plan rejected".into());
+            return failure(
+                "DECLINED",
+                "The user rejected this plan. Ask what they want changed, or propose a different one.",
+            )
+            .into();
+        }
+        for domain in &domains {
+            self.allow_site(run, domain);
+            if answer.remember {
+                remember_grant(ANY_ACTION, domain, &log::iso_now());
+            }
+        }
+        run.plan_approved.set(true);
+        call.report(true, "plan approved".into());
+        Ok(json!({ "approved": true, "domains": domains })).into()
+    }
+
+    /// The site an action works on: where a navigation goes, else the page its tab is on. `None`
+    /// for a blank or browser page, which needs no site's permission.
+    ///
+    /// A page that cannot be asked where it is fails the call: acting there unasked would let an
+    /// action through on a site the user never allowed.
+    async fn action_site(
+        &self,
+        run: &ActiveRun,
+        action: &str,
+        input: &Value,
+    ) -> Result<Option<String>, ActionError> {
+        let destination = scope::NAVIGATIONS
+            .contains(&action)
+            .then(|| input.get("url").and_then(Value::as_str))
+            .flatten();
+        if let Some(site) = destination.and_then(web_site_of) {
+            return Ok(Some(site));
+        }
+        // A watcher (`startMonitor`, `startDiagnostics`) may name another tab: that tab is asked.
+        let opts = match input.get("tabId").and_then(safe_integer) {
+            Some(tab_id) => InvokeOpts {
+                tab_id: Some(tab_id),
+                hosts: Some(run.scope.hosts.clone()),
+                ..InvokeOpts::default()
+            },
+            None => InvokeOpts {
+                run_id: Some(run.id.clone()),
+                hosts: Some(run.scope.hosts.clone()),
+                ..InvokeOpts::default()
+            },
+        };
+        let reply = (self.deps.invoke)("page.query".into(), json!({"what": "url"}), opts).await;
+        let page = match reply.result {
+            Ok(data) => data
+                .get("value")
+                .and_then(Value::as_str)
+                .unwrap_or_default()
+                .to_owned(),
+            // A browser page: no site, so nothing to ask about.
+            Err(error) if error.code == "TAB_UNREACHABLE" => return Ok(None),
+            Err(error) => {
+                return Err(ActionError {
+                    code: "SITE_UNKNOWN".into(),
+                    message: format!(
+                        "Could not tell which site this tab is on, so nothing was done ({}: {}). Try again.",
+                        error.code, error.message
+                    ),
+                });
+            }
+        };
+        Ok(match destination {
+            // A relative or scheme-relative address (`//other.site/x`) goes where the page resolves it.
+            Some(relative) => url::Url::parse(&page)
+                .ok()
+                .and_then(|base| base.join(relative).ok())
+                .and_then(|joined| web_site_of(joined.as_str())),
+            None => web_site_of(&page),
+        })
+    }
+
+    fn site_allowed(&self, run: &ActiveRun, site: &str) -> bool {
+        self.allowed_sites
+            .borrow()
+            .get(run.conversation())
+            .is_some_and(|hosts| scope::host_allowed(site, hosts))
+    }
+
+    fn allow_site(&self, run: &ActiveRun, site: &str) {
+        let mut allowed = self.allowed_sites.borrow_mut();
+        let hosts = allowed.entry(run.conversation().to_owned()).or_default();
+        if !hosts.iter().any(|host| host == site) {
+            hosts.push(site.to_owned());
+        }
+    }
+
+    /// Asks before a run first acts on `site`; `Err` is the reply when the user did not say yes.
+    async fn ask_for_site(
+        &self,
+        run: &ActiveRun,
+        call: &mut Call,
+        action: &str,
+        input: &Value,
+        site: &str,
+    ) -> Result<(), Reply> {
+        (self.deps.emit)(
+            &run.id,
+            RunEvent::Approval {
+                tool_id: call.tool_id.clone(),
+                action: action.to_owned(),
+                input: input.clone(),
+                site: Some(site.to_owned()),
+            },
+        );
+        call.waiting = Some(format!("first action on {site}"));
+        let answer = run.decision(&call.tool_id).await;
+        let why = call.waiting.take().unwrap_or_default();
+        if answer.unanswered {
+            log::log(&format!(
+                "agent run {} got no answer on {action}: {why}",
+                run.id
+            ));
+            call.report(false, "nobody answered in time".into());
+            return Err(failure("APPROVAL_TIMEOUT", UNANSWERED_MESSAGE).into());
+        }
+        if !answer.allow {
+            log::log(&format!("agent run {} declined {action}: {why}", run.id));
+            call.report(false, "declined by the user".into());
+            return Err(failure("DECLINED", DECLINED_MESSAGE).into());
+        }
+        self.allow_site(run, site);
+        if answer.remember {
+            remember_grant(ANY_ACTION, site, &log::iso_now());
+        }
+        Ok(())
     }
 
     async fn perform(&self, run: &ActiveRun, mut call: Call, action: &str, input: Value) -> Reply {
@@ -720,6 +1039,7 @@ impl AgentSession {
             live_tools,
             approved: RefCell::default(),
             scheduled: context.get("task").is_some_and(|task| !task.is_null()),
+            plan_approved: Cell::new(false),
             config,
         });
         {
@@ -1226,6 +1546,24 @@ fn outcome_of(result: &ActionResult) -> &str {
 fn site_of(url: &str) -> Option<String> {
     let url = url::Url::parse(url).ok()?;
     scope::normalize_host(&scope::hostname(&url))
+}
+
+/// A plan's site as the user will see it granted: a host name with at least one dot, typed as it
+/// normalizes, so `github.com@evil.example` or `*.com` cannot read as one site and grant another.
+fn plan_domain(domain: &Value) -> Option<String> {
+    let typed = domain.as_str()?.trim().to_ascii_lowercase();
+    let typed = typed.strip_prefix("www.").unwrap_or(&typed);
+    let site = site_of(&format!("https://{typed}/"))?;
+    (site == typed && site.contains('.') && TAB_HOST.is_match(&site)).then_some(site)
+}
+
+/// A web page's site; a browser page, a file or a relative address has none.
+fn web_site_of(url: &str) -> Option<String> {
+    let parsed = url::Url::parse(url).ok()?;
+    if !matches!(parsed.scheme(), "http" | "https") {
+        return None;
+    }
+    scope::normalize_host(&scope::hostname(&parsed))
 }
 
 fn explicitly_asked(text: &str) -> bool {
@@ -1774,7 +2112,45 @@ printf '%s\n' '{{"type":"result","subtype":"success","is_error":false,"stop_reas
                 .chain(&[AUTH_SAVE_ACTION])
                 .map(|name| (*name).to_owned())
                 .collect(),
-            reserved: vec![FOCUS_SHOT_ACTION.into()],
+            reserved: vec![FOCUS_SHOT_ACTION.into(), HAND_OFF_ACTION.into()],
+        }
+    }
+
+    /// Like `only_claude`, with these `guardrails` in config.json.
+    fn claude_with(bin: &str, guardrails: Value) {
+        let path = config_path();
+        std::fs::create_dir_all(path.parent().expect("config.json sits in the state folder"))
+            .expect("the scratch state folder can be made");
+        std::fs::write(
+            &path,
+            json!({"agent": "claude", "agents": {"claude": {"bin": bin}}, "guardrails": guardrails})
+                .to_string(),
+        )
+        .expect("config.json can be written");
+    }
+
+    /// A page on `url` that answers `page.query` with it and everything else with `{}`.
+    fn on_page(url: Rc<RefCell<&'static str>>) -> impl Fn(&str) -> ActionResult + 'static {
+        move |action| {
+            if action == "page.query" {
+                Ok(json!({"value": *url.borrow()}))
+            } else {
+                Ok(json!({}))
+            }
+        }
+    }
+
+    impl Rig {
+        /// The site every approval asked about, in order.
+        fn asked_sites(&self) -> Vec<Option<String>> {
+            self.events
+                .borrow()
+                .iter()
+                .filter_map(|(_, event)| match event {
+                    RunEvent::Approval { site, .. } => Some(site.clone()),
+                    _ => None,
+                })
+                .collect()
         }
     }
 
@@ -2034,6 +2410,182 @@ printf '%s\n' '{{"type":"result","subtype":"success","is_error":false,"stop_reas
 
             assert_eq!(before, ["tool", "approval"]);
             assert_eq!(reply.result, Ok(json!({"done": true})));
+        });
+    }
+
+    #[test]
+    fn a_plan_site_is_granted_only_as_it_reads() {
+        assert_eq!(
+            plan_domain(&json!(" GitHub.com ")).as_deref(),
+            Some("github.com")
+        );
+        assert_eq!(
+            plan_domain(&json!("www.github.com")).as_deref(),
+            Some("github.com")
+        );
+        for forged in ["github.com@evil.example", "*.com", "com", "a.com/x", ""] {
+            assert_eq!(
+                plan_domain(&json!(forged)),
+                None,
+                "{forged} must be refused"
+            );
+        }
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_hand_off_waits_until_the_user_is_back() {
+        let home = scratch("service-hand-off");
+        only_claude(&stand_in(home.path(), WAITS));
+        local(async {
+            let rig = rig(|_| Ok(json!({})));
+            rig.instruct("r1", "sign me in", json!({"sessionId": "s1"}));
+            let blank = rig
+                .call("r1", HAND_OFF_ACTION, json!({"reason": "  "}))
+                .await;
+            assert_matches!(blank.result, Err(error) if error.code == "INVALID_INPUT");
+
+            let call = tokio::task::spawn_local(rig.call(
+                "r1",
+                HAND_OFF_ACTION,
+                json!({"reason": "Sign in"}),
+            ));
+            until("the hand-off", || !rig.asked().is_empty()).await;
+            let (tool_id, action) = rig.asked()[0].clone();
+            assert_eq!(action, HAND_OFF_ACTION);
+            rig.answer("r1", &tool_id, true);
+            let reply = call.await.expect("the call finishes");
+            rig.finish(&["r1"]).await;
+
+            assert_eq!(
+                reply.result.map(|data| data["resumed"].clone()),
+                Ok(json!(true))
+            );
+            assert!(
+                rig.invoked.borrow().is_empty(),
+                "handing over acts on no page"
+            );
+        });
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn act_without_asking_performs_what_the_rules_would_confirm() {
+        let home = scratch("service-mode-auto");
+        claude_with(
+            &stand_in(home.path(), WAITS),
+            json!({"mode": "auto", "rules": {"form-submission": "confirm"}}),
+        );
+        local(async {
+            let rig = rig(|_| Ok(json!({})));
+            rig.instruct(
+                "r1",
+                "send it",
+                json!({"sessionId": "s1", "url": "https://a.com/x"}),
+            );
+            let reply = rig.call("r1", "page.submitForm", json!({})).await;
+            rig.finish(&["r1"]).await;
+
+            assert!(reply.result.is_ok(), "{:?}", reply.result);
+            assert!(rig.asked().is_empty(), "nothing was asked");
+            assert_eq!(rig.invoked_actions(), ["page.submitForm"]);
+        });
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn ask_before_acting_asks_once_per_site() {
+        let home = scratch("service-mode-ask");
+        claude_with(&stand_in(home.path(), WAITS), json!({"mode": "ask"}));
+        local(async {
+            let rig = rig(on_page(Rc::new(RefCell::new("https://a.com/x"))));
+            rig.instruct(
+                "r1",
+                "click it",
+                json!({"sessionId": "s1", "url": "https://a.com/x"}),
+            );
+            let click = json!({"target": {"text": "Go"}});
+            let first =
+                tokio::task::spawn_local(rig.call("r1", "page.clickElement", click.clone()));
+            until("the site approval", || !rig.asked().is_empty()).await;
+            let (tool_id, _) = rig.asked()[0].clone();
+            rig.answer("r1", &tool_id, true);
+            let first = first.await.expect("the first click finishes");
+            let second = rig.call("r1", "page.clickElement", click).await;
+            rig.finish(&["r1"]).await;
+
+            assert!(first.result.is_ok() && second.result.is_ok());
+            assert_eq!(rig.asked_sites(), [Some("a.com".to_owned())]);
+        });
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn follow_a_plan_acts_freely_on_the_sites_it_listed_and_asks_elsewhere() {
+        let home = scratch("service-mode-plan");
+        claude_with(&stand_in(home.path(), WAITS), json!({"mode": "plan"}));
+        local(async {
+            let url = Rc::new(RefCell::new("https://a.com/x"));
+            let rig = rig(on_page(Rc::clone(&url)));
+            rig.instruct(
+                "r1",
+                "click it",
+                json!({"sessionId": "s1", "url": "https://a.com/x"}),
+            );
+            let click = json!({"target": {"text": "Go"}});
+            let early = rig.call("r1", "page.clickElement", click.clone()).await;
+            assert_matches!(early.result, Err(error) if error.code == "PLAN_REQUIRED");
+
+            let plan = tokio::task::spawn_local(rig.call(
+                "r1",
+                PROPOSE_PLAN_ACTION,
+                json!({"domains": ["a.com"], "steps": ["Click Go"]}),
+            ));
+            until("the plan", || !rig.asked().is_empty()).await;
+            let (tool_id, action) = rig.asked()[0].clone();
+            assert_eq!(action, PROPOSE_PLAN_ACTION);
+            rig.answer("r1", &tool_id, true);
+            assert!(plan.await.expect("the plan is answered").result.is_ok());
+
+            let listed = rig.call("r1", "page.clickElement", click.clone()).await;
+            assert!(listed.result.is_ok(), "{:?}", listed.result);
+            assert_eq!(rig.asked().len(), 1, "a listed site needs no approval");
+
+            *url.borrow_mut() = "https://b.com/y";
+            let elsewhere = tokio::task::spawn_local(rig.call("r1", "page.clickElement", click));
+            until("the approval for b.com", || rig.asked().len() == 2).await;
+            let (tool_id, _) = rig.asked()[1].clone();
+            rig.answer("r1", &tool_id, false);
+            let elsewhere = elsewhere.await.expect("the click is answered");
+            rig.finish(&["r1"]).await;
+
+            assert_matches!(elsewhere.result, Err(error) if error.code == "DECLINED");
+            assert_eq!(rig.asked_sites(), [None, Some("b.com".to_owned())]);
+        });
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn a_scheduled_run_keeps_to_the_rules_in_any_mode() {
+        let home = scratch("service-mode-scheduled");
+        claude_with(&stand_in(home.path(), WAITS), json!({"mode": "ask"}));
+        local(async {
+            let rig = rig(on_page(Rc::new(RefCell::new("https://a.com/x"))));
+            rig.instruct(
+                "r1",
+                "check the PRs",
+                json!({"sessionId": "s1", "url": "https://a.com/x", "task": {"id": "t1", "name": "PR digest"}}),
+            );
+            let reply = rig
+                .call("r1", "page.clickElement", json!({"target": {"text": "Go"}}))
+                .await;
+            rig.finish(&["r1"]).await;
+
+            assert!(reply.result.is_ok(), "{:?}", reply.result);
+            assert!(
+                rig.asked().is_empty(),
+                "a schedule is never asked about sites"
+            );
         });
     }
 

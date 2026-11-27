@@ -5,6 +5,9 @@ import { Switch } from '@/extension/components/ui/switch';
 import {
   EFFECT_LABEL,
   FENCE_SETTING,
+  MODE_LABEL,
+  MODE_SETTING,
+  PERMISSION_MODES,
   UNATTENDED_SETTING,
   type GuardrailSettings as Policy,
   type GuardrailToggle,
@@ -47,9 +50,30 @@ export function GuardrailPolicy({
         </button>
       </div>
 
-      {error && <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">{error}</p>}
+      {error && (
+        <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+          {error}
+        </p>
+      )}
 
-      <Group title="Rules" note="Each row starts on the default Vexdom ships. Switch one on to choose Allow, Ask or Block for it.">
+      <Group
+        title="Permission mode"
+        note="How a side-panel run asks before acting. Scheduled tasks and MCP or CLI callers keep to your rules. Applies from your next message."
+      >
+        <div className="px-4 py-3.5">
+          <Segmented
+            options={PERMISSION_MODES.map((mode) => ({ value: mode, label: MODE_LABEL[mode].title }))}
+            value={settings.mode ?? 'rules'}
+            onSelect={(next) => write(MODE_SETTING, next)}
+          />
+          <p className="mt-2 text-xs leading-relaxed text-ink-faint">{MODE_LABEL[settings.mode ?? 'rules'].note}</p>
+        </div>
+      </Group>
+
+      <Group
+        title="Rules"
+        note="Each row starts on the default Vexdom ships. Switch one on to choose Allow, Ask or Block for it."
+      >
         {editable.map((rule) => (
           <RuleRow key={rule.id} rule={rule} busy={busy === rule.id} onWrite={write} />
         ))}
@@ -96,12 +120,17 @@ export function GuardrailPolicy({
         </Row>
         {settings.hosts.length > 0 && (
           <Fact title="Standing host allowlist" note="Added to every run’s scope. Edited in config.json.">
-            <p className="mt-1.5 font-mono text-[11px] leading-relaxed break-all text-ink-dim">{settings.hosts.join(' · ')}</p>
+            <p className="mt-1.5 font-mono text-[11px] leading-relaxed break-all text-ink-dim">
+              {settings.hosts.join(' · ')}
+            </p>
           </Fact>
         )}
       </Group>
 
-      <Group title="Not switches" note="Shown so you know they are there. Hand-editing config.json still works, for whoever genuinely means it.">
+      <Group
+        title="Not switches"
+        note="Shown so you know they are there. Hand-editing config.json still works, for whoever genuinely means it."
+      >
         <Fact
           icon={<ShieldCheck className="size-3.5 text-brand" />}
           title="Credential sealing"
@@ -220,7 +249,9 @@ function Fact({
       <div className="flex items-center gap-2">
         {icon}
         <span className="text-sm font-medium text-ink-dim">{title}</span>
-        {badge && <span className="ml-auto font-mono text-[10px] tracking-[0.1em] text-ink-faint uppercase">{badge}</span>}
+        {badge && (
+          <span className="ml-auto font-mono text-[10px] tracking-[0.1em] text-ink-faint uppercase">{badge}</span>
+        )}
       </div>
       <p className="mt-0.5 text-xs leading-relaxed text-ink-faint">{note}</p>
       {children}

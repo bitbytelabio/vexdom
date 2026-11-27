@@ -26,10 +26,17 @@ import { nameStoredSession } from '@/lib/bridge/session-store';
 import { analyzeStoredRecording, resumePendingAnalyses } from '@/lib/bridge/recording-store';
 import { ingestSample, monitorsForTab, serveMonitor } from '@/lib/bridge/monitor';
 import { appendEvents, recordingStateFor, serveRecorder } from '@/lib/bridge/recorder';
-import { onPanelPresence, serveRunPorts, serveTabSessions, sweepFiles } from '@/lib/bridge/run-port';
+import { onPanelPresence, runCommand, serveRunPorts, serveTabSessions, sweepFiles } from '@/lib/bridge/run-port';
+import { serveRunIndicator } from '@/lib/bridge/run-indicator';
+import { sessionForTab } from '@/lib/bridge/tab-sessions';
+import { HAND_OFF_ACTION } from '@/lib/actions/reserved';
 import { clearStrandedRail, serveRail, setPanelCollapsed, syncRail } from '@/lib/bridge/rail';
+import { serveTabGroups } from '@/lib/bridge/tab-groups';
+import { serveSeenSites } from '@/lib/bridge/seen-sites';
+import { captureRegion } from '@/lib/bridge/region';
 import { serveTimers } from '@/lib/bridge/timer';
 import { serveTaskNotices } from '@/lib/bridge/task-notices';
+import { serveRunNotices } from '@/lib/bridge/run-notices';
 import { serveToast } from '@/lib/bridge/toast';
 import { serveHandsFree } from '@/lib/bridge/hands-free';
 import { endHandsFree } from '@/lib/bridge/panel-view';
@@ -47,7 +54,9 @@ import {
   connectDaemon,
   retryAfterUpdate,
   disconnectDaemon,
+  forgetApprovals,
   onWelcome,
+  readApprovals,
   pairDaemon,
   readAgentState,
   readPreferences,
@@ -217,10 +226,42 @@ export default defineBackground(() => {
         .catch((error) => sendResponse(failure('BRIDGE_ERROR', String(error))));
       return true;
     }
+    if (message.op === 'approvals' || message.op === 'forgetApprovals') {
+      const host =
+        message.op === 'forgetApprovals' && typeof message.host === 'string' && message.host ? message.host : undefined;
+      (message.op === 'approvals' ? readApprovals() : forgetApprovals(host))
+        .then(sendResponse)
+        .catch((error) => sendResponse(failure('BRIDGE_ERROR', String(error))));
+      return true;
+    }
+    if (message.op === 'captureRegion' && typeof message.tabId === 'number') {
+      captureRegion(message.tabId)
+        .then(sendResponse)
+        .catch((error) => sendResponse(failure('BRIDGE_ERROR', String(error))));
+      return true;
+    }
+    if (message.op === 'stopRun' || message.op === 'handBack') {
+      const tabId = sender.tab?.id;
+      const handBack = message.op === 'handBack' ? message.allow === true : null;
+      void (tabId != null ? sessionForTab(tabId) : Promise.resolve(null)).then((session) => {
+        if (!session?.runId) return;
+        if (handBack === null) runCommand({ op: 'cancel', sessionId: session.sessionId });
+        else if (session.pendingApproval?.action === HAND_OFF_ACTION) {
+          runCommand({
+            op: 'decision',
+            sessionId: session.sessionId,
+            toolId: session.pendingApproval.toolId,
+            allow: handBack,
+          });
+        }
+      });
+      sendResponse(success(true));
+      return;
+    }
     sendResponse(
       failure(
         'INVALID_REQUEST',
-        'Expected {op:"describe"|"invoke"|"saveSkill"|"removeSkill"|"nameSession"|"recordEvents"|"recordingState"|"analyzeRecording"|"monitorSample"|"monitorState"|"listSkills"|"agentState"|"setAgent"|"setAgentModel"|"grantAgent"|"preferences"|"setPreference"|"tasks"|"saveTask"|"deleteTask"|"runTaskNow"|"pauseTasks"|"pair"|"autoPair"|"panelOpened"|"disconnect"}',
+        'Expected {op:"describe"|"invoke"|"saveSkill"|"removeSkill"|"nameSession"|"recordEvents"|"recordingState"|"analyzeRecording"|"monitorSample"|"monitorState"|"listSkills"|"agentState"|"setAgent"|"setAgentModel"|"grantAgent"|"preferences"|"setPreference"|"tasks"|"saveTask"|"deleteTask"|"runTaskNow"|"pauseTasks"|"pair"|"autoPair"|"panelOpened"|"disconnect"|"stopRun"|"handBack"|"captureRegion"|"approvals"|"forgetApprovals"}',
       ),
     );
     return;
@@ -262,8 +303,12 @@ export default defineBackground(() => {
   serveMonitor();
   serveTimers();
   serveTaskNotices();
+  serveRunNotices();
+  serveRunIndicator();
   serveRunPorts();
   serveTabSessions();
+  serveTabGroups();
+  serveSeenSites();
   serveRail();
   serveToast();
   serveHandsFree();

@@ -8,8 +8,7 @@ export const REMOVE_TOOLS_COMMAND = '/remove-tools';
 
 export const REMOVE_TOOLS_DESCRIPTION = 'Review the tools you saved, and delete any you are done with.';
 
-export const isRemoveToolsCommand = (text: string): boolean =>
-  text.trim().toLowerCase() === REMOVE_TOOLS_COMMAND;
+export const isRemoveToolsCommand = (text: string): boolean => text.trim().toLowerCase() === REMOVE_TOOLS_COMMAND;
 
 export const HANDS_FREE_COMMAND = '/hands-free';
 
@@ -28,8 +27,13 @@ export const TABS_DESCRIPTION = 'Add other open tabs to this conversation, or se
 
 export const isTabsCommand = (text: string): boolean => text.trim().toLowerCase() === TABS_COMMAND;
 
-export const CONTEXT_COMMAND_DESCRIPTION =
-  'See what this conversation carries — messages, files, recordings, tabs.';
+export const SHORTCUTS_COMMAND = '/shortcuts';
+
+export const SHORTCUTS_DESCRIPTION = 'Create or edit your shortcuts';
+
+export const isShortcutsCommand = (text: string): boolean => text.trim().toLowerCase() === SHORTCUTS_COMMAND;
+
+export const CONTEXT_COMMAND_DESCRIPTION = 'See what this conversation carries — messages, files, recordings, tabs.';
 
 export const isContextCommand = (text: string): boolean => text.trim().toLowerCase() === CONTEXT_COMMAND;
 

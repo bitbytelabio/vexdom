@@ -11,7 +11,9 @@ import {
   serverProof,
   type Transcript,
 } from '@/lib/actions/handshake';
+import type { ApprovalGrant } from '@/lib/settings/guardrails';
 import {
+  APPROVALS_PROTOCOL,
   DAEMON_PORTS,
   SOCKET_PROTOCOL_VERSION,
   failure,
@@ -202,7 +204,12 @@ function post(request: ExtensionRequest): number | null {
 }
 
 /** One ExtensionSession call, resolved with its result, or with a failure once `timeoutMs` passes. */
-function call<T>(request: ExtensionRequest, timeoutMs: number, timeoutMessage = NO_ANSWER, offline = OFFLINE): Promise<ActionResult<T>> {
+function call<T>(
+  request: ExtensionRequest,
+  timeoutMs: number,
+  timeoutMessage = NO_ANSWER,
+  offline = OFFLINE,
+): Promise<ActionResult<T>> {
   const sent = post(request);
   if (sent === null) return Promise.resolve(failure('EXTENSION_OFFLINE', offline));
   return new Promise((resolve) => {
@@ -348,6 +355,20 @@ export function readPreferences(): Promise<ActionResult<Preferences>> {
 
 export function setPreference(change: PreferenceChange): Promise<ActionResult<Preferences>> {
   return preferenceOp({ tag: 'SetPreference', change: JSON.stringify(change) });
+}
+
+const APPROVALS_UNSUPPORTED = 'Update Vexdom Bridge to manage approvals here (vexdom update).';
+
+/** The standing "Always on this site" approvals the Bridge keeps. */
+export async function readApprovals(): Promise<ActionResult<{ grants: ApprovalGrant[] }>> {
+  if (!daemonSpeaks(APPROVALS_PROTOCOL)) return failure('UNSUPPORTED', APPROVALS_UNSUPPORTED);
+  return call<{ grants: ApprovalGrant[] }>({ tag: 'Approvals' }, AGENT_TIMEOUT_MS);
+}
+
+/** Forgets one site's standing approvals, or every site's. */
+export async function forgetApprovals(host?: string): Promise<ActionResult<{ removed: number }>> {
+  if (!daemonSpeaks(APPROVALS_PROTOCOL)) return failure('UNSUPPORTED', APPROVALS_UNSUPPORTED);
+  return call<{ removed: number }>({ tag: 'ForgetApprovals', host: host ?? '' }, AGENT_TIMEOUT_MS);
 }
 
 export type TaskOpInput =
@@ -501,8 +522,7 @@ function disconnectSocket(): void {
   abandonReplies();
   try {
     closing.close(1000, 'client disconnecting');
-  } catch {
-  }
+  } catch {}
 }
 
 function dial(credential: Credential, ports: readonly number[], portIndex: number, carried?: Refusal): void {
@@ -536,8 +556,7 @@ function dial(credential: Credential, ports: readonly number[], portIndex: numbe
       clearTimeout(handshakeTimer);
       try {
         ws.close(1000, 'unproven daemon');
-      } catch {
-      }
+      } catch {}
     },
   };
 
@@ -620,7 +639,8 @@ function giveUp(credential: Credential, refusal?: Refusal): void {
 
 async function refuse(credential: Credential, refusal: Refusal): Promise<void> {
   const reason = await adviceFor(refusal.reason);
-  const blocked = credential.kind === 'session' && refusal.code === 'revoked' ? { pairing: { blocked: 'revoked' as const } } : {};
+  const blocked =
+    credential.kind === 'session' && refusal.code === 'revoked' ? { pairing: { blocked: 'revoked' as const } } : {};
   await setState({ connected: false, paired: false, error: reason, ...blocked, lastChangeAt: Date.now() });
   if (credential.kind !== 'session' || (refusal.code !== 'unknown' && refusal.code !== 'revoked')) return;
   // Either way the Bridge holds no session for this key; only a Bridge that forgot it is paired with again unasked.
@@ -632,7 +652,8 @@ async function refuse(credential: Credential, refusal: Refusal): Promise<void> {
 async function adviceFor(reason: string): Promise<string> {
   if (!/protocol version mismatch/i.test(reason)) return reason;
   const unpacked = (await browser.management.getSelf().catch(() => null))?.installType === 'development';
-  if (unpacked) return `${reason}. Rebuild and reload the extension — “bun run build”, then Reload at chrome://extensions.`;
+  if (unpacked)
+    return `${reason}. Rebuild and reload the extension — “bun run build”, then Reload at chrome://extensions.`;
   if (!import.meta.env.FIREFOX) await browser.runtime.requestUpdateCheck().catch(() => undefined);
   return `${reason}. This copy of Vexdom is older than Vexdom Bridge; the browser installs its update shortly.`;
 }
@@ -751,7 +772,8 @@ async function onEvent(ws: WebSocket, event: LinkEvent, attempt: Attempt): Promi
 
     // ext-core holds both until linkTrust; a link that was never welcomed must not act regardless.
     case 'PageCall':
-      if (ws !== welcomedSocket) return linkReply(event.callId, JSON.stringify(failure('UNAUTHORIZED', 'The Bridge has not proved itself.')));
+      if (ws !== welcomedSocket)
+        return linkReply(event.callId, JSON.stringify(failure('UNAUTHORIZED', 'The Bridge has not proved itself.')));
       return answerPage(ws, event, attempt);
 
     case 'Push':
@@ -804,14 +826,23 @@ function splitArtifact(result: ActionResult): [string, Uint8Array] {
   else if (artifact !== undefined) bytes = new TextEncoder().encode(JSON.stringify(artifact, null, 2));
   if (bytes.length > ARTIFACT_MAX_BYTES) {
     return [
-      JSON.stringify(failure('ARTIFACT_TOO_LARGE', `The file came to ${bytes.length} bytes; the most the Bridge takes is ${ARTIFACT_MAX_BYTES}.`)),
+      JSON.stringify(
+        failure(
+          'ARTIFACT_TOO_LARGE',
+          `The file came to ${bytes.length} bytes; the most the Bridge takes is ${ARTIFACT_MAX_BYTES}.`,
+        ),
+      ),
       new Uint8Array(),
     ];
   }
   return [JSON.stringify(success(rest)), bytes];
 }
 
-async function answerPage(ws: WebSocket, page: Extract<LinkEvent, { tag: 'PageCall' }>, attempt: Attempt): Promise<void> {
+async function answerPage(
+  ws: WebSocket,
+  page: Extract<LinkEvent, { tag: 'PageCall' }>,
+  attempt: Attempt,
+): Promise<void> {
   const tabId = page.tabId >= 0 ? page.tabId : undefined;
   const input = parseInput(page.input);
   switch (page.kind) {
@@ -819,7 +850,10 @@ async function answerPage(ws: WebSocket, page: Extract<LinkEvent, { tag: 'PageCa
       linkReply(page.callId, JSON.stringify(success(describeOwnActions())));
       break;
     case 'invoke':
-      linkReply(page.callId, JSON.stringify(await invokeForHarness(page.action, input, tabId, page.runId || undefined)));
+      linkReply(
+        page.callId,
+        JSON.stringify(await invokeForHarness(page.action, input, tabId, page.runId || undefined)),
+      );
       break;
     case 'screenshot': {
       const [result, image] = splitImage(await invokeForHarness('page.screenshot', input, tabId));
@@ -839,7 +873,10 @@ async function answerPage(ws: WebSocket, page: Extract<LinkEvent, { tag: 'PageCa
       break;
     }
     default:
-      linkReply(page.callId, JSON.stringify(failure('UNKNOWN_ACTION', `The extension does not answer "${page.kind}".`)));
+      linkReply(
+        page.callId,
+        JSON.stringify(failure('UNKNOWN_ACTION', `The extension does not answer "${page.kind}".`)),
+      );
   }
   if (socket === ws) pump(ws, attempt);
 }

@@ -49,6 +49,7 @@ import { monitorStatus } from '@/lib/actions/page/monitor-status';
 import { navigate } from '@/lib/actions/page/navigate';
 import { openTab } from '@/lib/actions/page/open-tab';
 import { openWindow } from '@/lib/actions/page/open-window';
+import { resizeWindow } from '@/lib/actions/page/resize-window';
 import { pickElement } from '@/lib/actions/page/pick-element';
 import { pointSchema } from '@/lib/actions/page/pointer';
 import { pressKey } from '@/lib/actions/page/press-key';
@@ -149,8 +150,7 @@ function pointOf(value: unknown): CuePoint | null {
   return parsed.success ? { x: parsed.data.x, y: parsed.data.y } : null;
 }
 
-const namedKey = (input: Input) =>
-  typeof input.key === 'string' && input.key.length > 1 ? input.key : undefined;
+const namedKey = (input: Input) => (typeof input.key === 'string' && input.key.length > 1 ? input.key : undefined);
 
 const HISTORY_VERBS: Record<string, string> = { back: 'Go back', forward: 'Go forward', reload: 'Reload' };
 
@@ -226,6 +226,7 @@ const RULES = new Map<string, Rule>([
   [waitFor.name, none],
   [cookies.name, none],
   [openWindow.name, none],
+  [resizeWindow.name, none],
   [openTab.name, none],
   [switchTab.name, none],
   [closeTab.name, none],

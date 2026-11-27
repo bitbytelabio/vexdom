@@ -30,10 +30,15 @@ the user must restore `VEXDOM_VAULT_KEY` or `~/.vexdom/.vault-key`), `PLUGIN_FAI
 
 ## What you must not do
 
-- Saving an account is the user's job, never yours: it is not offered to you. If none exists, ask
-  the user to run `vexdom auth save …` (below), or to log in themselves.
+- Saving an account is the user's job, never yours: it is not offered to you. If a login wall
+  appears and `authList` has no account for the site, call `vexdom.handOff` with
+  `{"reason":"Sign in to <site>, then press Done."}` when it is in your list: it waits while they
+  sign in, and you snapshot after it returns. Without it, ask the user to run `vexdom auth save …`
+  (below), or to log in themselves.
 - Never ask the user to paste a password into the conversation.
-- One-time codes (SMS, authenticator, email): ask the user for the code, then `fillInput` it.
+- One-time codes (SMS, authenticator, email): unless the user already gave you the code, hand the
+  page over with `vexdom.handOff` ("Enter the code you were sent, then press Done."); without it,
+  ask the user for the code, then `fillInput` it.
 - After a login, `act {"do":"state","op":"save","name":"work"}` keeps the session so later tasks
   can skip the login (the `page-state` playbook).
 - `act {"do":"authDelete","name":"work"}` removes an account — only when the user asks.

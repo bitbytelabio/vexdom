@@ -44,4 +44,35 @@ describe('syncRunIndicator', () => {
 
     expect(settled).toBe(true);
   });
+
+  it('tells the tab a hand-off waits on the user, with the reason', async () => {
+    const tab = await fakeBrowser.tabs.create({ url: 'https://example.com/' });
+    const sendMessage = vi.spyOn(fakeBrowser.tabs, 'sendMessage').mockResolvedValue({ ok: true });
+    await mutateTabSessions((map) => {
+      map.waiting = {
+        sessionId: 'waiting',
+        mainTabId: tab.id!,
+        tabIds: [tab.id!],
+        userTabIds: [tab.id!],
+        openedTabIds: [],
+        currentTabId: tab.id!,
+        windowId: -1,
+        title: 'Example',
+        runId: 'run',
+        turns: 1,
+        createdAt: 0,
+        lastActivityAt: 0,
+        pendingApproval: { toolId: 't', action: 'vexdom.handOff', input: { reason: 'Sign in please' } },
+      };
+    });
+
+    await syncRunIndicator();
+
+    expect(sendMessage).toHaveBeenCalledWith(tab.id, {
+      channel: 'vexdom/indicator',
+      op: 'busy',
+      glow: true,
+      waiting: { text: 'Sign in please', handOff: true },
+    });
+  });
 });

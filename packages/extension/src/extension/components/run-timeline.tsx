@@ -35,6 +35,7 @@ import { ContextCard } from '@/extension/components/context-card';
 import { Markdown } from '@/extension/components/markdown';
 import { Button } from '@/extension/components/ui/button';
 import { injectCode } from '@/lib/actions/page/inject-code';
+import { HAND_OFF_ACTION, PROPOSE_PLAN_ACTION } from '@/lib/actions/reserved';
 import { openScreenshot } from '@/lib/bridge/screenshot-preview';
 import type { RunItem } from '@/lib/bridge/run-items';
 import { cn } from '@/lib/utils';
@@ -137,7 +138,9 @@ function ToolRow({
   live: boolean;
   onDecide: (toolId: string, allow: boolean, remember?: boolean) => void;
 }) {
-  const name = item.action.replace(/^page\./, '');
+  const handOff = item.action === HAND_OFF_ACTION;
+  const plan = item.action === PROPOSE_PLAN_ACTION ? planOf(item.input) : null;
+  const name = handOff ? 'hand-off' : item.action === PROPOSE_PLAN_ACTION ? 'plan' : item.action.replace(/^page\./, '');
   const Icon = ICONS[name] ?? Wrench;
   const pending = live && item.ok === undefined && !item.awaiting;
   const source = item.action === injectCode.name ? sourceOf(item.input) : null;
@@ -181,12 +184,7 @@ function ToolRow({
             {item.source === 'external' && <Tag tone="magenta" icon={Terminal} label="mcp" />}
           </div>
           {item.summary && (
-            <p
-              className={cn(
-                'mt-0.5 truncate text-[10px]',
-                item.ok === false ? 'text-destructive' : 'text-ink-faint',
-              )}
-            >
+            <p className={cn('mt-0.5 truncate text-[10px]', item.ok === false ? 'text-destructive' : 'text-ink-faint')}>
               {item.summary}
             </p>
           )}
@@ -212,7 +210,55 @@ function ToolRow({
         </button>
       )}
 
-      {item.awaiting && (
+      {item.awaiting && handOff && (
+        <div className="flex flex-col gap-2 rounded-lg border border-amber/45 bg-amber/10 px-2.5 py-2">
+          <p className="font-mono text-[10px] tracking-[0.14em] text-amber uppercase">Your turn</p>
+          <p className="text-xs leading-relaxed text-ink">{reasonOf(item.input)}</p>
+          <div className="flex flex-wrap justify-end gap-1.5">
+            <Button size="sm" variant="ghost" onClick={() => onDecide(item.id, false)}>
+              Stop
+            </Button>
+            <Button size="sm" onClick={() => onDecide(item.id, true)}>
+              Done — continue
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {item.awaiting && plan && (
+        <div className="flex flex-col gap-2 rounded-lg border border-ember/45 bg-ember/10 px-2.5 py-2">
+          <p className="font-mono text-[10px] tracking-[0.14em] text-ember uppercase">Plan</p>
+          <div className="flex flex-wrap items-center gap-1">
+            <span className="text-[11px] text-ink-dim">Sites, with their subdomains</span>
+            {plan.domains.map((domain) => (
+              <span
+                key={domain}
+                className="rounded-full border border-line bg-ground/60 px-2 py-0.5 font-mono text-[10px] text-ink"
+              >
+                {domain}
+              </span>
+            ))}
+          </div>
+          <ol className="list-decimal space-y-0.5 pl-5 text-xs text-ink">
+            {plan.steps.map((step, index) => (
+              <li key={index}>{step}</li>
+            ))}
+          </ol>
+          <div className="flex flex-wrap justify-end gap-1.5">
+            <Button size="sm" variant="ghost" onClick={() => onDecide(item.id, false)}>
+              Reject
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => onDecide(item.id, true, true)}>
+              Approve and always allow these sites
+            </Button>
+            <Button size="sm" onClick={() => onDecide(item.id, true)}>
+              Approve plan
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {item.awaiting && !handOff && !plan && (
         <div className="flex flex-wrap items-center gap-1.5 rounded-lg border border-ember/45 bg-ember/10 px-2.5 py-2">
           <p className="flex-1 text-xs text-ink">{source ? 'Allow this code to run?' : 'Allow this action?'}</p>
           {source && (
@@ -228,7 +274,7 @@ function ToolRow({
               size="sm"
               variant="ghost"
               onClick={() => onDecide(item.id, true, true)}
-              title={`Stop asking for ${name} on ${item.site}. Undo with “vexdom approvals clear”.`}
+              title={`Don’t ask again for this on ${item.site}. Undo in Settings → Guardrails.`}
             >
               Always on {item.site}
             </Button>
@@ -251,6 +297,20 @@ function ToolRow({
       )}
     </div>
   );
+}
+
+function reasonOf(input: unknown): string {
+  const reason = (input as { reason?: unknown } | null)?.reason;
+  return typeof reason === 'string' && reason.trim() ? reason : 'The agent needs you to do something on the page.';
+}
+
+function planOf(input: unknown): { domains: string[]; steps: string[] } | null {
+  const args = input as { domains?: unknown; steps?: unknown } | null;
+  const strings = (value: unknown) =>
+    Array.isArray(value) ? value.filter((entry): entry is string => typeof entry === 'string') : [];
+  const domains = strings(args?.domains);
+  const steps = strings(args?.steps);
+  return domains.length || steps.length ? { domains, steps } : null;
 }
 
 function sourceOf(input: unknown): { purpose: string; code: string } | null {
@@ -282,11 +342,7 @@ function Notice({ item }: { item: Extract<RunItem, { kind: 'notice' }> }) {
         isError ? 'border border-destructive/35 bg-destructive/8 text-destructive' : 'text-ink-faint',
       )}
     >
-      {isError ? (
-        <TriangleAlert className="mt-px size-3 shrink-0" />
-      ) : (
-        <Info className="mt-px size-3 shrink-0" />
-      )}
+      {isError ? <TriangleAlert className="mt-px size-3 shrink-0" /> : <Info className="mt-px size-3 shrink-0" />}
       <span className="min-w-0 break-words">{item.text}</span>
     </div>
   );

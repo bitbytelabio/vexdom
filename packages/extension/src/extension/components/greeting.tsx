@@ -3,15 +3,11 @@ import { BookOpen, Clapperboard, History, Settings2, type LucideIcon } from 'luc
 import { Logo } from '@/extension/components/brand';
 import type { PanelTab } from '@/extension/components/panel-nav';
 import type { StatusBlocker } from '@/extension/components/status-pill';
-
-const SUGGESTIONS = [
-  'Summarise what this page says',
-  'Fill this form in with my details',
-  'Find the unpaid invoices and open the newest',
-];
+import { pageSuggestionsFor } from '@/lib/home/suggestions';
 
 const BLOCKED: Record<StatusBlocker, string> = {
-  unpaired: 'This browser isn’t connected to Vexdom Bridge yet. Once the Bridge is on this computer, it connects by itself.',
+  unpaired:
+    'This browser isn’t connected to Vexdom Bridge yet. Once the Bridge is on this computer, it connects by itself.',
   offline: 'Paired, but Vexdom Bridge isn’t answering. Start it and this reconnects on its own.',
   agent: 'The chosen agent can’t run on this machine. Pick another one, or let Vexdom fix it.',
 };
@@ -22,7 +18,10 @@ export function Greeting({
   onGo,
   onFix,
   onUse,
+  host,
 }: {
+  /** The site the tab is on, whose own tasks come first. */
+  host?: string;
   blocker?: StatusBlocker;
   voiceOn: boolean;
   onGo: (tab: PanelTab) => void;
@@ -47,16 +46,12 @@ export function Greeting({
 
       {blocker ? (
         <div className="flex flex-wrap gap-1.5">
-          <Quick
-            icon={Settings2}
-            label={blocker === 'agent' ? 'Choose an agent' : 'Set up the link'}
-            onClick={onFix}
-          />
+          <Quick icon={Settings2} label={blocker === 'agent' ? 'Choose an agent' : 'Set up the link'} onClick={onFix} />
         </div>
       ) : (
         <>
           <div className="flex flex-col gap-1.5">
-            {SUGGESTIONS.map((text) => (
+            {pageSuggestionsFor(host).map((text) => (
               <button
                 key={text}
                 type="button"

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { suggestionsFor } from './suggestions';
+import { ON_THIS_PAGE, pageSuggestionsFor, suggestionsFor } from './suggestions';
 
 describe('suggestionsFor', () => {
   it('offers general tasks to someone with no frequent sites yet', () => {
@@ -34,5 +34,17 @@ describe('suggestionsFor', () => {
     expect(suggestionsFor(['notgithub.com', 'amazon.example.com'], 1)).toEqual([
       'Find a flight to Lisbon next Friday and compare prices',
     ]);
+  });
+});
+
+describe('pageSuggestionsFor', () => {
+  it('puts the site’s own task first', () => {
+    const offered = pageSuggestionsFor('github.com');
+    expect(offered[0]).toBe('List the pull requests waiting on my review');
+    expect(offered).toHaveLength(3);
+  });
+
+  it('offers page-level tasks on a site it knows nothing about', () => {
+    expect(pageSuggestionsFor(undefined)).toEqual(ON_THIS_PAGE);
   });
 });

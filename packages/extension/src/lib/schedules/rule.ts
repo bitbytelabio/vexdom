@@ -1,4 +1,12 @@
-import { jsonText, localTimeZone, scheduleDescribeMoment, scheduleDescribeRule, scheduleInsideWindow, scheduleNextAfter, scheduleUpcoming } from '@/lib/bridge/pure';
+import {
+  jsonText,
+  localTimeZone,
+  scheduleDescribeMoment,
+  scheduleDescribeRule,
+  scheduleInsideWindow,
+  scheduleNextAfter,
+  scheduleUpcoming,
+} from '@/lib/bridge/pure';
 
 export type Weekday = 0 | 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -24,7 +32,11 @@ export interface TimeWindow {
 export type ScheduleRule =
   | { kind: 'once'; at: number }
   | { kind: 'every'; minutes: number; window?: TimeWindow }
-  | { kind: 'weekly'; days: Weekday[]; times: string[] };
+  | { kind: 'weekly'; days: Weekday[]; times: string[] }
+  /** Days of the month 1–31; one past the month's end runs on its last day. */
+  | { kind: 'monthly'; days: number[]; times: string[] }
+  /** Calendar dates; 29 Feb runs on 28 Feb in a common year. */
+  | { kind: 'yearly'; dates: { month: number; day: number }[]; times: string[] };
 
 interface ClockTime {
   hours: number;
@@ -40,7 +52,8 @@ export function parseClockTime(text: string): ClockTime | null {
 
 export const isClockTime = (text: unknown): text is string => typeof text === 'string' && CLOCK_TIME.test(text);
 
-export const isWeekday = (day: unknown): day is Weekday => Number.isInteger(day) && (day as number) >= 0 && (day as number) <= 6;
+export const isWeekday = (day: unknown): day is Weekday =>
+  Number.isInteger(day) && (day as number) >= 0 && (day as number) <= 6;
 
 const pad = (value: number) => String(value).padStart(2, '0');
 
@@ -65,7 +78,8 @@ export function upcoming(rule: ScheduleRule, from: number, count: number): numbe
   return [...scheduleUpcoming(jsonText(rule), from, count, localTimeZone())];
 }
 
-const sameSet = (a: readonly Weekday[], b: readonly Weekday[]) => a.length === b.length && b.every((day) => a.includes(day));
+const sameSet = (a: readonly Weekday[], b: readonly Weekday[]) =>
+  a.length === b.length && b.every((day) => a.includes(day));
 
 export function describeDays(days: readonly Weekday[]): string {
   if (sameSet(days, WEEKDAYS)) return 'Every day';

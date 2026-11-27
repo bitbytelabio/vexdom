@@ -51,6 +51,8 @@ export default defineConfig({
       'cookies',
       'clipboardRead',
       'clipboardWrite',
+      // Each conversation's tabs sit in a tab group of their own; Firefox has had the API since 139.
+      'tabGroups',
       // Firefox has no sidePanel, debugger or offscreen permission, and addons.mozilla.org flags each name it does not know.
       // offscreen is the hidden page hands-free mode listens through once the side panel is closed.
       // userScripts runs a saved tool on every visit, once the user turns on Allow User Scripts.

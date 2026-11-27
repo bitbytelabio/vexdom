@@ -342,6 +342,73 @@ pub struct Policy {
     pub unattended: Effect,
     pub url_payload_bytes: f64,
     pub fence: FencePolicy,
+    /// How often a side-panel run stops to ask; scheduled runs and outside callers keep to `Rules`.
+    pub mode: PermissionMode,
+}
+
+/// How a side-panel run asks before acting. `decide` is the same in every mode; the agent service
+/// adds or skips the asking around it.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum PermissionMode {
+    /// Acts freely and asks only where the rules say `confirm`.
+    #[default]
+    Rules,
+    /// Asks the first time it acts on each site in a conversation.
+    Ask,
+    /// Shows its plan and the sites it needs first, then asks before going anywhere else.
+    Plan,
+    /// Never stops to ask; what the rules block stays blocked.
+    Auto,
+}
+
+impl PermissionMode {
+    pub fn parse(text: &str) -> Option<Self> {
+        match text {
+            "rules" => Some(Self::Rules),
+            "ask" => Some(Self::Ask),
+            "plan" => Some(Self::Plan),
+            "auto" => Some(Self::Auto),
+            _ => None,
+        }
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::Rules => "rules",
+            Self::Ask => "ask",
+            Self::Plan => "plan",
+            Self::Auto => "auto",
+        }
+    }
+}
+
+/// Page actions that touch no page and so never need a site's permission.
+pub const HOSTLESS_ACTIONS: &[&str] = &[
+    "page.listFiles",
+    "page.listDownloads",
+    "page.listRecordings",
+    "page.readRecording",
+    "page.monitorStatus",
+    "page.timerStatus",
+    "page.siteToolResult",
+    "page.cancelSiteTool",
+    "page.startTimer",
+    "page.stopTimer",
+    "page.stopMonitor",
+    "page.awaitMonitor",
+    "page.readConsole",
+    "page.readNetwork",
+    "page.stopDiagnostics",
+    "page.checkSites",
+    "page.switchTab",
+    "page.closeTab",
+    "page.resizeWindow",
+];
+
+/// Whether an action works on a site, and so needs that site's permission in Ask and Plan modes.
+pub fn needs_site(action: &str) -> bool {
+    action.starts_with("page.") && !HOSTLESS_ACTIONS.contains(&action)
 }
 
 /// `guardrails` in config.json. Kept as loose JSON fields so unknown values read as absent.
@@ -358,6 +425,8 @@ pub struct GuardrailConfig {
     pub hosts: Option<Vec<String>>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub fence: Option<Value>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub mode: Option<Value>,
 }
 
 const DEFAULT_URL_PAYLOAD_BYTES: f64 = 512.0;
@@ -413,6 +482,12 @@ pub fn policy_from(config: &GuardrailConfig, require_approval: &[String]) -> Pol
             .filter(|bytes| *bytes >= 0.0)
             .unwrap_or(DEFAULT_URL_PAYLOAD_BYTES),
         fence: default_fence(config.fence != Some(Value::Bool(false))),
+        mode: config
+            .mode
+            .as_ref()
+            .and_then(Value::as_str)
+            .and_then(PermissionMode::parse)
+            .unwrap_or_default(),
     }
 }
 

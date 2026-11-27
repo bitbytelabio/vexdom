@@ -1,5 +1,6 @@
 import { screenshot } from '@/lib/actions/page/screenshot';
 import type { RunEvent } from '@/lib/actions/protocol';
+import { HAND_OFF_ACTION, PROPOSE_PLAN_ACTION } from '@/lib/actions/reserved';
 import { verdictLabel } from '@/lib/files/report';
 import type { MonitorState } from '@/lib/monitor/events';
 import type { ContextBreakdown } from './commands';
@@ -58,7 +59,12 @@ export function reduce(items: RunItem[], event: RunEvent): RunItem[] {
       ];
 
     case 'approval':
-      return patchTool(items, event.toolId, { awaiting: true, site: event.site });
+      // A hand-off or a plan is shown as the Bridge checked it, not as the agent first wrote it.
+      return patchTool(items, event.toolId, {
+        awaiting: true,
+        site: event.site,
+        ...(event.action === HAND_OFF_ACTION || event.action === PROPOSE_PLAN_ACTION ? { input: event.input } : {}),
+      });
 
     case 'toolResult':
       return patchTool(items, event.toolId, { ok: event.ok, summary: event.summary, awaiting: false });

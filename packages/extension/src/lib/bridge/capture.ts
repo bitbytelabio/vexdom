@@ -11,7 +11,16 @@ import { traceStart } from '@/lib/actions/page/trace-start';
 import { traceStop } from '@/lib/actions/page/trace-stop';
 import { failure, success, type ActionResult } from '@/lib/actions/protocol';
 import { base64ToBytes, textToBase64 } from './bytes';
-import { acquire, detachedFailure, onDebuggerEvent, onLost, release, send, withDebugger, type DebuggerSession } from './cdp';
+import {
+  acquire,
+  detachedFailure,
+  onDebuggerEvent,
+  onLost,
+  release,
+  send,
+  withDebugger,
+  type DebuggerSession,
+} from './cdp';
 import { sendRecordFrame } from './socket';
 import CURSOR_SCRIPT from './vendor/recording-cursor.js?raw';
 
@@ -44,7 +53,11 @@ export function pdfInTab(tabId: number, input: unknown): Promise<ActionResult> {
   if (!parsed.success) return Promise.resolve(failure('INVALID_INPUT', z.prettifyError(parsed.error)));
   const { landscape, printBackground, preferCSSPageSize } = parsed.data;
   return withDebugger(tabId, FIREFOX_HINT, async (session) => {
-    const printed = await send<{ data: string }>(session, 'Page.printToPDF', { landscape, printBackground, preferCSSPageSize });
+    const printed = await send<{ data: string }>(session, 'Page.printToPDF', {
+      landscape,
+      printBackground,
+      preferCSSPageSize,
+    });
     return success({ dataUrl: `data:application/pdf;base64,${printed.data}`, file: { stem: 'page', ext: 'pdf' } });
   });
 }
@@ -64,7 +77,8 @@ const lostTraces = new Map<number, string>();
 export async function startTrace(tabId: number, input: unknown): Promise<ActionResult> {
   const parsed = traceStart.input.safeParse(input ?? {});
   if (!parsed.success) return failure('INVALID_INPUT', z.prettifyError(parsed.error));
-  if (traces.has(tabId)) return failure('TRACE_ACTIVE', 'A trace or profile is already running on this tab; stop it first.');
+  if (traces.has(tabId))
+    return failure('TRACE_ACTIVE', 'A trace or profile is already running on this tab; stop it first.');
   const { mode, categories } = parsed.data;
   const acquired = await acquire(tabId, 'trace', FIREFOX_HINT);
   if (!acquired.ok) return failure(acquired.code, acquired.message);
@@ -93,7 +107,10 @@ export async function startTrace(tabId: number, input: unknown): Promise<ActionR
       state.fallback = true;
     } catch (fallbackError) {
       await release(tabId, 'trace');
-      return failure('TRACING_UNAVAILABLE', `Neither tracing nor the profiler is available here: ${message(fallbackError)}`);
+      return failure(
+        'TRACING_UNAVAILABLE',
+        `Neither tracing nor the profiler is available here: ${message(fallbackError)}`,
+      );
     }
   }
   traces.set(tabId, state);
@@ -137,7 +154,9 @@ export async function stopTrace(tabId: number, input: unknown): Promise<ActionRe
   if (!state) {
     const gone = lostTraces.get(tabId);
     lostTraces.delete(tabId);
-    return gone ? detachedFailure(gone) : failure('NO_TRACE', 'No trace or profile is running on this tab; start one with page.traceStart.');
+    return gone
+      ? detachedFailure(gone)
+      : failure('NO_TRACE', 'No trace or profile is running on this tab; start one with page.traceStart.');
   }
   const session = { tabId };
   try {
@@ -154,7 +173,10 @@ export async function stopTrace(tabId: number, input: unknown): Promise<ActionRe
     }
     const completed = new Promise<string | undefined>((resolve, reject) => {
       state.complete = resolve;
-      setTimeout(() => reject(new Error(`${state.mode === 'trace' ? 'Tracing' : 'Profiler'} stop timed out after 30s`)), STOP_DEADLINE_MS);
+      setTimeout(
+        () => reject(new Error(`${state.mode === 'trace' ? 'Tracing' : 'Profiler'} stop timed out after 30s`)),
+        STOP_DEADLINE_MS,
+      );
     });
     await send(session, 'Tracing.end');
     const stream = await completed;
@@ -182,13 +204,18 @@ interface Recording {
 }
 
 const recordings = new Map<number, Recording>();
+
+/** A video of this tab is being recorded, so every action shows its cue whatever the setting says. */
+export const isRecordingVideo = (tabId: number): boolean => recordings.has(tabId);
+
 const CURSOR_WORLD = 'vexdom-recording-cursor';
 
 export async function startRecording(tabId: number, input: unknown): Promise<ActionResult> {
   const parsed = recordStart.input.safeParse(input ?? {});
   if (!parsed.success) return failure('INVALID_INPUT', z.prettifyError(parsed.error));
   const { recordingId, cursor, path } = parsed.data;
-  if (!recordingId) return failure('INVALID_INPUT', 'page.recordStart is started through the Vexdom Bridge, which encodes the video.');
+  if (!recordingId)
+    return failure('INVALID_INPUT', 'page.recordStart is started through the Vexdom Bridge, which encodes the video.');
   if (recordings.size) return failure('RECORDING_ACTIVE', 'A recording is already running; stop it first.');
   const acquired = await acquire(tabId, 'record', FIREFOX_HINT);
   if (!acquired.ok) return failure(acquired.code, acquired.message);
@@ -221,7 +248,9 @@ export async function stopRecording(tabId: number): Promise<ActionResult> {
   const session = { tabId: heldTab };
   await send(session, 'Page.stopScreencast').catch(() => undefined);
   if (recording.cursorScript) {
-    await send(session, 'Page.removeScriptToEvaluateOnNewDocument', { identifier: recording.cursorScript }).catch(() => undefined);
+    await send(session, 'Page.removeScriptToEvaluateOnNewDocument', { identifier: recording.cursorScript }).catch(
+      () => undefined,
+    );
     await cleanCursor(session);
   }
   await release(heldTab, 'record');

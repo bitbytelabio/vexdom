@@ -1,6 +1,7 @@
 import { browser } from 'wxt/browser';
 import { micPermission, watchMicPermission } from '@/lib/bridge/mic-permission';
 import { createRecognition, transcriptOf, type SpeechRecognitionLike } from '@/lib/bridge/recognition';
+import { CHIME_CHANNEL, isChimeKind, playTone } from '@/lib/chime/tone';
 import {
   DICTATION_CHANNEL,
   isDictationCommand,
@@ -107,6 +108,9 @@ function talk(on: boolean): void {
 
 browser.runtime.onMessage.addListener((message: unknown) => {
   if (holding && isDictationCommand(message)) talk(message.on);
+  // Chrome allows one offscreen page, so while this one is open it plays the chimes too.
+  const chime = message as { channel?: unknown; kind?: unknown } | null;
+  if (chime?.channel === CHIME_CHANNEL && isChimeKind(chime.kind)) void playTone(chime.kind);
 });
 
 watchMicPermission((state) => {

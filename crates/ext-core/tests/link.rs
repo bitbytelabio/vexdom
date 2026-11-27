@@ -121,7 +121,10 @@ fn pairs_answers_a_page_call_and_makes_a_request() {
         else {
             panic!("the code is welcomed: {events:?}")
         };
-        assert_eq!(*protocol_version, 27);
+        assert_eq!(
+            *protocol_version,
+            vexdom_core::proto::SOCKET_PROTOCOL_VERSION
+        );
         assert!(
             !proof.is_empty() && !sealed_session_key.is_empty(),
             "a pairing welcome seals a session key"

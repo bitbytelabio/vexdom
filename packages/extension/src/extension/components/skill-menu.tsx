@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { BookOpen, Globe, Sparkles, SquareSlash, Zap } from 'lucide-react';
+import { BookOpen, Globe, MessageSquareText, Sparkles, SquareSlash, Zap } from 'lucide-react';
 
 import type { SkillCatalog } from '@/lib/actions/protocol';
 import { agentLabel } from '@/lib/agents/catalog';
@@ -11,17 +11,20 @@ import {
   HANDS_FREE_DESCRIPTION,
   REMOVE_TOOLS_COMMAND,
   REMOVE_TOOLS_DESCRIPTION,
+  SHORTCUTS_COMMAND,
+  SHORTCUTS_DESCRIPTION,
   TABS_COMMAND,
   TABS_DESCRIPTION,
 } from '@/lib/bridge/commands';
 import type { SavedToolMeta } from '@/lib/bridge/saved-tools';
+import type { Shortcut } from '@/lib/bridge/shortcuts';
 import { hostMatchesDomains, hostnameOf } from '@/lib/skills/format';
 import { toolMatchesUrl } from '@/lib/skills/saved-tool';
 import { cn } from '@/lib/utils';
 
 export interface SkillMenuItem {
   key: string;
-  group: 'tool' | 'command' | 'site' | 'general' | 'agent' | 'other-site';
+  group: 'shortcut' | 'tool' | 'command' | 'site' | 'general' | 'agent' | 'other-site';
   name: string;
   description: string;
   /** Set on agent skills — choosing one attaches this id to the message instead of a text prefix. */
@@ -36,17 +39,24 @@ export interface SkillMenuItem {
   savedToolId?: string;
   /** Other spellings the filter matches, so a near miss still finds the command. */
   aliases?: string[];
+  /** Set on the user's shortcuts. */
+  shortcutId?: string;
+  /** A shortcut's prompt: choosing it puts this in the composer to edit and send. */
+  prompt?: string;
 }
 
-// Saved tools sort first: they are the only entries that do something on their own, and
-// the user named them, so they are the ones being looked for.
+const SHORTCUT_NOTE_CHARS = 80;
+
+// The user's shortcuts and saved tools sort first: the user named them, so they are the ones
+// being looked for.
 const GROUP_ORDER: Record<SkillMenuItem['group'], number> = {
-  tool: 0,
-  command: 1,
-  site: 2,
-  general: 3,
-  agent: 4,
-  'other-site': 5,
+  shortcut: 0,
+  tool: 1,
+  command: 2,
+  site: 3,
+  general: 4,
+  agent: 5,
+  'other-site': 6,
 };
 
 export function skillMenuItems(
@@ -54,7 +64,11 @@ export function skillMenuItems(
   tabUrl: string,
   query: string,
   tools: readonly SavedToolMeta[] = [],
-  { handsFree = false, tabs = false }: { handsFree?: boolean; tabs?: boolean } = {},
+  {
+    handsFree = false,
+    tabs = false,
+    shortcuts = [],
+  }: { handsFree?: boolean; tabs?: boolean; shortcuts?: readonly Shortcut[] } = {},
 ): SkillMenuItem[] {
   const host = hostnameOf(tabUrl);
   const items: SkillMenuItem[] = [
@@ -65,9 +79,33 @@ export function skillMenuItems(
       description: CONTEXT_COMMAND_DESCRIPTION,
       command: CONTEXT_COMMAND,
     },
+    {
+      key: 'command:shortcuts',
+      group: 'command',
+      name: 'shortcuts',
+      description: SHORTCUTS_DESCRIPTION,
+      command: SHORTCUTS_COMMAND,
+    },
   ];
+  for (const shortcut of shortcuts) {
+    const oneLine = shortcut.prompt.replace(/\s+/g, ' ');
+    items.push({
+      key: `shortcut:${shortcut.id}`,
+      group: 'shortcut',
+      name: shortcut.name,
+      description: oneLine.length > SHORTCUT_NOTE_CHARS ? `${oneLine.slice(0, SHORTCUT_NOTE_CHARS - 1)}…` : oneLine,
+      shortcutId: shortcut.id,
+      prompt: shortcut.prompt,
+    });
+  }
   if (tabs) {
-    items.push({ key: 'command:tabs', group: 'command', name: 'tabs', description: TABS_DESCRIPTION, command: TABS_COMMAND });
+    items.push({
+      key: 'command:tabs',
+      group: 'command',
+      name: 'tabs',
+      description: TABS_DESCRIPTION,
+      command: TABS_COMMAND,
+    });
   }
   if (handsFree) {
     items.push({
@@ -110,7 +148,13 @@ export function skillMenuItems(
     items.push({ key: `${group}:${skill.name}`, group, name: skill.name, description: skill.description });
   }
   for (const skill of catalog?.agentSkills ?? []) {
-    items.push({ key: `agent:${skill.id}`, group: 'agent', name: skill.name, description: skill.description, agentSkillId: skill.id });
+    items.push({
+      key: `agent:${skill.id}`,
+      group: 'agent',
+      name: skill.name,
+      description: skill.description,
+      agentSkillId: skill.id,
+    });
   }
   const needle = query.trim().toLowerCase();
   const matched = needle
@@ -150,6 +194,7 @@ export function SkillMenu({
   onSelect: (item: SkillMenuItem) => void;
 }) {
   const labels: Record<SkillMenuItem['group'], string> = {
+    shortcut: 'Your shortcuts',
     tool: 'Your tools',
     command: 'Commands',
     site: 'On this site',
@@ -208,7 +253,9 @@ export function SkillMenu({
                 index === highlight ? 'bg-brand/12' : 'hover:bg-ground/40',
               )}
             >
-              {item.group === 'tool' ? (
+              {item.group === 'shortcut' ? (
+                <MessageSquareText className="mt-0.5 size-3 shrink-0 text-brand" />
+              ) : item.group === 'tool' ? (
                 <Zap className="mt-0.5 size-3 shrink-0 text-lime" />
               ) : item.group === 'command' ? (
                 <SquareSlash className="mt-0.5 size-3 shrink-0 text-amber" />

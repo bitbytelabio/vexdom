@@ -1,7 +1,9 @@
 import { browser } from 'wxt/browser';
 import type { ActionResult } from '@/lib/actions/protocol';
 import { CUE_CHANNEL, CUE_FADE_MS, CUE_LINGER_MS, type CueCommand, type CuePlan } from '@/lib/cues/events';
+import { isRecordingVideo } from './capture';
 import { focusedFrame, TOP_FRAME } from './frame-focus';
+import { hushIndicator } from './run-indicator';
 import { readTheme } from './theme';
 
 export const ACTION_CUES_KEY = 'vexdom/actionCues';
@@ -33,10 +35,22 @@ export async function readActionCues(): Promise<boolean> {
  * costs the action at most CUE_LEAD_MS, and a failed cue never fails the action.
  */
 export async function cued(tabId: number, plan: CuePlan, perform: () => Promise<ActionResult>): Promise<ActionResult> {
-  if (plan.quench) await quenchCues(tabId);
+  if (!plan.quench) return cue(tabId, plan, perform);
+  await quenchCues(tabId);
+  // The run's own frame and Stop pill stay out of what the agent sees, too.
+  await hushIndicator(tabId, true);
+  try {
+    return await cue(tabId, plan, perform);
+  } finally {
+    await hushIndicator(tabId, false);
+  }
+}
+
+async function cue(tabId: number, plan: CuePlan, perform: () => Promise<ActionResult>): Promise<ActionResult> {
   if (plan.kind === 'none') return perform();
   const [enabled, theme, frameId] = await Promise.all([
-    readActionCues(),
+    // A video shows every action ringed and captioned: that is what makes it worth watching.
+    readActionCues().then((on) => on || isRecordingVideo(tabId)),
     readTheme(),
     plan.kind === 'page' ? TOP_FRAME : focusedFrame(tabId),
   ]);

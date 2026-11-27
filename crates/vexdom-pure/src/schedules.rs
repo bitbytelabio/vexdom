@@ -14,6 +14,7 @@ pub const MAX_TASKS: usize = 25;
 pub const MIN_EVERY_MINUTES: i64 = 5;
 pub const MAX_EVERY_MINUTES: i64 = 7 * 24 * 60;
 pub const MAX_TIMES_PER_DAY: usize = 12;
+pub const MAX_DATES_PER_YEAR: usize = 12;
 pub const MAX_RUNS_KEPT: usize = 20;
 pub const MAX_TASK_RUNS: i64 = 1_000;
 pub const MAX_TASK_NAME: usize = 80;
@@ -77,6 +78,61 @@ fn at_clock_time(day: Date, offset_days: i64, (hours, minutes): (i8, i8), tz: &T
     wall.ok()
         .and_then(|wall| wall.to_zoned_datetime(tz.clone()).ok())
         .map_or(0, |zoned| zoned.timestamp().as_millisecond())
+}
+
+/// Local wall time on a calendar date; a day past the month's end is its last day (31 → 30 Apr).
+fn at_date(year: i16, month: i8, day: i8, clock: (i8, i8), tz: &TimeZone) -> i64 {
+    let Ok(first) = Date::new(year, month, 1) else {
+        return 0;
+    };
+    let date = Date::new(year, month, day.min(first.days_in_month())).unwrap_or(first);
+    at_clock_time(date, 0, clock, tz)
+}
+
+/// The month `offset` months after `year`-`month`.
+fn month_after(year: i16, month: i8, offset: i64) -> (i16, i8) {
+    let total = i64::from(year) * 12 + i64::from(month - 1) + offset;
+    (
+        total.div_euclid(12) as i16,
+        (total.rem_euclid(12) + 1) as i8,
+    )
+}
+
+/// The most days a month ever has, Feb 29 included.
+fn max_day_of(month: i64) -> i64 {
+    Date::new(2024, month as i8, 1).map_or(0, |date| i64::from(date.days_in_month()))
+}
+
+fn clocks_of(rule: &Value) -> Vec<(i8, i8)> {
+    rule.get("times")
+        .and_then(Value::as_array)
+        .map(|times| {
+            times
+                .iter()
+                .filter_map(|time| time.as_str().and_then(parse_clock_time))
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+fn whole(value: &Value) -> Option<i64> {
+    value
+        .as_f64()
+        .filter(|n| n.fract() == 0.0)
+        .map(|n| n as i64)
+}
+
+/// A yearly rule's `{month, day}` dates.
+fn dates_of(rule: &Value) -> Vec<(i64, i64)> {
+    rule.get("dates")
+        .and_then(Value::as_array)
+        .map(|dates| {
+            dates
+                .iter()
+                .filter_map(|date| Some((whole(date.get("month")?)?, whole(date.get("day")?)?)))
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
 fn minute_of_day(at: i64, tz: &TimeZone) -> i64 {
@@ -170,8 +226,76 @@ pub fn next_after(rule: &Value, after: i64, tz: &TimeZone) -> Option<i64> {
                     .min()
             })
         }
+        "monthly" => {
+            let days: Vec<i8> = rule
+                .get("days")?
+                .as_array()?
+                .iter()
+                .filter_map(whole)
+                .filter(|day| (1..=31).contains(day))
+                .map(|day| day as i8)
+                .collect();
+            let clocks = clocks_of(rule);
+            if days.is_empty() || clocks.is_empty() {
+                return None;
+            }
+            let start = local(after, tz).date();
+            (0..=12).find_map(|offset| {
+                let (year, month) = month_after(start.year(), start.month(), offset);
+                days.iter()
+                    .flat_map(|day| clocks.iter().map(move |clock| (*day, *clock)))
+                    .map(|(day, clock)| at_date(year, month, day, clock, tz))
+                    .filter(|at| *at > after)
+                    .min()
+            })
+        }
+        "yearly" => {
+            let dates: Vec<(i8, i8)> = dates_of(rule)
+                .into_iter()
+                .filter(|(month, day)| (1..=12).contains(month) && (1..=31).contains(day))
+                .map(|(month, day)| (month as i8, day as i8))
+                .collect();
+            let clocks = clocks_of(rule);
+            if dates.is_empty() || clocks.is_empty() {
+                return None;
+            }
+            let start = local(after, tz).date().year();
+            (0..=1).find_map(|offset| {
+                dates
+                    .iter()
+                    .flat_map(|date| clocks.iter().map(move |clock| (*date, *clock)))
+                    .map(|((month, day), clock)| at_date(start + offset, month, day, clock, tz))
+                    .filter(|at| *at > after)
+                    .min()
+            })
+        }
         _ => None,
     }
+}
+
+/// `1st`, `2nd`, `3rd`, `4th`, `11th`, `21st`.
+fn ordinal(day: i64) -> String {
+    let suffix = match (day % 10, day % 100) {
+        (_, 11..=13) => "th",
+        (1, _) => "st",
+        (2, _) => "nd",
+        (3, _) => "rd",
+        _ => "th",
+    };
+    format!("{day}{suffix}")
+}
+
+fn sorted_times(rule: &Value) -> String {
+    let mut times: Vec<String> = rule["times"]
+        .as_array()
+        .map(|t| {
+            t.iter()
+                .filter_map(|v| v.as_str().map(str::to_owned))
+                .collect()
+        })
+        .unwrap_or_default();
+    times.sort();
+    join_list(&times)
 }
 
 pub fn upcoming(rule: &Value, from: i64, count: usize, tz: &TimeZone) -> Vec<i64> {
@@ -287,6 +411,33 @@ pub fn describe_rule(rule: &Value, tz: &TimeZone) -> String {
                 .unwrap_or_default();
             times.sort();
             format!("{} at {}", describe_days(&days), join_list(&times))
+        }
+        Some("monthly") => {
+            let mut days: Vec<i64> = rule["days"]
+                .as_array()
+                .map(|d| d.iter().filter_map(whole).collect())
+                .unwrap_or_default();
+            days.sort_unstable();
+            let days: Vec<String> = days.into_iter().map(ordinal).collect();
+            format!(
+                "Monthly on the {} at {}",
+                join_list(&days),
+                sorted_times(rule)
+            )
+        }
+        Some("yearly") => {
+            let mut dates = dates_of(rule);
+            dates.sort_unstable();
+            let dates: Vec<String> = dates
+                .into_iter()
+                .filter(|(month, _)| (1..=12).contains(month))
+                .map(|(month, day)| format!("{day} {}", MONTH_NAMES[(month - 1) as usize]))
+                .collect();
+            format!(
+                "Every year on {} at {}",
+                join_list(&dates),
+                sorted_times(rule)
+            )
         }
         _ => String::new(),
     }
@@ -429,38 +580,99 @@ pub fn validate_rule(raw: &Value, now: i64, stored: Option<&Value>) -> Result<Va
             if days.is_empty() || !days.iter().all(weekday_ok) {
                 return Err("Pick at least one day.".into());
             }
-            let mut times: Vec<Value> = Vec::new();
-            for time in raw
-                .get("times")
-                .and_then(Value::as_array)
-                .cloned()
-                .unwrap_or_default()
-            {
-                if !times.contains(&time) {
-                    times.push(time);
-                }
-            }
-            if times.is_empty() || !times.iter().all(is_clock_time) {
-                return Err("Give at least one time, like 09:00.".into());
-            }
-            if times.len() > MAX_TIMES_PER_DAY {
-                return Err(format!("Pick at most {MAX_TIMES_PER_DAY} times a day."));
-            }
+            let times = valid_times(raw)?;
             // JS `sort()` compares as strings; single digits sort the same as numbers.
             let mut days: Vec<i64> = days
                 .iter()
                 .filter_map(|d| d.as_f64().map(|d| d as i64))
                 .collect();
             days.sort_unstable();
-            let mut times: Vec<String> = times
-                .iter()
-                .filter_map(|t| t.as_str().map(str::to_owned))
-                .collect();
-            times.sort();
             Ok(json!({"kind": "weekly", "days": days, "times": times}))
         }
-        _ => Err("A task runs once, every so often, or on set days.".into()),
+        Some("monthly") => {
+            let given = raw
+                .get("days")
+                .and_then(Value::as_array)
+                .cloned()
+                .unwrap_or_default();
+            if given.is_empty() {
+                return Err("Pick at least one day of the month.".into());
+            }
+            let mut days: Vec<i64> = Vec::new();
+            for day in &given {
+                match whole(day).filter(|day| (1..=31).contains(day)) {
+                    Some(day) if !days.contains(&day) => days.push(day),
+                    Some(_) => {}
+                    None => return Err("Days of the month are 1 to 31.".into()),
+                }
+            }
+            let times = valid_times(raw)?;
+            days.sort_unstable();
+            Ok(json!({"kind": "monthly", "days": days, "times": times}))
+        }
+        Some("yearly") => {
+            let given = raw
+                .get("dates")
+                .and_then(Value::as_array)
+                .cloned()
+                .unwrap_or_default();
+            if given.is_empty() {
+                return Err("Pick at least one date.".into());
+            }
+            let mut dates: Vec<(i64, i64)> = Vec::new();
+            for date in &given {
+                let month = date.get("month").and_then(whole);
+                let day = date.get("day").and_then(whole);
+                let (Some(month), Some(day)) = (month, day) else {
+                    return Err("That date does not exist.".into());
+                };
+                if !(1..=12).contains(&month) || day < 1 || day > max_day_of(month) {
+                    return Err("That date does not exist.".into());
+                }
+                if !dates.contains(&(month, day)) {
+                    dates.push((month, day));
+                }
+            }
+            if dates.len() > MAX_DATES_PER_YEAR {
+                return Err(format!("Up to {MAX_DATES_PER_YEAR} dates a year."));
+            }
+            let times = valid_times(raw)?;
+            dates.sort_unstable();
+            let dates: Vec<Value> = dates
+                .into_iter()
+                .map(|(month, day)| json!({"month": month, "day": day}))
+                .collect();
+            Ok(json!({"kind": "yearly", "dates": dates, "times": times}))
+        }
+        _ => Err("A task runs once, every so often, on set days, monthly or yearly.".into()),
     }
+}
+
+/// A rule's clock times, deduplicated and sorted, or why they will not do.
+fn valid_times(raw: &Value) -> Result<Vec<String>, String> {
+    let mut times: Vec<Value> = Vec::new();
+    for time in raw
+        .get("times")
+        .and_then(Value::as_array)
+        .cloned()
+        .unwrap_or_default()
+    {
+        if !times.contains(&time) {
+            times.push(time);
+        }
+    }
+    if times.is_empty() || !times.iter().all(is_clock_time) {
+        return Err("Give at least one time, like 09:00.".into());
+    }
+    if times.len() > MAX_TIMES_PER_DAY {
+        return Err(format!("Pick at most {MAX_TIMES_PER_DAY} times a day."));
+    }
+    let mut times: Vec<String> = times
+        .iter()
+        .filter_map(|t| t.as_str().map(str::to_owned))
+        .collect();
+    times.sort();
+    Ok(times)
 }
 
 fn is_web_url(value: &Value) -> bool {
@@ -720,6 +932,91 @@ mod tests {
         assert_eq!(
             headline_of("# Done\n- **All** `good`\n").as_deref(),
             Some("All good")
+        );
+    }
+
+    fn berlin(year: i16, month: i8, day: i8, hour: i8) -> i64 {
+        jiff::civil::date(year, month, day)
+            .at(hour, 0, 0, 0)
+            .to_zoned_datetime(TimeZone::get("Europe/Berlin").unwrap())
+            .unwrap()
+            .timestamp()
+            .as_millisecond()
+    }
+
+    #[test]
+    fn monthly_and_yearly_rules() {
+        let tz = TimeZone::get("Europe/Berlin").unwrap();
+        let last_day = json!({"kind": "monthly", "days": [31], "times": ["09:00"]});
+        assert_eq!(
+            next_after(&last_day, berlin(2026, 4, 15, 12), &tz),
+            Some(berlin(2026, 4, 30, 9))
+        );
+        let twice = json!({"kind": "monthly", "days": [1, 15], "times": ["09:00"]});
+        assert_eq!(
+            next_after(&twice, berlin(2026, 1, 15, 10), &tz),
+            Some(berlin(2026, 2, 1, 9))
+        );
+        let leap =
+            json!({"kind": "yearly", "dates": [{"month": 2, "day": 29}], "times": ["09:00"]});
+        assert_eq!(
+            next_after(&leap, berlin(2026, 3, 1, 12), &tz),
+            Some(berlin(2027, 2, 28, 9))
+        );
+        assert_eq!(
+            describe_rule(&twice, &tz),
+            "Monthly on the 1st and 15th at 09:00"
+        );
+        assert_eq!(
+            describe_rule(
+                &json!({"kind": "monthly", "days": [22, 11, 3], "times": ["09:00"]}),
+                &tz
+            ),
+            "Monthly on the 3rd, 11th and 22nd at 09:00"
+        );
+        assert_eq!(
+            describe_rule(
+                &json!({"kind": "yearly", "dates": [{"month": 2, "day": 14}], "times": ["09:00"]}),
+                &tz
+            ),
+            "Every year on 14 Feb at 09:00"
+        );
+    }
+
+    #[test]
+    fn validates_monthly_and_yearly() {
+        let now = 1_700_000_000_000;
+        assert_eq!(
+            validate_rule(
+                &json!({"kind": "monthly", "days": [0], "times": ["09:00"]}),
+                now,
+                None
+            ),
+            Err("Days of the month are 1 to 31.".into())
+        );
+        assert_eq!(
+            validate_rule(
+                &json!({"kind": "yearly", "dates": [{"month": 4, "day": 31}], "times": ["09:00"]}),
+                now,
+                None
+            ),
+            Err("That date does not exist.".into())
+        );
+        assert_eq!(
+            validate_rule(
+                &json!({"kind": "monthly", "days": [15, 1, 15], "times": ["09:00"]}),
+                now,
+                None
+            ),
+            Ok(json!({"kind": "monthly", "days": [1, 15], "times": ["09:00"]}))
+        );
+        assert!(
+            validate_rule(
+                &json!({"kind": "yearly", "dates": [{"month": 2, "day": 29}], "times": ["09:00"]}),
+                now,
+                None
+            )
+            .is_ok()
         );
     }
 

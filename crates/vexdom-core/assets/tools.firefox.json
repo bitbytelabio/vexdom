@@ -1,5 +1,5 @@
 {
-  "hash": "67c5df13",
+  "hash": "43cded57",
   "tools": [
     {
       "name": "page.getPageInfo",
@@ -2709,6 +2709,45 @@
       }
     },
     {
+      "name": "page.resizeWindow",
+      "description": "Resize, move, maximize or minimize the browser window the agent's tab is in (not the page's viewport — use emulate for that).",
+      "inputSchema": {
+        "type": "object",
+        "properties": {
+          "width": {
+            "description": "Window width in CSS pixels.",
+            "type": "integer",
+            "minimum": 200,
+            "maximum": 10000
+          },
+          "height": {
+            "description": "Window height in CSS pixels.",
+            "type": "integer",
+            "minimum": 200,
+            "maximum": 10000
+          },
+          "left": {
+            "description": "Distance from the screen’s left edge.",
+            "type": "integer"
+          },
+          "top": {
+            "description": "Distance from the screen’s top edge.",
+            "type": "integer"
+          },
+          "state": {
+            "description": "Window state instead of a size; cannot be combined with width/height/left/top.",
+            "type": "string",
+            "enum": [
+              "normal",
+              "maximized",
+              "minimized",
+              "fullscreen"
+            ]
+          }
+        }
+      }
+    },
+    {
       "name": "page.pushState",
       "description": "Change a single-page app’s route without a reload: Next.js’s router when the page has one, else history.pushState plus a popstate event its router hears. Same origin only; use page.navigate to leave the site.",
       "inputSchema": {
@@ -2955,7 +2994,7 @@
     },
     {
       "name": "page.attachFile",
-      "description": "Attach a file to a file input on the page: one the user stored in Vexdom (fileId, from page.listFiles), one you captured off another page (downloadId, from page.captureDownload), or local files by path (paths). The second closes the loop — download here, upload there — without the bytes ever passing through you.",
+      "description": "Attach a file to a file input on the page: one the user stored in Vexdom (fileId, from page.listFiles), one you captured off another page (downloadId, from page.captureDownload), or local files by path (paths). The second closes the loop — download here, upload there — without the bytes ever passing through you. A target that is not a file input gets the files dropped onto it, as a drop zone expects.",
       "inputSchema": {
         "type": "object",
         "properties": {
@@ -3028,7 +3067,7 @@
                 "type": "boolean"
               }
             },
-            "description": "The file input (<input type=\"file\">) to attach the file to."
+            "description": "The file input (<input type=\"file\">) to attach the file to, or a drop zone to drop it onto."
           },
           "name": {
             "description": "Internal: original filename. Vexdom fills this in.",
@@ -3213,6 +3252,7 @@
     "page.timerStatus": "monitoring",
     "page.stopTimer": "monitoring",
     "page.openWindow": "navigation",
+    "page.resizeWindow": "navigation",
     "page.pushState": "navigation",
     "page.tabKeep": "navigation",
     "page.captureDownload": "downloads",

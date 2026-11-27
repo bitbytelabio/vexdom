@@ -17,7 +17,8 @@ import { SavedToolList } from '@/extension/components/saved-tools';
 import { StatusPill, describeStatus, type StatusBlocker } from '@/extension/components/status-pill';
 import { Button } from '@/extension/components/ui/button';
 import { BRIDGE_CHANNEL } from '@/lib/actions/protocol';
-import { isRemoveToolsCommand } from '@/lib/bridge/commands';
+import { isRemoveToolsCommand, isShortcutsCommand } from '@/lib/bridge/commands';
+import { useShortcuts } from '@/lib/bridge/use-shortcuts';
 import { showPanelTab } from '@/lib/bridge/panel-view';
 import { hasSidePanel, openSidePanel } from '@/lib/bridge/side-panel';
 import { useOwnTab } from '@/lib/bridge/use-active-tab';
@@ -41,8 +42,16 @@ type Sheet = 'connection' | 'agent' | 'customize';
 const RECENT = 4;
 
 const SETUP: Record<StatusBlocker, { text: string; action: string; sheet: Sheet }> = {
-  unpaired: { text: 'This browser isn’t connected to Vexdom Bridge yet.', action: 'Set up the link', sheet: 'connection' },
-  offline: { text: 'Vexdom Bridge isn’t answering. Start it and this reconnects on its own.', action: 'Check the link', sheet: 'connection' },
+  unpaired: {
+    text: 'This browser isn’t connected to Vexdom Bridge yet.',
+    action: 'Set up the link',
+    sheet: 'connection',
+  },
+  offline: {
+    text: 'Vexdom Bridge isn’t answering. Start it and this reconnects on its own.',
+    action: 'Check the link',
+    sheet: 'connection',
+  },
   agent: { text: 'The chosen agent can’t run on this computer.', action: 'Choose another agent', sheet: 'agent' },
 };
 
@@ -58,6 +67,7 @@ export default function App({ onTurnOff }: { onTurnOff: () => void }) {
   const frequent = useFrequentSites(choice.sites, choice.hidden);
   const stored = useStoredSessions();
   const storedFiles = useStoredFiles();
+  const shortcuts = useShortcuts();
   const [micOn, setMicOn] = useState(false);
   const [actionCues, setActionCues] = useActionCues();
   const [liveTools, setLiveTools] = useState(false);
@@ -110,7 +120,11 @@ export default function App({ onTurnOff }: { onTurnOff: () => void }) {
     [storedFiles, run.sessionId],
   );
   const summary = useMemo(
-    () => summarize(run.items.filter((item) => !(item.kind === 'tool' && item.source === 'external')), run.running),
+    () =>
+      summarize(
+        run.items.filter((item) => !(item.kind === 'tool' && item.source === 'external')),
+        run.running,
+      ),
     [run.items, run.running],
   );
   const ideas = useMemo(() => suggestionsFor(frequent.sites.map((site) => site.host)), [frequent.sites]);
@@ -129,6 +143,10 @@ export default function App({ onTurnOff }: { onTurnOff: () => void }) {
   function command(text: string) {
     if (isRemoveToolsCommand(text)) {
       setShowTools(true);
+      return;
+    }
+    if (isShortcutsCommand(text)) {
+      void browser.tabs.create({ url: browser.runtime.getURL('/options.html#shortcuts') });
       return;
     }
     reveal();
@@ -184,7 +202,13 @@ export default function App({ onTurnOff }: { onTurnOff: () => void }) {
             </Popover>
           </div>
           {panel && (
-            <Button variant="ghost" size="icon-sm" title="Open the side panel" aria-label="Open the side panel" onClick={reveal}>
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              title="Open the side panel"
+              aria-label="Open the side panel"
+              onClick={reveal}
+            >
               <PanelRight className="size-3.5" />
             </Button>
           )}
@@ -247,6 +271,7 @@ export default function App({ onTurnOff }: { onTurnOff: () => void }) {
               }
               onCommand={command}
               tools={run.tools}
+              shortcuts={shortcuts}
               onRunTool={(id) => {
                 reveal();
                 run.runTool(id);

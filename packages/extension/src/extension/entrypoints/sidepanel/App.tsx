@@ -2,8 +2,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowDown, PanelRightClose, PictureInPicture2, SlidersHorizontal, SquarePen } from 'lucide-react';
 import { browser } from 'wxt/browser';
 
-import { isHandsFreeCommand, isRemoveToolsCommand, isTabsCommand } from '@/lib/bridge/commands';
-import { BRIDGE_CHANNEL, type FocusedElement } from '@/lib/actions/protocol';
+import { isHandsFreeCommand, isRemoveToolsCommand, isShortcutsCommand, isTabsCommand } from '@/lib/bridge/commands';
+import { useShortcuts } from '@/lib/bridge/use-shortcuts';
+import { BRIDGE_CHANNEL, type ActionResult, type FocusedElement } from '@/lib/actions/protocol';
 import { MAX_STORED_FILE_BYTES } from '@/lib/files/report';
 import { Wordmark } from '@/extension/components/brand';
 import { BLOCKED_HERE, BlockedSiteNote } from '@/extension/components/blocked-site-note';
@@ -33,6 +34,7 @@ import { ScrollArea } from '@/extension/components/ui/scroll-area';
 import { pickFocus } from '@/lib/bridge/aeye';
 import { removeRecording, type StoredRecordingMeta } from '@/lib/bridge/recording-store';
 import { removeSession } from '@/lib/bridge/session-store';
+import { hostOf } from '@/lib/bridge/tab-sessions';
 import { useActiveTabUrl } from '@/lib/bridge/use-active-tab-url';
 import { useActionCues, useBlockedPattern } from '@/lib/bridge/use-extension-settings';
 import { useAttachFiles } from '@/lib/bridge/use-attach-files';
@@ -75,6 +77,7 @@ export default function App() {
   const recordings = useStoredRecordings();
   const skills = useStoredSkills();
   const tasks = useStoredTasks();
+  const shortcuts = useShortcuts();
   const [taskSeed, setTaskSeed] = useState<TaskSeed | null>(null);
   const [scheduling, setScheduling] = useState(false);
   const [tabsOpen, setTabsOpen] = useState(false);
@@ -201,6 +204,11 @@ export default function App() {
       setTabsOpen(true);
       return true;
     }
+    if (isShortcutsCommand(text)) {
+      voice.setInput('');
+      void browser.tabs.create({ url: browser.runtime.getURL('/options.html#shortcuts') });
+      return true;
+    }
     return false;
   }
 
@@ -257,6 +265,30 @@ export default function App() {
     else if ('error' in outcome) setAttachError(`A-Eye couldn’t read that element: ${outcome.error}`);
   }
 
+  /** The user draws a box on the page; the picture of it is attached like any file. */
+  async function captureRegion() {
+    if (blockedHere) {
+      setAttachError(BLOCKED_HERE);
+      return;
+    }
+    setAttachError(null);
+    const [active] = await browser.tabs.query({ active: true, currentWindow: true });
+    if (active?.id == null) return;
+    const result = (await browser.runtime.sendMessage({
+      channel: BRIDGE_CHANNEL,
+      op: 'captureRegion',
+      tabId: active.id,
+    })) as ActionResult<{ name: string; dataUrl: string }> | undefined;
+    if (!result) return;
+    if (!result.ok) {
+      if (result.error.code !== 'CANCELLED')
+        setAttachError(`Couldn’t capture that part of the page: ${result.error.message}`);
+      return;
+    }
+    const blob = await (await fetch(result.data.dataUrl)).blob();
+    await attachFiles([new File([blob], result.data.name, { type: 'image/png' })]);
+  }
+
   function toggleVoice() {
     if (!voiceEnabled) {
       setVoiceEnabled(true);
@@ -285,11 +317,7 @@ export default function App() {
     <div className={cn('relative flex h-screen flex-col', detaching && 'detaching')}>
       <header className="flex shrink-0 items-center gap-2 px-3 py-2.5">
         <Wordmark className="flex-1" />
-        <StatusPill
-          tone={status.tone}
-          expanded={connectionOpen}
-          onClick={() => setConnectionOpen((open) => !open)}
-        >
+        <StatusPill tone={status.tone} expanded={connectionOpen} onClick={() => setConnectionOpen((open) => !open)}>
           {status.label}
         </StatusPill>
         <Button
@@ -339,12 +367,7 @@ export default function App() {
 
       <PanelNav tab={tab} counts={counts} onSelect={open} />
 
-      <SessionRail
-        sessions={run.sessions}
-        activeSessionId={run.sessionId}
-        onFocus={watch}
-        onEnd={run.endSession}
-      />
+      <SessionRail sessions={run.sessions} activeSessionId={run.sessionId} onFocus={watch} onEnd={run.endSession} />
 
       {hasBanners && (
         <div className="max-h-[45%] shrink-0 overflow-y-auto px-3 pt-2">
@@ -374,6 +397,7 @@ export default function App() {
           {tab === 'chat' ? (
             run.items.length === 0 ? (
               <Greeting
+                host={hostOf(tabUrl)}
                 blocker={status.blocker}
                 voiceOn={voiceEnabled && voice.supported}
                 onGo={open}
@@ -419,7 +443,9 @@ export default function App() {
               onStart={run.startRecording}
               onStop={run.stopRecording}
               onReplay={replayRecording}
-              onSchedule={(recording) => schedule({ recordingId: recording.id, name: recording.name, url: recording.startUrl })}
+              onSchedule={(recording) =>
+                schedule({ recordingId: recording.id, name: recording.name, url: recording.startUrl })
+              }
               onRemove={(id) => void removeRecording(id)}
             />
           )}
@@ -430,7 +456,10 @@ export default function App() {
           <Button
             size="sm"
             variant="outline"
-            className={cn('enters absolute left-1/2 -translate-x-1/2 backdrop-blur', starShown ? 'bottom-14' : 'bottom-3')}
+            className={cn(
+              'enters absolute left-1/2 -translate-x-1/2 backdrop-blur',
+              starShown ? 'bottom-14' : 'bottom-3',
+            )}
             onClick={goToLatest}
           >
             <ArrowDown className="size-3" /> Latest
@@ -504,6 +533,7 @@ export default function App() {
               run.send(command);
             }}
             tools={run.tools}
+            shortcuts={shortcuts}
             onRunTool={(id) => {
               open('chat');
               run.runTool(id);
@@ -512,6 +542,7 @@ export default function App() {
             onStop={run.cancel}
             onToggleVoice={toggleVoice}
             onPick={() => void pointAtElement()}
+            onCaptureRegion={() => void captureRegion()}
             onClearFocus={() => setFocus(null)}
             onAttachFile={(file) => void attachFiles([file])}
             onRemoveFile={run.detachFile}
