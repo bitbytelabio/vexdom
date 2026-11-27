@@ -105,8 +105,10 @@ unpacked extensions by itself.
 [release.yml](../../.github/workflows/release.yml) runs on a `v*` tag and publishes everything
 `install.sh`, `vexdom update` and Firefox's update check read.
 
-1. **Bump the version** in `Cargo.toml` (`[workspace.package]`), `desktop/Cargo.toml` and
-   `packages/extension/package.json`; the job fails when the tag and `package.json` disagree. Then
+1. **Bump the version** in `Cargo.toml` (`[workspace.package]`) and `desktop/Cargo.toml`; the job
+   fails when the tag and `[workspace.package]` disagree. Bump `packages/extension/package.json`
+   to the same version only when the extension changed: a release whose extension version differs
+   re-attaches that version's signed Firefox add-on instead of signing a new one. Then
    `cargo metadata --format-version 1 >/dev/null`, at the root and in `desktop/`, updates both
    `Cargo.lock` files; commit them with the bump.
 2. **Tag and push** once CI is green on `main`: `git tag -s vX.Y.Z -m vX.Y.Z && git push origin vX.Y.Z`.

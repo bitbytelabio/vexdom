@@ -76,12 +76,16 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      - name: The tag is the package version
+      - name: The tag is the workspace version
         id: version
         run: |
-          version=$(jq -r .version package.json)
+          # The release is the Bridge's version; the extension keeps its own and is re-signed only
+          # when it changes (AMO signs a version once).
+          version=$(awk -F'"' '/^\[workspace.package\]/ { section = 1; next } /^\[/ { section = 0 } section && /^version *=/ { print $2; exit }' ../../Cargo.toml)
           test "v$version" = "$GITHUB_REF_NAME" || { echo "::error::tag $GITHUB_REF_NAME is not v$version"; exit 1; }
+          extension=$(jq -r .version package.json)
           echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "extension=$extension" >> "$GITHUB_OUTPUT"
 
       - name: Build
         run: |
@@ -90,11 +94,30 @@ jobs:
           bun run lint:firefox
 
       - name: No AMO keys, no Firefox add-on
-        if: env.AMO_JWT_ISSUER == '' || env.AMO_JWT_SECRET == ''
+        if: steps.version.outputs.extension == steps.version.outputs.version && (env.AMO_JWT_ISSUER == '' || env.AMO_JWT_SECRET == '')
         run: echo "::warning::AMO_JWT_ISSUER / AMO_JWT_SECRET are not set; this release has no signed Firefox add-on"
 
+      - name: Reuse the signed Firefox add-on of the extension's release
+        # A Bridge-only release: the add-on is the one already signed, under this release's name
+        # (browsers.rs `signed_addon_url` builds it from the Bridge version), and updates.json keeps
+        # pointing at the release that signed it.
+        if: steps.version.outputs.extension != steps.version.outputs.version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+          EXTENSION: ${{ steps.version.outputs.extension }}
+        run: |
+          mkdir -p dist/release
+          if gh release download "v$EXTENSION" --repo "$GITHUB_REPOSITORY" --dir dist/release \
+            --pattern "vexdom-$EXTENSION-firefox.xpi" --pattern updates.json; then
+            mv "dist/release/vexdom-$EXTENSION-firefox.xpi" "dist/release/vexdom-$VERSION-firefox.xpi"
+          else
+            rm -rf dist/release
+            echo "::warning::release v$EXTENSION has no signed Firefox add-on to reuse; this release has none"
+          fi
+
       - name: Sign the Firefox add-on (unlisted)
-        if: env.AMO_JWT_ISSUER != '' && env.AMO_JWT_SECRET != ''
+        if: steps.version.outputs.extension == steps.version.outputs.version && env.AMO_JWT_ISSUER != '' && env.AMO_JWT_SECRET != ''
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
