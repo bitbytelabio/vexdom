@@ -1138,8 +1138,18 @@ async fn snapshot(bridge: &Bridge, args: &Args) -> ExitCode {
 }
 
 async fn read(bridge: &Bridge, args: &Args) -> ExitCode {
+    let offset = match args.value("--offset").map(str::parse::<usize>) {
+        None => 0,
+        Some(Ok(n)) => n,
+        Some(Err(_)) => {
+            return fail(&format!(
+                "Invalid read offset: {}",
+                args.value("--offset").unwrap_or("")
+            ));
+        }
+    };
     if let Some(url) = args.positional().first() {
-        return read_url(bridge, url, args).await;
+        return read_url(bridge, url, args, offset).await;
     }
     let mut request = bridge.control.read_request();
     {
@@ -1147,6 +1157,7 @@ async fn read(bridge: &Bridge, args: &Args) -> ExitCode {
         opts.set_outline(args.flag("--outline"));
         opts.set_filter(args.value("--filter").unwrap_or(""));
         opts.set_max_chars(max_output(args).map_or(0, |max| max.min(u32::MAX as usize) as u32));
+        opts.set_offset(offset.min(u32::MAX as usize) as u32);
         if let Some(word) = args.value("--target") {
             opts.set_target(target(word).to_string());
         }
@@ -1171,7 +1182,7 @@ async fn read(bridge: &Bridge, args: &Args) -> ExitCode {
 }
 
 /// `read <url>`: over HTTP, never touching a tab.
-async fn read_url(bridge: &Bridge, url: &str, args: &Args) -> ExitCode {
+async fn read_url(bridge: &Bridge, url: &str, args: &Args, offset: usize) -> ExitCode {
     let mut input = json!({
         "raw": args.flag("--raw"),
         "requireMd": args.flag("--require-md"),
@@ -1214,7 +1225,11 @@ async fn read_url(bridge: &Bridge, url: &str, args: &Args) -> ExitCode {
     });
     if json_output(args) {
         return print_json(&result.map(|mut read| {
-            read["content"] = json!(crate::read_url::sealed_content(&read));
+            read["content"] = json!(vexdom_snapshot::page(
+                &crate::read_url::sealed_content(&read),
+                offset,
+                None
+            ));
             read
         }));
     }
@@ -1222,7 +1237,11 @@ async fn read_url(bridge: &Bridge, url: &str, args: &Args) -> ExitCode {
         Ok(read) => {
             println!(
                 "{}",
-                truncate(&crate::read_url::sealed_content(&read), max_output(args))
+                vexdom_snapshot::page(
+                    &crate::read_url::sealed_content(&read),
+                    offset,
+                    max_output(args)
+                )
             );
             ExitCode::SUCCESS
         }

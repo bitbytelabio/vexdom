@@ -47,7 +47,7 @@ same few hundred tokens in every session. What an action takes is asked for only
 | --- | --- |
 | `snapshot {}` | The active tab's accessibility tree, interactive elements only, each with a ref: `button "Sign in" [ref=e5]`. After the first call, only what changed |
 | `snapshot {"interactive": false}` | Every element, not only the ones to act on. `compact`, `depth`, `selector` (one subtree), `urls` (link targets) and `full` (no delta) narrow or widen it |
-| `snapshot {"as": "markdown"}` | The tab's text as markdown. `outline: true` lists the headings with line numbers, `filter` keeps the sections mentioning a phrase, `maxChars` caps it, `target` reads one element |
+| `snapshot {"as": "markdown"}` | The tab's text as markdown. `outline: true` lists the headings with line numbers, `filter` keeps the sections mentioning a phrase, `maxChars` caps it, `offset` reads on where a cut answer stopped, `target` reads one element |
 | `snapshot {"as": "markdown", "url": "https://…"}` | A page fetched over HTTP without touching any tab. `raw`, `requireMd`, `llms: "index"\|"full"` work as in `vexdom read <url>`; `headers` is dropped. Each URL and redirect hop is checked like a navigation, and an address on this computer or its local network answers `READ_REFUSED` unless the server was started with `VEXDOM_READ_PRIVATE=1` |
 | `snapshot {"as": "image"}` | A screenshot. `fullPage`, `target` (one element), `annotate` (draws each ref on its element), `ifChanged` (skips a capture identical to the last), `save` (also keeps a file), `format`, `quality` |
 
@@ -135,7 +135,8 @@ Text parts are printed; an image prints as its type and size.
 ## Output size
 
 A result longer than 20,000 characters is cut, with a note saying how to narrow the call
-(`filter`, `selector`, `maxChars`…). `vexdom mcp --max-output <n>` changes the limit for one
+(`filter`, `selector`, `maxChars`…). A cut markdown read also names the char range shown and the
+next `offset`; repeat the call with it to read on. `vexdom mcp --max-output <n>` changes the limit for one
 registration, as do `VEXDOM_MAX_OUTPUT` and `maxOutput` in `./vexdom.json` or under `"cli"` in
 `~/.vexdom/config.json` ([Configuration](configuration.md#cli-preferences)); `0` turns it off.
 

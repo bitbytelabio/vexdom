@@ -17,9 +17,7 @@ use vexdom_core::guardrails::secrets::seal_secrets;
 use vexdom_core::result::{ActionError, failure};
 use vexdom_schema::{read_opts, snapshot_opts};
 use vexdom_snapshot::diff::diff_screenshot;
-use vexdom_snapshot::{
-    Baselines, RefMap, SnapshotOptions, WireSnapshot, parse_ref, render, truncate,
-};
+use vexdom_snapshot::{Baselines, RefMap, SnapshotOptions, WireSnapshot, page, parse_ref, render};
 
 use crate::Daemon;
 use crate::link::{Link, Reply};
@@ -104,6 +102,7 @@ pub(crate) struct ReadRequest {
     pub max_chars: Option<usize>,
     pub target: Option<Value>,
     pub run_id: Option<String>,
+    pub offset: usize,
 }
 
 impl ReadRequest {
@@ -114,6 +113,7 @@ impl ReadRequest {
             max_chars: Some(opts.get_max_chars() as usize).filter(|max| *max > 0),
             target: Some(parse_json(&text(opts.get_target()))).filter(|target| !target.is_null()),
             run_id: optional(text(opts.get_run_id())),
+            offset: opts.get_offset() as usize,
         })
     }
 }
@@ -279,8 +279,8 @@ impl Daemon {
         } else {
             markdown
         };
-        let shaped = truncate(&shaped, request.max_chars);
         let sealed = seal_secrets(&shaped);
+        let sealed = page(&sealed, request.offset, request.max_chars);
         let config = read_agent_config();
         let policy = policy_from(&config.guardrails, &config.require_approval);
         Ok(if should_fence("page.readHtml", &policy) {

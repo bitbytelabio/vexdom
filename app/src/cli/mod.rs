@@ -87,7 +87,7 @@ fn usage() -> String {
   vexdom cookies [get [name]] | cookies set <name> <value> [--url --domain --path --secure --http-only --same-site --expires] | cookies clear [name]
   vexdom clipboard read|write <text>|copy|paste
   vexdom webmcp list [tool] [--frame id] | webmcp invoke <tool> [--params <json|@file>] [--detach] | webmcp result|cancel <id>
-  vexdom read [url]       the page as markdown; --outline headings only, --filter TEXT matching sections
+  vexdom read [url]       the page as markdown; --outline headings only, --filter TEXT matching sections, --offset N from char N
   vexdom screenshot       capture the tab; -o FILE, --screenshot-dir DIR, --screenshot-format png|jpeg,
                               --screenshot-quality N, --full, -s <t>, --if-changed [--threshold F], --annotate
   vexdom diff snapshot [--baseline FILE]   what changed since the last snapshot, or since a saved one
@@ -161,6 +161,7 @@ const VALUE_FLAGS: &[&str] = &[
     "--name",
     "--tab",
     "--max-output",
+    "--offset",
     "-d",
     "-s",
     "-o",

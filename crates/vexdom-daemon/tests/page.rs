@@ -170,6 +170,25 @@ fn snapshot_refs_and_deltas() {
         );
         assert!(!outline.contains("Hello"));
 
+        // Read: a page from an offset names the next one.
+        let mut read = control.read_request();
+        {
+            let mut opts = read.get().init_opts();
+            opts.set_offset(2);
+            opts.set_max_chars(5);
+        }
+        let paged = read.send().promise.await.unwrap();
+        let paged = paged
+            .get()
+            .unwrap()
+            .get_text()
+            .unwrap()
+            .to_string()
+            .unwrap();
+        assert!(paged.starts_with("<<<untrusted-page-data:"), "{paged}");
+        assert!(paged.contains("[truncated: chars 2–7 of "), "{paged}");
+        assert!(paged.contains("read on with --offset 7]"), "{paged}");
+
         // Screenshots: bytes travel as Data; an unchanged one is skipped.
         let (shot, image) = invoke(&control, "page.screenshot", json!({"ifChanged": true})).await;
         assert_eq!(shot.unwrap()["format"], "png");

@@ -42,7 +42,8 @@ their description.
 | `full` | boolean | tree: the whole tree, not a delta |
 | `outline` | boolean | markdown: headings only, with line numbers |
 | `filter` | string | markdown: keep sections mentioning this text |
-| `maxChars` | integer | markdown: cap on the text returned |
+| `maxChars` | integer | markdown: chars per answer, at most the server's limit |
+| `offset` | integer | markdown: start at this char; a cut answer names the next offset |
 | `url` | string | markdown: fetch this page over HTTP instead of reading the tab |
 | `raw` | boolean | markdown with `url`: the body as served |
 | `requireMd` | boolean | markdown with `url`: fail unless the site serves markdown |

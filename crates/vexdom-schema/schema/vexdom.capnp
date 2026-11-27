@@ -229,6 +229,7 @@ struct ReadOpts {
   maxChars @2 :UInt32;
   target @3 :Json;
   runId @4 :Text;
+  offset @5 :UInt32;
 }
 
 # `control.ts` BridgeStatus, in order.

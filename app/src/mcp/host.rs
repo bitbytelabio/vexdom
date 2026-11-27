@@ -85,7 +85,7 @@ pub fn instructions() -> String {
     format!(
         "Controls the user’s browser through the Vexdom extension, with three tools. \
 snapshot looks at the active tab: by default its accessibility tree, each control with a ref such as e5 (after the first call, only what changed); \
-as: \"markdown\" reads its text (outline: true lists the headings, filter keeps matching sections); as: \"image\" captures it (annotate: true draws each ref on its element, ifChanged: true skips a capture identical to the last). \
+as: \"markdown\" reads its text (outline: true lists the headings, filter keeps matching sections, offset reads on where a cut answer stopped); as: \"image\" captures it (annotate: true draws each ref on its element, ifChanged: true skips a capture identical to the last). \
 act runs one action — {{\"do\":\"clickElement\",\"target\":\"e5\"}} — or several in order — {{\"batch\":[{{\"do\":…}},…],\"bail\":true}}. \
 guide lists every action by group and the playbooks; guide {{\"topic\":\"<action>\"}} gives one action's input. \
 Target an element by its ref — \"e5\" or {{\"ref\":\"e5\"}} — or by a locator such as {{\"selector\"|\"text\"|\"role\"|\"label\"|\"nth\"}}. \
@@ -119,7 +119,8 @@ pub fn tool_definitions() -> Vec<Value> {
                 "full": {"type": "boolean", "description": "tree: the whole tree, not a delta."},
                 "outline": {"type": "boolean", "description": "markdown: headings only, with line numbers."},
                 "filter": {"type": "string", "description": "markdown: keep sections mentioning this text."},
-                "maxChars": {"type": "integer"},
+                "maxChars": {"type": "integer", "description": "markdown: chars per answer, at most the server's limit."},
+                "offset": {"type": "integer", "description": "markdown: start at this char; a cut answer names the next offset."},
                 "url": {"type": "string", "description": "markdown: fetch this page over HTTP instead of reading the tab."},
                 "raw": {"type": "boolean", "description": "markdown with url: the body as served."},
                 "requireMd": {"type": "boolean", "description": "markdown with url: fail unless the site serves markdown."},
@@ -565,8 +566,23 @@ impl Host {
     }
 
     pub async fn call(&self, name: &str, args: Value) -> ToolReply {
+        let markdown = (name == SNAPSHOT_TOOL
+            && args.get("as").and_then(Value::as_str) == Some("markdown"))
+        .then(|| args.get("offset").and_then(Value::as_u64).unwrap_or(0) as usize);
+        let max = match (
+            markdown,
+            args.get("maxChars")
+                .and_then(Value::as_u64)
+                .filter(|n| *n > 0),
+        ) {
+            (Some(_), Some(asked)) => Some(
+                self.max_output
+                    .map_or(asked as usize, |cap| cap.min(asked as usize)),
+            ),
+            _ => self.max_output,
+        };
         let reply = self.answer(name, args).await;
-        let reply = self.limit(reply);
+        let reply = Self::limit(reply, max, markdown);
         match self.result_bytes {
             Some(bytes) => within_limit(reply, bytes),
             None => reply,
@@ -806,11 +822,12 @@ impl Host {
         (invoked.result, invoked.image)
     }
 
-    fn limit(&self, mut reply: ToolReply) -> ToolReply {
-        if let Some(max) = self.max_output {
+    /// Cuts every text block to `max` chars; `markdown` is the offset a markdown read started at.
+    fn limit(mut reply: ToolReply, max: Option<usize>, markdown: Option<usize>) -> ToolReply {
+        if let Some(max) = max {
             for block in &mut reply.content {
                 if let Some(text) = block.get("text").and_then(Value::as_str) {
-                    let cut = cut_to(text, max);
+                    let cut = cut_to(text, max, markdown);
                     block["text"] = json!(cut);
                 }
             }
@@ -933,9 +950,15 @@ impl Host {
             Err(message) => Err(message),
         };
         match read {
-            Ok(read) => ToolReply::text(
-                self.fenced("page.extractText", crate::read_url::sealed_content(&read)),
-            ),
+            Ok(read) => {
+                let offset = args.get("offset").and_then(Value::as_u64).unwrap_or(0) as usize;
+                let content = crate::read_url::sealed_content(&read);
+                let body = match vexdom_snapshot::from_offset(&content, offset) {
+                    Ok(rest) => rest.to_owned(),
+                    Err(note) => note,
+                };
+                ToolReply::text(self.fenced("page.extractText", body))
+            }
             Err(message) => ToolReply::error(&match message.split_once(": ") {
                 Some((code, rest))
                     if !code.is_empty()
@@ -964,8 +987,8 @@ impl Host {
                     .unwrap_or(false),
             );
             opts.set_filter(args.get("filter").and_then(Value::as_str).unwrap_or(""));
-            opts.set_max_chars(
-                args.get("maxChars")
+            opts.set_offset(
+                args.get("offset")
                     .and_then(Value::as_u64)
                     .map_or(0, |n| n.min(u64::from(u32::MAX)) as u32),
             );
@@ -1274,7 +1297,7 @@ fn within_limit(reply: ToolReply, limit: usize) -> ToolReply {
     };
     ToolReply {
         content: vec![json!({"type": "text", "text": format!(
-            "RESULT_TOO_LARGE: The call went through, but its result came to {} bytes, and the agent CLI running you keeps anything over {} from you, so it was not sent. Do not repeat an action for its result; ask for less at a time instead — snapshot {{\"as\":\"markdown\"}} with a smaller maxChars or a filter, snapshot with a selector, or a target that narrows the read to one element.",
+            "RESULT_TOO_LARGE: The call went through, but its result came to {} bytes, and the agent CLI running you keeps anything over {} from you, so it was not sent. Do not repeat an action for its result; ask for less at a time instead — snapshot {{\"as\":\"markdown\"}} with a smaller maxChars (then offset to read on) or a filter, snapshot with a selector, or a target that narrows the read to one element.",
             grouped(bytes), grouped(limit)
         )})],
         is_error: true,
@@ -1324,8 +1347,9 @@ mod tests {
 }
 
 /// Cuts a result to `max` chars of its body, keeping an untrusted-data fence whole, and says how to
-/// ask for less: an agent cannot raise the server's limit.
-pub fn cut_to(text: &str, max: usize) -> String {
+/// ask for less: an agent cannot raise the server's limit. A markdown read (`markdown` is the
+/// offset it started at) also names the offset to read on from.
+pub fn cut_to(text: &str, max: usize, markdown: Option<usize>) -> String {
     let (open, body, close) = match (text.find(">>>\n"), text.rfind("\n<<</")) {
         (Some(head), Some(tail)) if text.starts_with("<<<") && head < tail => {
             (&text[..head + 4], &text[head + 4..tail], &text[tail..])
@@ -1336,10 +1360,19 @@ pub fn cut_to(text: &str, max: usize) -> String {
         return text.to_owned();
     };
     let total = body.chars().count();
-    format!(
-        "{open}{}\n[truncated: {max} of {total} chars. Ask for less: snapshot with a selector or depth, or as markdown with outline, filter or a target.]{close}",
-        &body[..at]
-    )
+    let note = match markdown {
+        None => format!(
+            "[truncated: {max} of {total} chars. Ask for less: snapshot with a selector or depth, or as markdown with outline, filter or a target.]"
+        ),
+        Some(offset) => {
+            let end = offset + max;
+            let total = offset + total;
+            format!(
+                "[truncated: chars {offset}–{end} of {total}. Read on with the same call and offset:{end}, or ask for less: outline, filter or a target.]"
+            )
+        }
+    };
+    format!("{open}{}\n{note}{close}", &body[..at])
 }
 
 #[cfg(test)]
@@ -1349,7 +1382,7 @@ mod limit_tests {
     #[test]
     fn cuts_inside_the_fence_and_says_how_to_narrow() {
         let fenced = "<<<untrusted-page-data:abc>>>\nhéllo world\n<<</untrusted-page-data:abc>>>";
-        let cut = cut_to(fenced, 5);
+        let cut = cut_to(fenced, 5, None);
         assert!(
             cut.starts_with("<<<untrusted-page-data:abc>>>\nhéllo\n[truncated: 5 of 11 chars."),
             "{cut}"
@@ -1358,7 +1391,25 @@ mod limit_tests {
             cut.ends_with("\n<<</untrusted-page-data:abc>>>"),
             "the closing marker survives: {cut}"
         );
-        assert_eq!(cut_to("short", 20), "short");
-        assert!(cut_to("plain text here", 5).starts_with("plain\n[truncated: 5 of 15 chars."));
+        assert_eq!(cut_to("short", 20, None), "short");
+        assert!(
+            cut_to("plain text here", 5, None).starts_with("plain\n[truncated: 5 of 15 chars.")
+        );
+    }
+
+    #[test]
+    fn a_cut_markdown_read_names_the_next_offset() {
+        let fenced = "<<<untrusted-page-data:abc>>>\nhéllo world\n<<</untrusted-page-data:abc>>>";
+        let cut = cut_to(fenced, 5, Some(20));
+        assert!(
+            cut.starts_with(
+                "<<<untrusted-page-data:abc>>>\nhéllo\n[truncated: chars 20–25 of 31. Read on with the same call and offset:25,"
+            ),
+            "{cut}"
+        );
+        assert!(
+            cut.ends_with("\n<<</untrusted-page-data:abc>>>"),
+            "the closing marker survives: {cut}"
+        );
     }
 }
