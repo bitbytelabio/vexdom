@@ -12,9 +12,9 @@ through the `vexdom` binary in its own bundle. The guide page is
 ## The crate
 
 `desktop/` is a Cargo workspace of its own (an empty `[workspace]` table in
-[`desktop/Cargo.toml`](../../desktop/Cargo.toml)), so GPUI never enters the root `Cargo.lock` or the
-Linux CI (ADR-026). It builds one binary, `vexdom-desktop`, and uses these crates from the main
-workspace:
+[`desktop/Cargo.toml`](../../desktop/Cargo.toml)), so GPUI never enters the root `Cargo.lock`
+(ADR-026); CI builds and tests it on macOS and, compile-and-test only, on Linux. It builds one
+binary, `vexdom-desktop`, and uses these crates from the main workspace:
 
 | Crate | Used for |
 | --- | --- |

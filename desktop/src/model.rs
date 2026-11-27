@@ -429,6 +429,7 @@ pub fn reload_needed(session: &SessionRow, unpacked: &Unpacked) -> bool {
 }
 
 /// The app `open -a` opens for a browser id (the CLI's `BROWSERS`).
+#[cfg(target_os = "macos")]
 pub fn mac_app(id: &str) -> Option<&'static str> {
     Some(match id {
         "chrome" => "Google Chrome",

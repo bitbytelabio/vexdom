@@ -18,7 +18,9 @@ use vexdom_client::Bridge;
 use vexdom_schema::Topic;
 use vexdom_update::{Layout, Release};
 
-use crate::model::{UpdateState, app_asset, mac_app, setup_summary, unpacked, unpacked_steps};
+#[cfg(target_os = "macos")]
+use crate::model::mac_app;
+use crate::model::{UpdateState, app_asset, setup_summary, unpacked, unpacked_steps};
 use crate::preflight::{Findings, Fix, Preflight, evaluate};
 use crate::{settings, shell};
 
@@ -345,6 +347,7 @@ impl Link {
                 .to_owned()
         };
         let (label, page) = (field("label"), field("extensionsPage"));
+        #[cfg(target_os = "macos")]
         if let Some(app) = mac_app(browser) {
             // Brings the browser forward on its extensions page; the steps say where to go if not.
             let _ = exec("/usr/bin/open", &["-a", app, &page]).await;

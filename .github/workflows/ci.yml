@@ -105,3 +105,30 @@ jobs:
           cargo fmt --check
           cargo clippy --locked --all-targets -- -D warnings
           cargo test --locked
+
+  # The GPUI desktop app on Linux: it builds and its tests run here; the app itself ships for macOS
+  # (ADR-026). The tray uses tray-icon's ksni backend, so no GTK; GPUI links libxkbcommon.
+  desktop-linux:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Toolchain
+        run: |
+          rustup component add clippy
+          sudo apt-get update && sudo apt-get install -y --no-install-recommends capnproto pkg-config \
+            libxkbcommon-dev libxkbcommon-x11-dev libwayland-dev libx11-xcb-dev libfontconfig-dev libfreetype-dev
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: linux-desktop
+          workspaces: desktop
+          save-if: ${{ github.ref == 'refs/heads/main' }}
+
+      - name: Test the desktop app
+        run: |
+          cargo clippy --locked --all-targets -- -D warnings
+          cargo test --locked

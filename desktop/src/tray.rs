@@ -11,7 +11,9 @@
 
 use std::sync::Arc;
 
+#[cfg(target_os = "macos")]
 use objc2::MainThreadMarker;
+#[cfg(target_os = "macos")]
 use objc2_app_kit::{NSApplication, NSApplicationActivationPolicy};
 use tray_icon::menu::{
     CheckMenuItem, IsMenuItem, Menu, MenuEvent, MenuItem, PredefinedMenuItem, Submenu,
@@ -22,6 +24,7 @@ use crate::model::{PAIRING_MODES, UpdateState};
 use crate::settings::Appearance;
 
 const MENU_BAR_TEMPLATE: &[u8] = include_bytes!("../../brand/MenuBarTemplate@2x.png");
+#[cfg(target_os = "macos")]
 const APP_ICON: &[u8] = include_bytes!("../../brand/AppIcon-1024.png");
 
 /// What a menu click asks for. Its menu id is `verb` or `verb:rest` (`id`, `parse`).
@@ -442,8 +445,12 @@ impl Tray {
             }
         })));
 
-        let icon = TrayIconBuilder::new()
-            .with_icon_templated(icon)
+        let builder = TrayIconBuilder::new();
+        #[cfg(target_os = "macos")]
+        let builder = builder.with_icon_templated(icon);
+        #[cfg(not(target_os = "macos"))]
+        let builder = builder.with_icon(icon);
+        let icon = builder
             .with_tooltip("Vexdom")
             .with_menu(Box::new(menu(&MenuState::default())?))
             .build()
@@ -474,13 +481,19 @@ impl Tray {
 }
 
 /// Brings the app back after the window was closed (closing hides the app).
+#[cfg(target_os = "macos")]
 pub fn reveal() {
     if let Some(main_thread) = MainThreadMarker::new() {
         NSApplication::sharedApplication(main_thread).unhide(None);
     }
 }
 
+/// Off macOS the window manager brings the window back; there is no hidden app.
+#[cfg(not(target_os = "macos"))]
+pub fn reveal() {}
+
 /// Shows the app in the Dock and the app switcher, or keeps it in the menu bar alone.
+#[cfg(target_os = "macos")]
 pub fn set_dock_visible(visible: bool) {
     let Some(main_thread) = MainThreadMarker::new() else {
         return;
@@ -495,10 +508,15 @@ pub fn set_dock_visible(visible: bool) {
     }
 }
 
+/// Off macOS there is no Dock.
+#[cfg(not(target_os = "macos"))]
+pub fn set_dock_visible(_visible: bool) {}
+
 /// Names the app notifications are posted as, before the first one. Left unset, notify-rust looks
 /// the name up with an AppleScript (`id of application "use_default"`) that opens a "Where is
 /// use_default?" chooser, and AppKit traps when that runs off the main thread. A bundled app
 /// posts as itself; `cargo run` posts as Finder, the library's own fallback.
+#[cfg(target_os = "macos")]
 pub fn set_notification_sender() {
     use objc2_foundation::NSBundle;
 
@@ -511,8 +529,13 @@ pub fn set_notification_sender() {
     }
 }
 
+/// Off macOS notifications go over D-Bus and need no sender name.
+#[cfg(not(target_os = "macos"))]
+pub fn set_notification_sender() {}
+
 /// Gives an unbundled run (`cargo run`) the app icon in the Dock and the app switcher; a bundled
 /// `Vexdom.app` shows its own icon (`Assets.car`, `AppIcon.icns`) and is left alone.
+#[cfg(target_os = "macos")]
 fn set_dock_icon() {
     use objc2::AllocAnyThread;
     use objc2_app_kit::NSImage;
