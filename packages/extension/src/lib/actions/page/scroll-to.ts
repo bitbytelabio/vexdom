@@ -23,7 +23,7 @@ export const scrollTo = defineAction({
     container: targetSchema
       .optional()
       .describe('A scrollable element to scroll instead of the window, such as a list or a side panel'),
-    behavior: z.enum(['smooth', 'instant']).default('smooth').describe('Animation of the scroll'),
+    behavior: z.enum(['smooth', 'instant']).default('instant').describe('Animation of the scroll'),
   }),
   async execute({ target, position, direction, amount, container, behavior }) {
     const box = container ? resolveTarget(container) : null;

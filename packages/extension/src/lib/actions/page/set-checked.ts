@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ActionError, defineAction } from '../core';
-import { assertActionable, dispatchClick, forceSchema } from './click-element';
+import { actionableTimeoutSchema, dispatchClick, forceSchema, waitActionable } from './click-element';
 import { computedRole, describeElement, isChecked, isVisible, resolveTarget, targetSchema } from './dom';
 
 const CHECKABLE_ROLES = new Set(['checkbox', 'switch', 'radio']);
@@ -27,8 +27,9 @@ export const setChecked = defineAction({
     target: targetSchema.describe('The checkbox, switch, radio, or its label'),
     checked: z.boolean().default(true).describe('false to uncheck'),
     force: forceSchema,
+    timeoutMs: actionableTimeoutSchema,
   }),
-  execute({ target, checked, force }) {
+  async execute({ target, checked, force, timeoutMs }) {
     const el = controlOf(resolveTarget(target, { includeHidden: true }));
     if (!isCheckable(el)) {
       throw new ActionError(`<${el.tagName.toLowerCase()}> is not a checkbox, switch or radio`, 'NOT_CHECKABLE');
@@ -39,7 +40,7 @@ export const setChecked = defineAction({
     }
     el.scrollIntoView({ block: 'center', behavior: 'instant' });
     // A styled control often hides its native input behind its label: that one is only refused when disabled.
-    if (!force) assertActionable(el, { visibility: isVisible(el) });
+    if (!force) await waitActionable(el, timeoutMs, { visibility: isVisible(el) });
     dispatchClick(el);
     return { changed: true, checked: isChecked(el), element: describeElement(el) };
   },

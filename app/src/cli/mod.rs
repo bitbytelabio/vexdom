@@ -61,7 +61,8 @@ fn usage() -> String {
 
   vexdom snapshot         the active tab's elements, each with a ref (e5); then only what changed
                               -i interactive only (default), --all every element, -c compact, -d N depth, -s SEL subtree,
-                              -u link targets, --full, --json {{text, refs}}
+                              -u link targets, --full, --json {{text, refs}}, --find TEXT matching lines,
+                              --viewport on-screen only
   <t> is a ref (@e5) or a CSS selector; each element command prints the result, then the snapshot delta it caused
   vexdom click <t>        [--button left|right|middle] [--modifiers ctrl,shift] [--new-tab]
   vexdom dblclick <t>     [--modifiers …]
@@ -88,7 +89,8 @@ fn usage() -> String {
   vexdom cookies [get [name]] | cookies set <name> <value> [--url --domain --path --secure --http-only --same-site --expires] | cookies clear [name]
   vexdom clipboard read|write <text>|copy|paste
   vexdom webmcp list [tool] [--frame id] | webmcp invoke <tool> [--params <json|@file>] [--detach] | webmcp result|cancel <id>
-  vexdom read [url]       the page as markdown; --outline headings only, --filter TEXT matching sections, --offset N from char N
+  vexdom read [url]       the page as markdown; --outline headings only, --filter TEXT matching sections, --offset N from char N,
+                              -u link targets as [text](url)
   vexdom screenshot       capture the tab; -o FILE, --screenshot-dir DIR, --screenshot-format png|jpeg,
                               --screenshot-quality N, --full, -s <t>, --if-changed [--threshold F], --annotate
   vexdom diff snapshot [--baseline FILE]   what changed since the last snapshot, or since a saved one
@@ -160,6 +162,7 @@ pub struct Args {
 }
 
 const VALUE_FLAGS: &[&str] = &[
+    "--find",
     "--name",
     "--tab",
     "--max-output",

@@ -11,6 +11,7 @@ import { snapshot, type FrameSlot, type PageSnapshot } from '@/lib/actions/page/
 import type { RefLabel } from '@/lib/frames/ref-labels';
 import { CLAIM_GAP_MS, claimOf, clearLabels, describeFrame, drawLabels, TOP_FRAME } from './frame-focus';
 import { screenshotTab } from './screenshot';
+import { awaitLoad } from './tabs';
 import { sealForPage } from './secret-vault';
 
 /** As deep as the Bridge renders nested frames (vexdom-snapshot). */
@@ -23,6 +24,15 @@ interface SnapshotInput {
   interactive?: boolean;
   maxNodes?: number;
   includeFrames?: boolean;
+  /** The top document only: a child frame is walked whole. */
+  viewport?: boolean;
+  /** The top document only: wait for the page to load and its DOM to go quiet, at most this long. */
+  settleMs?: number;
+}
+
+async function isLoading(tabId: number): Promise<boolean> {
+  const tab = await browser.tabs.get(tabId).catch(() => null);
+  return tab?.status === 'loading';
 }
 
 const originOf = (url: string): string | undefined => {
@@ -40,9 +50,20 @@ const originOf = (url: string): string | undefined => {
  */
 export async function snapshotTab(tabId: number, input: unknown): Promise<ActionResult> {
   const asked = (input ?? {}) as SnapshotInput;
+  // An after-action snapshot: give a load the action started up to the settle cap to finish.
+  if (asked.settleMs) {
+    await Promise.race([awaitLoad(tabId), new Promise((resolve) => setTimeout(resolve, asked.settleMs))]);
+  }
   const stitching = asked.includeFrames !== false;
-  const children = stitching ? await childFrames(tabId) : [];
-  const top = await invokeInFrame(tabId, TOP_FRAME, snapshot.name, asked as never);
+  let children = stitching ? await childFrames(tabId) : [];
+  let top = await invokeInFrame(tabId, TOP_FRAME, snapshot.name, asked as never);
+  if (!top.ok && top.error.code === 'TAB_UNREACHABLE' && (await isLoading(tabId))) {
+    // The action started a navigation that tore the old document down mid-call: read the new
+    // one, whose frames have new ids.
+    await awaitLoad(tabId);
+    if (stitching) children = await childFrames(tabId);
+    top = await invokeInFrame(tabId, TOP_FRAME, snapshot.name, asked as never);
+  }
   if (!top.ok) return top;
   const tree = top.data as PageSnapshot;
   if (stitching) {
@@ -79,12 +100,17 @@ export async function claimFrame(tabId: number, nonce: string): Promise<number |
 
 /** Names each slot's frame from the nonce it was posted; a nonce two frames claim names neither. */
 async function claim(tabId: number, slots: FrameSlot[], candidates: number[]): Promise<void> {
-  const waiting = new Map(slots.filter((slot) => slot.frameId === undefined && slot.probe).map((slot) => [slot.probe!, slot]));
+  const waiting = new Map(
+    slots.filter((slot) => slot.frameId === undefined && slot.probe).map((slot) => [slot.probe!, slot]),
+  );
   for (let round = 0; round < CLAIM_ROUNDS && waiting.size; round++) {
     if (round) await new Promise((resolve) => setTimeout(resolve, CLAIM_GAP_MS));
-    const claims = await Promise.all(candidates.map(async (frameId) => [frameId, await claimOf(tabId, frameId)] as const));
+    const claims = await Promise.all(
+      candidates.map(async (frameId) => [frameId, await claimOf(tabId, frameId)] as const),
+    );
     const owners = new Map<string, number[]>();
-    for (const [frameId, nonce] of claims) if (nonce && waiting.has(nonce)) owners.set(nonce, [...(owners.get(nonce) ?? []), frameId]);
+    for (const [frameId, nonce] of claims)
+      if (nonce && waiting.has(nonce)) owners.set(nonce, [...(owners.get(nonce) ?? []), frameId]);
     for (const [nonce, frameIds] of owners) {
       if (frameIds.length === 1) waiting.get(nonce)!.frameId = frameIds[0];
       waiting.delete(nonce);
@@ -92,7 +118,13 @@ async function claim(tabId: number, slots: FrameSlot[], candidates: number[]): P
   }
 }
 
-async function stitch(tabId: number, slots: FrameSlot[], input: SnapshotInput, candidates: number[], depth: number): Promise<void> {
+async function stitch(
+  tabId: number,
+  slots: FrameSlot[],
+  input: SnapshotInput,
+  candidates: number[],
+  depth: number,
+): Promise<void> {
   if (depth > MAX_FRAME_DEPTH) return;
   await claim(tabId, slots, candidates);
   await Promise.all(
@@ -136,7 +168,15 @@ export async function screenshotWithLabels(
   const { labels: _labels, ...rest } = (input ?? {}) as { labels?: unknown };
   if (!labels.length) return screenshotTab(tab, rest, runId);
   const frames = [...new Set(labels.map((label) => label.frameId))];
-  await Promise.all(frames.map((frameId) => drawLabels(tab.id, frameId, labels.filter((label) => label.frameId === frameId))));
+  await Promise.all(
+    frames.map((frameId) =>
+      drawLabels(
+        tab.id,
+        frameId,
+        labels.filter((label) => label.frameId === frameId),
+      ),
+    ),
+  );
   try {
     return await screenshotTab(tab, rest, runId);
   } catch (error) {

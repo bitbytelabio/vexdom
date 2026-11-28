@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { typeInto } from './fill-input';
 
 const typed = (html: string, value: string) => {
@@ -53,5 +53,37 @@ describe('fields that cannot take text', () => {
 
   it('still fills a plain text field', () => {
     expect(typed('<input>', 'Ada')).toBe('Ada');
+  });
+});
+
+describe('a contenteditable', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('is edited through the browser editing command, which rich editors follow', () => {
+    document.body.innerHTML = '<div contenteditable="true">old</div>';
+    const el = document.body.firstElementChild as HTMLElement;
+    const exec = vi.fn(() => true);
+    Object.defineProperty(document, 'execCommand', { value: exec, configurable: true });
+    try {
+      typeInto(el, 'Ada', { clear: true, pressEnter: false });
+      expect(exec).toHaveBeenCalledWith('insertText', false, 'Ada');
+    } finally {
+      delete (document as { execCommand?: unknown }).execCommand;
+    }
+  });
+
+  it('is set directly where the command does not run', () => {
+    document.body.innerHTML = '<div contenteditable="true">old</div>';
+    const el = document.body.firstElementChild as HTMLElement;
+    const exec = vi.fn(() => false);
+    Object.defineProperty(document, 'execCommand', { value: exec, configurable: true });
+    try {
+      expect(typeInto(el, ' new', { clear: false, pressEnter: false }).length).toBe('old new'.length);
+      expect(el.textContent).toBe('old new');
+    } finally {
+      delete (document as { execCommand?: unknown }).execCommand;
+    }
   });
 });

@@ -167,6 +167,7 @@ impl control::Server for ControlConn {
         })();
         async move {
             let (action, mut input, run_id) = started?;
+            let delta = !crate::page::take_no_delta(&mut input);
             let reply: Reply = if let Some(run_id) = run_id {
                 conn.speaks_for_run.set(true);
                 // A run's approvals go to the side panel; an approver tag means nothing here.
@@ -186,7 +187,7 @@ impl control::Server for ControlConn {
             } else {
                 let target = conn.daemon.route_for(&conn.binding);
                 conn.daemon
-                    .page_invoke(target, &action, input, &conn.label)
+                    .page_invoke(target, &action, input, &conn.label, delta)
                     .await
             };
             let mut out = results.get();

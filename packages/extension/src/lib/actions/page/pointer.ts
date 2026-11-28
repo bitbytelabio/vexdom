@@ -57,14 +57,35 @@ export function approachPoint(to: Point): Point {
   };
 }
 
-/** What the page has at a point, looking through anything Vexdom drew over it. */
+/**
+ * What the page has at a point, looking through anything Vexdom drew over it and into open shadow
+ * roots, where the document only reports their host.
+ */
 export function elementAt(point: Point): Element | null {
-  return document.elementsFromPoint(point.x, point.y).find((element) => !isOverlay(element)) ?? null;
+  const topmost = (root: DocumentOrShadowRoot) =>
+    root.elementsFromPoint(point.x, point.y).find((element) => !isOverlay(element)) ?? null;
+  let hit = topmost(document);
+  while (hit?.shadowRoot) {
+    const inner = topmost(hit.shadowRoot);
+    if (!inner || inner === hit) break;
+    hit = inner;
+  }
+  return hit;
+}
+
+/** `node` is `ancestor` or inside it, crossing shadow boundaries to their hosts. */
+function composedContains(ancestor: Node, node: Node | null): boolean {
+  for (let at = node; at; at = at instanceof ShadowRoot ? at.host : at.parentNode) {
+    if (at === ancestor) return true;
+  }
+  return false;
 }
 
 export function assertUncovered(el: HTMLElement, at: Point): void {
   const hit = elementAt(at);
-  if (hit === el || el.contains(hit)) return;
+  if (hit === el || composedContains(el, hit)) return;
+  // `el` is in a shadow tree under `hit` that `elementAt` could not open (a closed root).
+  if (hit && composedContains(hit, el) && !hit.contains(el)) return;
   throw new ActionError(
     hit
       ? `${cssPath(hit)} covers (${at.x}, ${at.y}) — dismiss whatever is over the element, then retry`

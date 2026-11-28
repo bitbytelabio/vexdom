@@ -21,8 +21,27 @@ test('reads the whole document without what the markdown drops, and leaves the p
   expect(html.startsWith('<html')).toBe(true);
   expect(html).toContain('<h1>Shop</h1>');
   expect(html).toContain('<p>Hello world</p>');
-  for (const dropped of ['boot(', 'p {}', 'a > b', '<svg', 'Later', 'Enable JS', 'ring']) expect(html).not.toContain(dropped);
+  for (const dropped of ['boot(', 'p {}', 'a > b', '<svg', 'Later', 'Enable JS', 'ring'])
+    expect(html).not.toContain(dropped);
   expect(document.querySelectorAll('script, style, svg, template, noscript')).toHaveLength(5);
+});
+
+test('leaves out what the page does not show, where injected instructions hide', () => {
+  document.body.innerHTML = `<main><div style="display:none">secret</div><p>shown</p>
+    <div style="visibility:hidden">quiet<span style="visibility:visible">back</span></div>
+    <a href="/cart">Cart</a></main>`;
+  const { html } = read();
+  expect(html).toContain('<p>shown</p>');
+  expect(html).toContain('back');
+  expect(html).toContain(`href="${new URL('/cart', location.href).href}"`);
+  for (const hidden of ['secret', 'quiet']) expect(html).not.toContain(hidden);
+  expect(document.body.textContent).toContain('secret');
+  // A page that hides the root and shows the body again still has its hidden text filtered.
+  document.documentElement.style.visibility = 'hidden';
+  document.body.style.visibility = 'visible';
+  expect(read().html).not.toContain('secret');
+  // A hidden element the agent names is read.
+  expect(read({ target: { selector: 'main > div' } }).html).toContain('secret');
 });
 
 test('reads one element by selector or by ref', () => {

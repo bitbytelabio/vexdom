@@ -1,6 +1,6 @@
 > {"jsonrpc":"2.0","id":9,"method":"tools/call","params":{"name":"snapshot","arguments":{}}}
-< {"jsonrpc":"2.0","id":9,"result":{"content":[{"type":"text","text":"<<<untrusted-page-data:7e24d227bfd6>>>\nsnapshot r3\n(no interactive elements)\n<<</untrusted-page-data:7e24d227bfd6>>>"}],"isError":false}}
+< {"jsonrpc":"2.0","id":9,"result":{"content":[{"type":"text","text":"<<<untrusted-page-data:c902cb6a63ba>>>\nsnapshot r3\n(no interactive elements)\n<<</untrusted-page-data:c902cb6a63ba>>>"}],"isError":false}}
 > {"jsonrpc":"2.0","id":10,"method":"tools/call","params":{"name":"snapshot","arguments":{"as":"markdown"}}}
-< {"jsonrpc":"2.0","id":10,"result":{"content":[{"type":"text","text":"<<<untrusted-page-data:b5b3175ce05f>>>\ndrag me\n\n```\n\n```\n<<</untrusted-page-data:b5b3175ce05f>>>"}],"isError":false}}
+< {"jsonrpc":"2.0","id":10,"result":{"content":[{"type":"text","text":"<<<untrusted-page-data:d6dc3f547784>>>\ndrag me\n\n```\n\n```\n<<</untrusted-page-data:d6dc3f547784>>>"}],"isError":false}}
 > {"jsonrpc":"2.0","id":11,"method":"tools/call","params":{"name":"snapshot","arguments":{"as":"markdown","outline":true}}}
-< {"jsonrpc":"2.0","id":11,"result":{"content":[{"type":"text","text":"<<<untrusted-page-data:bfa387e40d87>>>\n\n<<</untrusted-page-data:bfa387e40d87>>>"}],"isError":false}}
+< {"jsonrpc":"2.0","id":11,"result":{"content":[{"type":"text","text":"<<<untrusted-page-data:53a3a7edcc55>>>\n\n<<</untrusted-page-data:53a3a7edcc55>>>"}],"isError":false}}

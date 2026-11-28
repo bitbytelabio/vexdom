@@ -7,12 +7,14 @@
   from a page that has since navigated is refused as `STALE_REF`.
 - If the exact element is gone but exactly one element with the same role and name exists, the
   extension uses that one. With duplicates (`nth=…` in the tree) it refuses instead.
-- Deltas: after the first snapshot, `snapshot {}` returns only the lines that changed, as one
-  splice: `lines a-b replaced by:`, `inserted after line n:` or `lines a-b removed`. A URL change,
-  different options or `full:true` return the whole tree again.
-- Actions that change the page (click, fill, type, insert text, select, check, press, submit,
-  navigate, push a route, mouse, answer a dialog) wait briefly and answer with the delta they
-  caused, so the next step can use refs straight away.
+- Deltas: after the first snapshot, `snapshot {}` returns only the lines that changed: a delta
+  lists one or more `@` hunks: `@ lines a-b replaced by:`, `@ inserted after line n:` or
+  `@ lines a-b removed`, numbered by the previous tree's lines. A URL change, different options or
+  `full:true` return the whole tree again.
+- Actions that change the page (click, hover, drag, fill, type, insert text, select, check, press,
+  submit, scroll, wait, navigate, push a route, mouse, answer a dialog) wait for the page to load
+  and go quiet, then answer with the delta they caused, so the next step can use refs straight
+  away. A batch answers with one delta, after its last page-changing step.
 - Frames: refs inside iframes work like any other; the tree shows the frame's content under its
   `Iframe` node. `act {"do":"switchFrame","frame":"e13"}` makes later actions run inside it;
   `{"do":"switchFrame","to":"top"}` steps back out.

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { ActionError, defineAction } from '../core';
 import { describeElement, resolveTarget, targetSchema } from './dom';
+import { editByCommand } from './fill-input';
 import { keyboardInit } from './keyboard';
 
 export const SPEEDS = { slow: 400, natural: 220, fast: 110, instant: 0 } as const;
@@ -17,8 +18,7 @@ const LINGER_AFTER: Record<string, number> = {
 
 const MAX_DURATION_MS = 120_000;
 
-const keyDelays = (text: string, base: number): number[] =>
-  [...text].map((char) => base * (LINGER_AFTER[char] ?? 1));
+const keyDelays = (text: string, base: number): number[] => [...text].map((char) => base * (LINGER_AFTER[char] ?? 1));
 
 const budgetFor = (delays: readonly number[], jitter: number): number =>
   Math.round(delays.reduce((total, ms) => total + ms, 0) * (1 + jitter));
@@ -30,9 +30,7 @@ export const typeText = defineAction({
   description:
     'Stream text into a field one keystroke at a time, at a human pace — a real key event per character, pauses that vary, and longer breaths after punctuation. Use page.fillInput when you just need the value in the field; use this when the page should watch someone type.',
   input: z.object({
-    target: targetSchema
-      .optional()
-      .describe('Element to type into; defaults to the currently focused element'),
+    target: targetSchema.optional().describe('Element to type into; defaults to the currently focused element'),
     text: z.string().min(1).max(2000).describe('Text to type, character by character'),
     speed: z
       .enum(['slow', 'natural', 'fast', 'instant'])
@@ -63,9 +61,7 @@ export const typeText = defineAction({
       .describe('Type with real browser key events (isTrusted) at the focused element; Chromium only.'),
   }),
   async execute({ target, text, speed, charDelayMs, jitter, clear, pressEnter }) {
-    const el = target
-      ? resolveTarget(target)
-      : ((document.activeElement as HTMLElement | null) ?? document.body);
+    const el = target ? resolveTarget(target) : ((document.activeElement as HTMLElement | null) ?? document.body);
     const isField = el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement;
     if (!isField && !el.isContentEditable) {
       throw new ActionError(`<${el.tagName.toLowerCase()}> is not an editable element`, 'INVALID_TARGET');
@@ -135,6 +131,7 @@ function setNativeValue(el: HTMLInputElement | HTMLTextAreaElement, value: strin
 
 function clearContent(el: HTMLElement): void {
   if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) setNativeValue(el, '');
+  else if (editByCommand(el, '', true)) return;
   else el.textContent = '';
   el.dispatchEvent(new InputEvent('input', { bubbles: true, inputType: 'deleteContentBackward' }));
 }

@@ -475,6 +475,8 @@ const TOP: &[Node] = &[
             opt("-s", "the subtree under this selector", Free),
             flag("-u", "show link targets"),
             flag("--full", "the whole tree, not a delta"),
+            opt("--find", "only lines containing this text", Free),
+            flag("--viewport", "only what is on screen"),
         ],
         ..page("snapshot", "the tab's elements, each with a ref")
     },
@@ -870,6 +872,7 @@ const TOP: &[Node] = &[
             opt("--filter", "sections mentioning this text", Free),
             opt("--target", "one element", Free),
             opt("--offset", "start at this char", Free),
+            flag("-u", "show link targets"),
             flag("--raw", "the body as served"),
             flag("--require-md", "fail unless served as markdown"),
             opt("--llms", "read llms.txt", Choices(&["index", "full"])),

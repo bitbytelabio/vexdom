@@ -1,5 +1,7 @@
 # So sánh tính năng: `vexdom` vs `../browsentic` & `../agent-browser`
 
+> **Đã lỗi thời (2026-11-27):** phần lớn mục §3.1A, §3.1B và §3.2 đã được làm; xem [improvement-roadmap-2026-11.md](improvement-roadmap-2026-11.md).
+
 - **Ngày đối chiếu:** 2026-11-26
 - **Commit đối chiếu:**
   - `vexdom`: `d0490dc` (Rust Bridge/CLI/MCP + Cap'n Proto + `ext-core` wasm + GPUI `desktop/` + ADR-028)

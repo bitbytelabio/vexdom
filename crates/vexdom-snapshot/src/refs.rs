@@ -83,6 +83,15 @@ impl RefMap {
         entries
     }
 
+    /// Adds the refs of `other`, a clone of this map that rendered another view of the same tab
+    /// (`find`), keeping the refs this map's latest snapshot showed, and every number either gave
+    /// out.
+    pub fn absorb(&mut self, other: RefMap) {
+        self.map.extend(other.map);
+        self.keys.extend(other.keys);
+        self.next_ref = self.next_ref.max(other.next_ref);
+    }
+
     /// Starts a snapshot of the documents `doc_keys`: drops the refs of the previous snapshot and
     /// the numbers of elements in any other document (it was navigated away or reloaded).
     pub(crate) fn begin_snapshot(&mut self, doc_keys: &[&str]) {

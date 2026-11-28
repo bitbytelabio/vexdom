@@ -25,8 +25,9 @@ Everything works on the active tab unless you pass `tabId`.
    should watch someone type), `selectOption`, `setChecked`, `pressKey {"key":"Enter"}`,
    `hoverElement`, `submitForm`, `scrollTo`, `navigate {"url":"https://…"}`.
 3. Read the answer: the result, then what the action changed on the page —
-   `snapshot r3 (delta from r2): lines 4-6 replaced by:` and the new lines. `unchanged` means the
-   page did not move. You rarely need another full snapshot.
+   `snapshot r3 (delta from r2):`, then one or more `@` hunks: `@ lines a-b replaced by:`,
+   `@ inserted after line n:` or `@ lines a-b removed`, numbered by the previous tree's lines.
+   `unchanged` means the page did not move. You rarely need another full snapshot.
 
 ## Refs and locators
 

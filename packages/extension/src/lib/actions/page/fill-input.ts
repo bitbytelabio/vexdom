@@ -83,19 +83,40 @@ export function typeInto(
     el.dispatchEvent(new Event('change', { bubbles: true }));
   } else if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) {
     next = clear ? value : el.value + value;
-    const proto =
-      el instanceof HTMLInputElement ? HTMLInputElement.prototype : HTMLTextAreaElement.prototype;
+    const proto = el instanceof HTMLInputElement ? HTMLInputElement.prototype : HTMLTextAreaElement.prototype;
     Object.getOwnPropertyDescriptor(proto, 'value')!.set!.call(el, next);
     el.dispatchEvent(new InputEvent('input', { bubbles: true, data: value, inputType: 'insertText' }));
     el.dispatchEvent(new Event('change', { bubbles: true }));
   } else if (el.isContentEditable) {
-    next = clear ? value : (el.textContent ?? '') + value;
-    el.textContent = next;
-    el.dispatchEvent(new InputEvent('input', { bubbles: true, data: value, inputType: 'insertText' }));
+    if (!editByCommand(el, value, clear)) {
+      el.textContent = clear ? value : (el.textContent ?? '') + value;
+      el.dispatchEvent(new InputEvent('input', { bubbles: true, data: value, inputType: 'insertText' }));
+    }
+    next = el.textContent ?? '';
   } else {
     throw new ActionError(`<${el.tagName.toLowerCase()}> is not an editable element`, 'INVALID_TARGET');
   }
   return { length: next.length, submitted: pressEnter ? pressEnterIn(el) : false };
+}
+
+/**
+ * Puts `value` into a contenteditable through the browser's own editing command, the path a
+ * user's typing takes: rich editors (ProseMirror, Lexical, Slate) keep their model in step only
+ * with it. Replaces everything with `replaceAll`, else inserts at the end; an empty value deletes.
+ * False when the browser would not run the command, so the caller sets the text itself.
+ */
+export function editByCommand(el: HTMLElement, value: string, replaceAll: boolean): boolean {
+  if (typeof document.execCommand !== 'function') return false;
+  const selection = window.getSelection();
+  if (!selection) return false;
+  el.focus({ preventScroll: true });
+  const range = document.createRange();
+  range.selectNodeContents(el);
+  if (!replaceAll) range.collapse(false);
+  selection.removeAllRanges();
+  selection.addRange(range);
+  if (value === '' && !replaceAll) return true;
+  return document.execCommand(value === '' ? 'delete' : 'insertText', false, value);
 }
 
 function pressEnterIn(el: HTMLElement): boolean {

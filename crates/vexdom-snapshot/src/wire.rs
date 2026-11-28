@@ -22,6 +22,20 @@ pub struct WireSnapshot {
     /// Child frames that are not walked inline, each attached to an `Iframe` node of `nodes`.
     #[serde(default)]
     pub frames: Vec<FrameSlot>,
+    /// Page regions a viewport-only snapshot left out; absent otherwise.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub offscreen: Option<Offscreen>,
+}
+
+/// How many page regions (top-level subtrees) lay wholly outside the viewport, by direction.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+pub struct Offscreen {
+    #[serde(default)]
+    pub above: u32,
+    #[serde(default)]
+    pub below: u32,
+    #[serde(default)]
+    pub aside: u32,
 }
 
 /// One accessibility node. Field names are short because a page has thousands of them.

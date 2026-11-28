@@ -1,12 +1,12 @@
 {
   "catalog": {
     "tools": {
-      "chars": 2784,
-      "tokens": 696
+      "chars": 3316,
+      "tokens": 829
     },
     "instructions": {
-      "chars": 2170,
-      "tokens": 543
+      "chars": 2315,
+      "tokens": 579
     }
   },
   "fixtures": {
@@ -86,26 +86,26 @@
     },
     "wikipedia-rust": {
       "snapshot": {
-        "chars": 20213,
-        "tokens": 5054
+        "chars": 20229,
+        "tokens": 5058
       },
       "read": {
-        "chars": 20212,
-        "tokens": 5053
+        "chars": 20207,
+        "tokens": 5052
       },
       "outline": {
-        "chars": 1578,
-        "tokens": 395
+        "chars": 1570,
+        "tokens": 393
       }
     },
     "hacker-news": {
       "snapshot": {
-        "chars": 20212,
-        "tokens": 5053
+        "chars": 13551,
+        "tokens": 3388
       },
       "read": {
-        "chars": 4105,
-        "tokens": 1027
+        "chars": 4627,
+        "tokens": 1157
       },
       "outline": {
         "chars": 79,
@@ -118,8 +118,8 @@
         "tokens": 1424
       },
       "read": {
-        "chars": 19051,
-        "tokens": 4763
+        "chars": 19031,
+        "tokens": 4758
       },
       "outline": {
         "chars": 857,

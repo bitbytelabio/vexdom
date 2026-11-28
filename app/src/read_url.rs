@@ -55,6 +55,8 @@ pub struct ReadOptions {
     pub headers: HashMap<String, String>,
     /// Whether loopback, private and link-local addresses may be fetched (the user's CLI only).
     pub allow_private: bool,
+    /// Print link targets in markdown made from HTML, as `[text](url)`.
+    pub urls: bool,
 }
 
 impl Default for ReadOptions {
@@ -68,6 +70,7 @@ impl Default for ReadOptions {
             timeout_ms: DEFAULT_TIMEOUT_MS,
             headers: HashMap::new(),
             allow_private: false,
+            urls: false,
         }
     }
 }
@@ -125,6 +128,7 @@ pub fn options_from_command(cmd: &Value) -> Result<ReadOptions, String> {
         timeout_ms,
         headers,
         allow_private: false,
+        urls: cmd.get("urls").and_then(|v| v.as_bool()).unwrap_or(false),
     })
 }
 
@@ -371,7 +375,7 @@ async fn try_llms_link(
         return None;
     }
     let content = if is_html_content_type(&fetch.content_type) {
-        vexdom_daemon::markdown::html_to_markdown(&fetch.body)
+        html_to_markdown(&fetch, options)
     } else {
         fetch.body.clone()
     };
@@ -445,6 +449,16 @@ async fn fetch_read_url(
     })
 }
 
+/// A fetched HTML body as markdown, its links resolved against the URL it was served from when
+/// `options.urls` asks for them.
+fn html_to_markdown(fetch: &ReadFetch, options: &ReadOptions) -> String {
+    let base = options
+        .urls
+        .then(|| Url::parse(&fetch.final_url).ok())
+        .flatten();
+    vexdom_daemon::markdown::html_to_markdown(&fetch.body, base.as_ref())
+}
+
 fn content_from_fetch(
     fetch: &ReadFetch,
     options: &ReadOptions,
@@ -460,10 +474,7 @@ fn content_from_fetch(
     } else if content_type_lower == "text/plain" {
         Ok(("text", fetch.body.clone()))
     } else if content_type_lower == "text/html" || content_type_lower == "application/xhtml+xml" {
-        Ok((
-            "html-fallback",
-            vexdom_daemon::markdown::html_to_markdown(&fetch.body),
-        ))
+        Ok(("html-fallback", html_to_markdown(fetch, options)))
     } else {
         Ok(("raw", fetch.body.clone()))
     }

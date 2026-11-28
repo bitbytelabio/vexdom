@@ -4,12 +4,19 @@
 // Modified by the vexdom authors: the per-session revisions of `DaemonState` became `Baselines`,
 // keyed by tab with a caller-chosen cap, and every reply stores its tree as the baseline; replies
 // are text instead of JSON and carry no `changes`/`refs` maps; options compare as
-// `SnapshotOptions`; eviction ties go to the lowest tab id.
+// `SnapshotOptions`; eviction ties go to the lowest tab id; a delta lists one `@` hunk per run of
+// changed lines (Myers, via `similar`) instead of one splice between common prefix and suffix.
 
 use std::collections::HashMap;
 use std::fmt::Write;
+use std::time::{Duration, Instant};
+
+use similar::{Algorithm, DiffTag};
 
 use crate::snapshot::SnapshotOptions;
+
+/// How long a delta may spend diffing; past it the diff gets coarser, never wrong.
+const DIFF_DEADLINE: Duration = Duration::from_millis(50);
 
 struct SnapshotRevision {
     revision: u64,
@@ -40,9 +47,9 @@ impl Baselines {
     /// - `snapshot r{rev}: unchanged`;
     /// - `snapshot r{rev}\n{tree}` when the tab has no baseline, its URL or options changed,
     ///   `force_full` is set, or the change would take at least 70 % of the tree's bytes;
-    /// - `snapshot r{rev} (delta from r{base}): ` followed by `lines {a}-{b} replaced by:\n{lines}`,
-    ///   `inserted after line {n}:\n{lines}` or `lines {a}-{b} removed`, with 1-based line numbers
-    ///   of the baseline tree.
+    /// - `snapshot r{rev} (delta from r{base}):` followed by one or more hunks, each on its own
+    ///   line: `@ lines {a}-{b} replaced by:\n{lines}`, `@ inserted after line {n}:\n{lines}` or
+    ///   `@ lines {a}-{b} removed`, with 1-based line numbers of the baseline tree.
     #[must_use]
     pub fn reply(
         &mut self,
@@ -106,38 +113,42 @@ fn snapshot_delta_response(previous: &SnapshotRevision, revision: u64, tree: &st
         return format!("snapshot r{revision}: unchanged");
     }
 
-    // One splice between the common prefix and the common suffix reproduces the new tree
-    // exactly, including changes no ref can describe (a checkbox gaining `[checked]`).
+    // Line hunks reproduce the new tree exactly, including changes no ref can describe (a
+    // checkbox gaining `[checked]`). One hunk per run of changed lines keeps two distant edits
+    // from resending everything between them.
     let before_lines: Vec<&str> = previous.tree.split('\n').collect();
     let after_lines: Vec<&str> = tree.split('\n').collect();
-    let prefix = before_lines
-        .iter()
-        .zip(&after_lines)
-        .take_while(|(a, b)| a == b)
-        .count();
-    let suffix = before_lines[prefix..]
-        .iter()
-        .rev()
-        .zip(after_lines[prefix..].iter().rev())
-        .take_while(|(a, b)| a == b)
-        .count();
-    let start_line = prefix;
-    let delete_count = before_lines.len() - prefix - suffix;
-    let lines = &after_lines[prefix..after_lines.len() - suffix];
+    let deadline = Instant::now() + DIFF_DEADLINE;
+    let ops = similar::capture_diff_slices_deadline(
+        Algorithm::Myers,
+        &before_lines,
+        &after_lines,
+        Some(deadline),
+    );
 
-    let mut delta = format!("snapshot r{revision} (delta from r{}): ", previous.revision);
-    let (first, last) = (start_line + 1, start_line + delete_count);
-    // Writing to a String cannot fail.
-    let _ = if lines.is_empty() {
-        write!(delta, "lines {first}-{last} removed")
-    } else if delete_count == 0 {
-        write!(delta, "inserted after line {start_line}:")
-    } else {
-        write!(delta, "lines {first}-{last} replaced by:")
-    };
-    for line in lines {
-        delta.push('\n');
-        delta.push_str(line);
+    let mut delta = format!("snapshot r{revision} (delta from r{}):", previous.revision);
+    for group in similar::group_diff_ops(ops, 0) {
+        // A group is one run of changed ops in order, so its first and last span the hunk.
+        let mut changed = group.iter().filter(|op| op.tag() != DiffTag::Equal);
+        let Some(head) = changed.next() else {
+            continue;
+        };
+        let tail = changed.next_back().unwrap_or(head);
+        let old = head.old_range().start..tail.old_range().end;
+        let new = head.new_range().start..tail.new_range().end;
+        let (first, last) = (old.start + 1, old.end);
+        // Writing to a String cannot fail.
+        let _ = if new.is_empty() {
+            write!(delta, "\n@ lines {first}-{last} removed")
+        } else if old.is_empty() {
+            write!(delta, "\n@ inserted after line {}:", old.start)
+        } else {
+            write!(delta, "\n@ lines {first}-{last} replaced by:")
+        };
+        for line in &after_lines[new] {
+            delta.push('\n');
+            delta.push_str(line);
+        }
     }
 
     if delta.len() >= tree.len().saturating_mul(7) / 10 {
@@ -162,24 +173,37 @@ mod tests {
 
     /// Applies a reply to the tree it was computed against, the way a reader of the text would.
     fn apply(before: &str, reply: &str) -> String {
-        let (head, rest) = reply.split_once("): ").expect("a delta reply");
+        let mut lines = reply.split('\n');
+        let head = lines.next().expect("a header");
         assert!(head.contains("(delta from r"), "{reply}");
-        let (instruction, lines) = rest.split_once('\n').unwrap_or((rest, ""));
-        let mut tree: Vec<&str> = before.split('\n').collect();
+        // Each hunk: its instruction and the new lines that follow it, before the next `@`.
+        let mut hunks: Vec<(&str, Vec<&str>)> = Vec::new();
+        for line in lines {
+            match line.strip_prefix("@ ") {
+                Some(instruction) => hunks.push((instruction, Vec::new())),
+                None => hunks.last_mut().expect("a hunk").1.push(line),
+            }
+        }
         let range = |spec: &str| {
             let (a, b) = spec.split_once('-').expect("a line range");
-            let (a, b): (usize, usize) = (a.parse().unwrap(), b.parse().unwrap());
+            let (a, b): (usize, usize) = (
+                a.parse().expect("a line number"),
+                b.parse().expect("a line number"),
+            );
             a - 1..b
         };
-        let new_lines = lines.split('\n');
-        if let Some(spec) = instruction.strip_prefix("inserted after line ") {
-            let at: usize = spec.trim_end_matches(':').parse().unwrap();
-            tree.splice(at..at, new_lines);
-        } else if let Some(spec) = instruction.strip_suffix(" replaced by:") {
-            tree.splice(range(spec.trim_start_matches("lines ")), new_lines);
-        } else {
-            let spec = instruction.strip_suffix(" removed").expect("a removal");
-            tree.splice(range(spec.trim_start_matches("lines ")), []);
+        let mut tree: Vec<&str> = before.split('\n').collect();
+        // Hunks number the baseline's lines, so applying them bottom up keeps numbers valid.
+        for (instruction, new_lines) in hunks.into_iter().rev() {
+            if let Some(spec) = instruction.strip_prefix("inserted after line ") {
+                let at: usize = spec.trim_end_matches(':').parse().expect("a line number");
+                tree.splice(at..at, new_lines);
+            } else if let Some(spec) = instruction.strip_suffix(" replaced by:") {
+                tree.splice(range(spec.trim_start_matches("lines ")), new_lines);
+            } else {
+                let spec = instruction.strip_suffix(" removed").expect("a removal");
+                tree.splice(range(spec.trim_start_matches("lines ")), []);
+            }
         }
         tree.join("\n")
     }
@@ -196,11 +220,11 @@ mod tests {
         for (current, expected) in [
             (
                 &after,
-                "snapshot r2 (delta from r1): lines 41-42 replaced by:\n- button \"Saved\" [ref=e1]\n- checkbox \"Agree\" [ref=e2] [checked]",
+                "snapshot r2 (delta from r1):\n@ lines 41-42 replaced by:\n- button \"Saved\" [ref=e1]\n- checkbox \"Agree\" [ref=e2] [checked]",
             ),
             (
                 &checked_only,
-                "snapshot r2 (delta from r1): lines 42-42 replaced by:\n- checkbox \"Agree\" [ref=e2] [checked]",
+                "snapshot r2 (delta from r1):\n@ lines 42-42 replaced by:\n- checkbox \"Agree\" [ref=e2] [checked]",
             ),
         ] {
             let reply = snapshot_delta_response(&previous, 2, current);
@@ -223,18 +247,18 @@ mod tests {
         let replaced = snapshot_delta_response(&previous, 2, &format!("{}\nnew", "x".repeat(1000)));
         assert_eq!(
             replaced,
-            "snapshot r2 (delta from r1): lines 2-2 replaced by:\nnew"
+            "snapshot r2 (delta from r1):\n@ lines 2-2 replaced by:\nnew"
         );
 
         let removed = snapshot_delta_response(&previous, 2, &"x".repeat(1000));
-        assert_eq!(removed, "snapshot r2 (delta from r1): lines 2-2 removed");
+        assert_eq!(removed, "snapshot r2 (delta from r1):\n@ lines 2-2 removed");
         assert_eq!(apply(&before, &removed), "x".repeat(1000));
 
         let added = format!("{}\nold\nmore", "x".repeat(1000));
         let inserted = snapshot_delta_response(&previous, 2, &added);
         assert_eq!(
             inserted,
-            "snapshot r2 (delta from r1): inserted after line 2:\nmore"
+            "snapshot r2 (delta from r1):\n@ inserted after line 2:\nmore"
         );
         assert_eq!(apply(&before, &inserted), added);
 
@@ -242,9 +266,36 @@ mod tests {
         let at_top = snapshot_delta_response(&previous, 2, &top);
         assert_eq!(
             at_top,
-            "snapshot r2 (delta from r1): inserted after line 0:\ntop"
+            "snapshot r2 (delta from r1):\n@ inserted after line 0:\ntop"
         );
         assert_eq!(apply(&before, &at_top), top);
+    }
+
+    #[test]
+    fn two_distant_changes_make_two_hunks() {
+        let before: Vec<String> = (1..=200)
+            .map(|i| format!("- link \"Item {i}\" [ref=e{i}]"))
+            .collect();
+        let mut after = before.clone();
+        after[2] = "- link \"Item 3 (new)\" [ref=e3]".to_string();
+        after[189] = "- link \"Item 190 (new)\" [ref=e190]".to_string();
+        let (before, after) = (before.join("\n"), after.join("\n"));
+
+        let reply = snapshot_delta_response(&revision(1, &before), 2, &after);
+
+        assert_eq!(
+            reply,
+            "snapshot r2 (delta from r1):\n@ lines 3-3 replaced by:\n- link \"Item 3 (new)\" [ref=e3]\n@ lines 190-190 replaced by:\n- link \"Item 190 (new)\" [ref=e190]"
+        );
+        // The old single splice resent lines 3-190, everything between the two changes.
+        let splice: usize = after
+            .split('\n')
+            .skip(2)
+            .take(188)
+            .map(|l| l.len() + 1)
+            .sum();
+        assert!(reply.len() < splice, "{} >= {splice}", reply.len());
+        assert_eq!(apply(&before, &reply), after);
     }
 
     #[test]
@@ -277,7 +328,7 @@ mod tests {
         let saved = tree.replace("\"Save\"", "\"Saved\"");
         assert_eq!(
             baselines.reply(1, url, &opts, &saved, false),
-            "snapshot r3 (delta from r2): lines 21-21 replaced by:\n- button \"Saved\" [ref=e1]"
+            "snapshot r3 (delta from r2):\n@ lines 21-21 replaced by:\n- button \"Saved\" [ref=e1]"
         );
         // Every reply is the new baseline, a full one included.
         assert_eq!(

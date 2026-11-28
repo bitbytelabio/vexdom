@@ -28,13 +28,13 @@ export function dispatchClick(el: HTMLElement, options: ClickOptions = {}): void
   const button = options.button ?? 'left';
   const modifiers = options.modifiers ?? [];
   const count = options.count ?? 1;
-  const rect = el.getBoundingClientRect();
+  const at = clickPoint(el);
   const base = {
     bubbles: true,
     cancelable: true,
     composed: true,
-    clientX: rect.x + rect.width / 2,
-    clientY: rect.y + rect.height / 2,
+    clientX: at.x,
+    clientY: at.y,
     button: BUTTON[button].button,
     ctrlKey: modifiers.includes('ctrl'),
     shiftKey: modifiers.includes('shift'),
@@ -60,7 +60,18 @@ export function dispatchClick(el: HTMLElement, options: ClickOptions = {}): void
       el.dispatchEvent(new MouseEvent('click', up));
     }
   }
-  if (count === 2 && button === 'left') el.dispatchEvent(new MouseEvent('dblclick', { ...base, detail: 2, buttons: 0 }));
+  if (count === 2 && button === 'left')
+    el.dispatchEvent(new MouseEvent('dblclick', { ...base, detail: 2, buttons: 0 }));
+}
+
+/** The centre of the element's visible part, where the uncovered check looked; its box's centre when none shows. */
+function clickPoint(el: HTMLElement): Point {
+  try {
+    return elementPoint(el);
+  } catch {
+    const rect = el.getBoundingClientRect();
+    return { x: rect.x + rect.width / 2, y: rect.y + rect.height / 2 };
+  }
 }
 
 export const forceSchema = z.boolean().default(false).describe('Skip the visibility, enabled and covered checks.');
@@ -88,6 +99,43 @@ export function assertActionable(el: HTMLElement, { visibility = true } = {}): v
   assertUncovered(el, point);
 }
 
+/** How often an element that is not actionable yet is looked at again. */
+const ACTIONABLE_POLL_MS = 50;
+
+/**
+ * `assertActionable`, retried while the element is disabled, hidden or covered and `timeoutMs`
+ * lasts: a button that enables a moment later, or a toast that fades, should not fail the action.
+ * Polls on a timer, as background tabs run no animation frames. Free when it is actionable already.
+ */
+export async function waitActionable(
+  el: HTMLElement,
+  timeoutMs: number,
+  options: { visibility?: boolean } = {},
+): Promise<void> {
+  const deadline = performance.now() + timeoutMs;
+  for (;;) {
+    if (!el.isConnected) {
+      throw new ActionError('The element left the page while Vexdom waited for it. Take a new snapshot.', 'STALE_REF');
+    }
+    try {
+      assertActionable(el, options);
+      return;
+    } catch (error) {
+      const waiting = error instanceof ActionError && error.code === 'INVALID_TARGET' && performance.now() < deadline;
+      if (!waiting) throw error;
+    }
+    await new Promise((resolve) => setTimeout(resolve, ACTIONABLE_POLL_MS));
+  }
+}
+
+export const actionableTimeoutSchema = z
+  .number()
+  .int()
+  .min(0)
+  .max(30_000)
+  .default(2_000)
+  .describe('How long to wait for the element to become enabled, visible and uncovered');
+
 export const clickElement = defineAction({
   name: 'page.clickElement',
   description:
@@ -102,15 +150,15 @@ export const clickElement = defineAction({
       .describe('Modifier keys held during the click'),
     count: z.number().int().min(1).max(2).default(1).describe('2 for a double click'),
     force: forceSchema,
+    timeoutMs: actionableTimeoutSchema,
   }),
-  execute({ target, scrollIntoView, button, modifiers, count, force }) {
+  async execute({ target, scrollIntoView, button, modifiers, count, force, timeoutMs }) {
     const el = resolveTarget(target);
     if (scrollIntoView) el.scrollIntoView({ block: 'center', behavior: 'instant' });
-    if (!force) assertActionable(el);
+    if (!force) await waitActionable(el, timeoutMs);
     try {
       el.focus({ preventScroll: true });
-    } catch {
-    }
+    } catch {}
     const submits = submitsOnClick(el);
     dispatchClick(el, { button, modifiers, count });
     return { ...describeElement(el), submits };

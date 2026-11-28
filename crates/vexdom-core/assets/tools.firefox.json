@@ -1,5 +1,5 @@
 {
-  "hash": "43cded57",
+  "hash": "8ea772ab",
   "tools": [
     {
       "name": "page.getPageInfo",
@@ -46,6 +46,18 @@
             "default": true,
             "description": "Walk blank same-origin frames inline and list the other frames for the extension to fill in",
             "type": "boolean"
+          },
+          "viewport": {
+            "default": false,
+            "description": "Only elements on screen; the reply says what lies beyond",
+            "type": "boolean"
+          },
+          "settleMs": {
+            "default": 0,
+            "description": "First wait until the page has made no DOM change for 50 ms, at most this long",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2000
           }
         }
       }
@@ -269,7 +281,7 @@
             }
           },
           "behavior": {
-            "default": "smooth",
+            "default": "instant",
             "description": "Animation of the scroll",
             "type": "string",
             "enum": [
@@ -382,6 +394,13 @@
             "default": false,
             "description": "Skip the visibility, enabled and covered checks.",
             "type": "boolean"
+          },
+          "timeoutMs": {
+            "default": 2000,
+            "description": "How long to wait for the element to become enabled, visible and uncovered",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 30000
           }
         },
         "required": [
@@ -460,6 +479,13 @@
             "default": false,
             "description": "Skip the visibility, enabled and covered checks.",
             "type": "boolean"
+          },
+          "timeoutMs": {
+            "default": 2000,
+            "description": "How long to wait for the element to become enabled, visible and uncovered",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 30000
           }
         },
         "required": [
@@ -1098,6 +1124,13 @@
             "default": false,
             "description": "Skip the visibility, enabled and covered checks.",
             "type": "boolean"
+          },
+          "timeoutMs": {
+            "default": 2000,
+            "description": "How long to wait for the element to become enabled, visible and uncovered",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 30000
           }
         },
         "required": [

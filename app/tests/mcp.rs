@@ -13,6 +13,8 @@ use support::{Session, paired_bridge, scratch};
 
 const CHECKOUT: &str = include_str!("../../crates/vexdom-snapshot/tests/fixtures/checkout.json");
 const MODERN: &str = "2026-07-28";
+/// Bytes of the tool list and server instructions every session starts with (~4 per token).
+const CATALOG_CEILING: usize = 5_750;
 
 fn golden(name: &str, actual: &Value) {
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -52,7 +54,11 @@ fn stdio_session_drives_the_page_through_refs() {
             page["tabId"] = json!(7);
             let mut canned = canned.borrow_mut();
             canned.answers.insert("page.snapshot".into(), page);
-            canned.answers.insert("page.clickElement".into(), json!({"clicked": true}));
+            canned.answers.insert(
+                "page.clickElement".into(),
+                json!({"tag": "button", "role": "button", "selector": "#a > b", "text": "Pay",
+                    "bounds": {"x": 1, "y": 2, "width": 3, "height": 4}, "submits": false}),
+            );
             canned.answers.insert(
                 "page.listSiteTools".into(),
                 json!({"pageOrigin": "https://shop.test", "count": 1, "tools": [
@@ -79,6 +85,12 @@ fn stdio_session_drives_the_page_through_refs() {
         let names: Vec<&str> = tools.iter().filter_map(|tool| tool["name"].as_str()).collect();
         assert_eq!(names, ["snapshot", "act", "guide"]);
         golden("catalog.json", &listed["result"]["tools"]);
+        let catalog = serde_json::to_string(&listed["result"]["tools"]).unwrap().len()
+            + init["result"]["instructions"].as_str().map_or(0, str::len);
+        assert!(
+            catalog <= CATALOG_CEILING,
+            "catalog grew past its token budget; trim it or raise CATALOG_CEILING on purpose ({catalog} > {CATALOG_CEILING})"
+        );
 
         let refused = mcp.call("act", json!({"do": "clickElement", "target": "e1"})).await;
         assert!(refused.contains("NO_SNAPSHOT"), "{refused}");
@@ -90,8 +102,15 @@ fn stdio_session_drives_the_page_through_refs() {
         assert!(first.contains("[origin https://shop.test] addToCart [frame 0]: Add an item.\\u{200B}"), "{first}");
         assert!(first.contains(r#"act {"do":"callSiteTool","tool":"<tool>","frameId":0"#), "{first}");
 
+        // find answers matching lines with their refs, and leaves the delta baseline at r1.
+        let found = mcp.call("snapshot", json!({"find": "email"})).await;
+        assert!(found.contains("find \"email\": 1 of ") && found.contains("textbox \"Email\" [required, ref=e4]"), "{found}");
+        assert!(!found.contains("Shipping"), "{found}");
+
         let clicked = mcp.call("act", json!({"do": "clickElement", "target": "e1"})).await;
-        assert!(clicked.contains("\"clicked\":true") && clicked.contains("snapshot r2: unchanged"), "{clicked}");
+        assert!(clicked.contains("\"text\":\"Pay\"") && clicked.contains("snapshot r2: unchanged"), "{clicked}");
+        // The agent holds the ref: the element's selector, box and tag are not echoed back.
+        assert!(!clicked.contains("selector") && !clicked.contains("bounds") && !clicked.contains("\"tag\""), "{clicked}");
         assert!(!clicked.contains("WebMCP"), "{clicked}");
         let sent = canned.borrow().calls.iter().rfind(|(action, _)| action == "page.clickElement").unwrap().1.clone();
         assert_eq!(sent["target"]["ref"]["role"], "link");
@@ -128,6 +147,21 @@ fn stdio_session_drives_the_page_through_refs() {
         assert!(!fetched.contains("abcdefghijklmnopqrstuvwxyz0123456789"), "{fetched}");
         let checked = canned.borrow().calls.iter().rfind(|(action, _)| action == "page.checkSites").unwrap().1.clone();
         assert_eq!(checked["urls"][0], url);
+
+        // A batch takes one after-action snapshot, for its last step, and lets the page settle.
+        let snapshots = |canned: &fake_extension::Shared| {
+            canned.borrow().calls.iter().filter(|(action, _)| action == "page.snapshot").count()
+        };
+        let before = snapshots(&canned);
+        let twice = mcp
+            .call("act", json!({"batch": [{"do": "clickElement", "target": "e1"}, {"do": "clickElement", "target": "e1"}]}))
+            .await;
+        assert_eq!(snapshots(&canned), before + 1, "{twice}");
+        assert_eq!(twice.matches("unchanged").count(), 1, "{twice}");
+        let calls = canned.borrow().calls.clone();
+        let (_, settled) = calls.iter().rfind(|(action, _)| action == "page.snapshot").unwrap();
+        assert!(settled["settleMs"].as_u64().is_some_and(|ms| ms > 0), "{settled}");
+        assert!(calls.iter().all(|(_, input)| input.get("_noDelta").is_none()), "the Bridge strips _noDelta");
 
         let batch = mcp
             .call("act", json!({"batch": [{"do": "clickElement", "target": "e1"}, {"do": "clickElement", "target": "e99"}]}))

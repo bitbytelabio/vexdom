@@ -1099,6 +1099,8 @@ async fn snapshot_reply(
         opts.set_selector(args.value("-s").unwrap_or(""));
         opts.set_urls(args.flag("-u"));
         opts.set_full(full);
+        opts.set_find(args.value("--find").unwrap_or(""));
+        opts.set_viewport(args.flag("--viewport"));
         opts.set_tab_id(
             args.value("--tab")
                 .and_then(|tab| tab.parse().ok())
@@ -1157,6 +1159,7 @@ async fn read(bridge: &Bridge, args: &Args) -> ExitCode {
         let mut opts = request.get().init_opts();
         opts.set_outline(args.flag("--outline"));
         opts.set_filter(args.value("--filter").unwrap_or(""));
+        opts.set_urls(args.flag("-u"));
         opts.set_max_chars(max_output(args).map_or(0, |max| max.min(u32::MAX as usize) as u32));
         opts.set_offset(offset.min(u32::MAX as usize) as u32);
         if let Some(word) = args.value("--target") {
@@ -1188,6 +1191,7 @@ async fn read_url(bridge: &Bridge, url: &str, args: &Args, offset: usize) -> Exi
         "raw": args.flag("--raw"),
         "requireMd": args.flag("--require-md"),
         "outline": args.flag("--outline"),
+        "urls": args.flag("-u"),
     });
     if let Some(filter) = args.value("--filter") {
         input["filter"] = json!(filter);

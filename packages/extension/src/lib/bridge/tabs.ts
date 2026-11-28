@@ -51,9 +51,11 @@ export async function openNewTab(input: unknown, anchor?: TabRef): Promise<Actio
     );
   }
 
-  const current = (anchor
-    ? await browser.tabs.get(anchor.id).catch(() => undefined)
-    : (await browser.tabs.query({ active: true, currentWindow: true }))[0]) as TabInfo | undefined;
+  const current = (
+    anchor
+      ? await browser.tabs.get(anchor.id).catch(() => undefined)
+      : (await browser.tabs.query({ active: true, currentWindow: true }))[0]
+  ) as TabInfo | undefined;
   const usable = await usableTabs();
   const base = current && usable(current) ? current.url : undefined;
 
@@ -69,9 +71,7 @@ export async function openNewTab(input: unknown, anchor?: TabRef): Promise<Actio
   if (refused) return refused;
 
   const opener =
-    current?.id != null && current.windowId != null
-      ? { windowId: current.windowId, openerTabId: current.id }
-      : {};
+    current?.id != null && current.windowId != null ? { windowId: current.windowId, openerTabId: current.id } : {};
 
   let created: TabInfo;
   try {
@@ -213,7 +213,8 @@ export function watchForLoad(tabId: number) {
   return { settled, cancel: () => finish(false) };
 }
 
-async function awaitLoad(tabId: number): Promise<boolean> {
+/** Waits for the tab to finish loading; true at once for a complete tab, false if it never does. */
+export async function awaitLoad(tabId: number): Promise<boolean> {
   const watcher = watchForLoad(tabId);
   const status = ((await browser.tabs.get(tabId).catch(() => null)) as TabInfo | null)?.status;
   if (status == null || status === 'complete') {
@@ -274,7 +275,10 @@ async function pickTab(
   if (!hits.length) {
     return {
       ok: false,
-      result: failure('TARGET_NOT_FOUND', `No open tab matches "${clip(selector.match!)}". ${openTabsLine(tabs, usable)}`),
+      result: failure(
+        'TARGET_NOT_FOUND',
+        `No open tab matches "${clip(selector.match!)}". ${openTabsLine(tabs, usable)}`,
+      ),
     };
   }
   if (hits.length > 1) {
@@ -302,10 +306,7 @@ function inventory(tabs: TabInfo[], current: TabRef, usable: Usable) {
   };
 }
 
-async function settleAfterClose(
-  current: TabRef,
-  closedId: number,
-): Promise<{ active?: TabInfo; remaining: number }> {
+async function settleAfterClose(current: TabRef, closedId: number): Promise<{ active?: TabInfo; remaining: number }> {
   let tabs: TabInfo[] = [];
   for (let attempt = 0; attempt < SUCCESSOR_TRIES; attempt++) {
     tabs = await windowTabs(current);
@@ -322,7 +323,9 @@ async function windowTabs(current: TabRef): Promise<TabInfo[]> {
     current.windowId != null ? { windowId: current.windowId } : { currentWindow: true },
   )) as TabInfo[];
   const labels = await tabLabels();
-  return tabs.map((tab) => (tab.id != null && labels[String(tab.id)] ? { ...tab, label: labels[String(tab.id)] } : tab));
+  return tabs.map((tab) =>
+    tab.id != null && labels[String(tab.id)] ? { ...tab, label: labels[String(tab.id)] } : tab,
+  );
 }
 
 function describeTab(tab: TabInfo) {

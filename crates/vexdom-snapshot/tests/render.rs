@@ -512,6 +512,73 @@ fn link_targets_show_only_with_urls_and_never_as_values() {
 }
 
 #[test]
+fn interactive_mode_gives_table_cells_no_ref() {
+    let snapshot: WireSnapshot = serde_json::from_value(json!({
+        "v": 1, "docKey": "doc", "url": "https://x.test/", "title": "", "frames": [],
+        "nodes": [
+            {"id": 1, "r": "RootWebArea", "c": [1]},
+            {"id": 2, "r": "table", "c": [2]},
+            {"id": 3, "r": "row", "c": [3]},
+            {"id": 4, "r": "cell", "n": "Total 5", "c": [4]},
+            {"id": 5, "r": "link", "n": "Pay"}
+        ]
+    }))
+    .expect("a valid wire snapshot");
+
+    let interactive = render_new(&snapshot, &options(true, false, false));
+    assert_eq!(interactive, "- link \"Pay\" [ref=e1]");
+
+    let full = render_new(&snapshot, &SnapshotOptions::default());
+    assert!(full.contains("cell \"Total 5\" [ref=e1]"), "{full}");
+    assert!(full.contains("link \"Pay\" [ref=e2]"), "{full}");
+}
+
+#[test]
+fn a_viewport_tree_says_what_lies_beyond() {
+    let mut snapshot = page("doc", vec![leaf(2, "button", "Go")]);
+    snapshot.offscreen =
+        serde_json::from_value(json!({"above": 0, "below": 3, "aside": 0})).expect("offscreen");
+    assert_eq!(
+        render_new(&snapshot, &SnapshotOptions::default()),
+        "- button \"Go\" [ref=e1]\n- (viewport only: 3 page regions below; scroll, or snapshot without viewport)"
+    );
+}
+
+#[test]
+fn a_view_rendered_into_a_clone_keeps_the_refs_of_the_last_full_view() {
+    let full = page(
+        "doc",
+        vec![leaf(2, "heading", "Cart"), leaf(3, "button", "Pay")],
+    );
+    let mut refs = RefMap::new();
+    let _ = render(&full, 0, &SnapshotOptions::default(), &mut refs);
+    // A narrower view (another selector) shows only a new element.
+    let narrow = page("doc", vec![leaf(4, "link", "Help")]);
+    let mut seen = refs.clone();
+    let _ = render(&narrow, 0, &SnapshotOptions::default(), &mut seen);
+    refs.absorb(seen);
+    assert_eq!(
+        refs.get("e1").map(|entry| entry.name.as_str()),
+        Some("Cart")
+    );
+    assert_eq!(refs.get("e2").map(|entry| entry.name.as_str()), Some("Pay"));
+    assert_eq!(
+        refs.get("e3").map(|entry| entry.name.as_str()),
+        Some("Help")
+    );
+}
+
+#[test]
+fn long_ref_names_are_capped() {
+    let name = "x".repeat(400);
+    let snapshot = page("doc", vec![leaf(2, "link", &name)]);
+    let mut refs = RefMap::new();
+    let out = render(&snapshot, 0, &SnapshotOptions::default(), &mut refs);
+    assert_eq!(out, format!("- link \"{}…\" [ref=e1]", "x".repeat(150)));
+    assert_eq!(refs.get("e1").unwrap().name, name);
+}
+
+#[test]
 fn deep_pages_render_on_a_small_stack() {
     // 20,000 nested wrappers (transparent when rendered) around one button.
     let depth = 20_000;

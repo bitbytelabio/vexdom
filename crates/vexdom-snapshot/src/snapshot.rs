@@ -18,7 +18,7 @@ use serde_json::Value;
 
 use crate::ax::{AXNode, AXProperty, AXValue, WirePage, from_wire};
 use crate::refs::{RefEntry, RefMap, normalize_ax_role};
-use crate::wire::{CursorInfo, WireSnapshot};
+use crate::wire::{CursorInfo, Offscreen, WireSnapshot};
 
 const INTERACTIVE_ROLES: &[&str] = &[
     "button",
@@ -44,6 +44,10 @@ const INTERACTIVE_ROLES: &[&str] = &[
 ];
 
 const TABLE_CELL_ROLES: &[&str] = &["cell", "gridcell", "columnheader", "rowheader"];
+
+/// Characters of a ref'd element's name the tree prints; longer names end in `…`. The ref map
+/// keeps the whole name, and page text (`StaticText`, never ref'd) is never cut.
+const MAX_REF_NAME: usize = 150;
 
 const CONTENT_ROLES: &[&str] = &[
     "heading",
@@ -87,6 +91,9 @@ pub struct SnapshotOptions {
     pub selector: Option<String>,
     /// Print link targets as `url=…` (`-u`).
     pub urls: bool,
+    /// Only what is on screen (`--viewport`). The content script skips the rest; here it tells
+    /// baselines apart.
+    pub viewport: bool,
 }
 
 struct TreeNode {
@@ -271,6 +278,7 @@ fn assign_refs(
     cursor_elements: &HashMap<i64, CursorElementInfo>,
     page: &WirePage<'_>,
     ref_map: &mut RefMap,
+    interactive: bool,
 ) {
     let mut trackers = HashMap::<i64, RoleNameTracker>::new();
 
@@ -278,14 +286,17 @@ fn assign_refs(
 
     for (idx, node) in tree_nodes.iter().enumerate() {
         let role = node.role.as_str();
-        let mut should_ref =
-            if INTERACTIVE_ROLES.contains(&role) || TABLE_CELL_ROLES.contains(&role) {
-                true
-            } else if CONTENT_ROLES.contains(&role) {
-                !node.name.is_empty()
-            } else {
-                false
-            };
+        // Interactive mode prints only ref'd lines, so a cell ref would repeat the text of the
+        // controls inside it; their lines take the cell's place.
+        let mut should_ref = if INTERACTIVE_ROLES.contains(&role) {
+            true
+        } else if TABLE_CELL_ROLES.contains(&role) {
+            !interactive
+        } else if CONTENT_ROLES.contains(&role) {
+            !node.name.is_empty()
+        } else {
+            false
+        };
 
         if node
             .backend_node_id
@@ -375,9 +386,9 @@ fn finish_output(mut output: String, options: &SnapshotOptions) -> String {
 /// `frame_id` is the browser frame the snapshot was taken in (0 for the top frame); the trees of
 /// child frames filled into [`FrameSlot`](crate::FrameSlot)s are rendered under their `Iframe`
 /// node and keyed by their own frame ids. An element gets a ref when its role calls for one
-/// (interactive, table cell, named content or cursor-interactive) and the content script gave it
-/// an id. It keeps its number in later snapshots for as long as its document is in them; numbers
-/// are never reused.
+/// (interactive, table cell outside interactive mode, named content or cursor-interactive) and the
+/// content script gave it an id. It keeps its number in later snapshots for as long as its
+/// document is in them; numbers are never reused.
 #[must_use]
 pub fn render(
     snap: &WireSnapshot,
@@ -392,7 +403,13 @@ pub fn render(
     promote_hidden_inputs(&mut tree_nodes, &cursor_elements);
     let doc_keys: Vec<&str> = page.doc_keys().collect();
     refs.begin_snapshot(&doc_keys);
-    assign_refs(&mut tree_nodes, &cursor_elements, &page, refs);
+    assign_refs(
+        &mut tree_nodes,
+        &cursor_elements,
+        &page,
+        refs,
+        opts.interactive,
+    );
     for (idx, bid) in hint_targets(&tree_nodes) {
         if let Some(hint) = page.source(bid).h.as_ref().filter(|hint| !hint.is_empty()) {
             tree_nodes[idx].hint = Some(hint.clone());
@@ -418,7 +435,38 @@ pub fn render(
     for &root in &roots {
         render_tree(&tree_nodes, root, 0, &mut output, opts);
     }
-    finish_output(output, opts)
+    let mut output = finish_output(output, opts);
+    if let Some(note) = snap.offscreen.as_ref().and_then(offscreen_note) {
+        output.push('\n');
+        output.push_str(&note);
+    }
+    output
+}
+
+/// The line that tells a viewport-only tree what it left out; `None` when nothing was.
+fn offscreen_note(offscreen: &Offscreen) -> Option<String> {
+    let parts: Vec<String> = [
+        (offscreen.above, "above"),
+        (offscreen.below, "below"),
+        (offscreen.aside, "to the side"),
+    ]
+    .into_iter()
+    .filter(|&(count, _)| count > 0)
+    .enumerate()
+    .map(|(i, (count, place))| {
+        if i == 0 {
+            format!("{count} page regions {place}")
+        } else {
+            format!("{count} {place}")
+        }
+    })
+    .collect();
+    (!parts.is_empty()).then(|| {
+        format!(
+            "- (viewport only: {}; scroll, or snapshot without viewport)",
+            parts.join(", ")
+        )
+    })
 }
 
 /// Builds the info the snapshot pipeline renders from the cursor scan's result for one element.
@@ -694,9 +742,15 @@ fn render_node(
     } else {
         ""
     };
-    if !unescaped_display_name.is_empty()
-        && let Ok(display_name) =
-            serde_json::to_string(&normalize_snapshot_name(unescaped_display_name))
+    let mut display_name = normalize_snapshot_name(unescaped_display_name);
+    if node.has_ref
+        && let Some((cut, _)) = display_name.char_indices().nth(MAX_REF_NAME)
+    {
+        display_name.truncate(cut);
+        display_name.push('…');
+    }
+    if !display_name.is_empty()
+        && let Ok(display_name) = serde_json::to_string(&display_name)
     {
         line.push_str(&format!(" {}", display_name));
     }
@@ -775,7 +829,24 @@ fn compact_tree(tree: &str, interactive: bool) -> String {
         return String::new();
     }
 
-    let mut keep = vec![false; lines.len()];
+    let result = keep_with_ancestors(&lines, |line| {
+        line.contains("ref=") || line.contains(": ") || (!interactive && line.contains(" \""))
+    });
+
+    let output = result.join("\n");
+    if output.trim().is_empty() && interactive {
+        return "(no interactive elements)".to_string();
+    }
+    output
+}
+
+/// The tree lines `keep` accepts, each with its chain of ancestors (lines of smaller indent above
+/// it), in tree order.
+pub(crate) fn keep_with_ancestors<'a>(
+    lines: &[&'a str],
+    keep: impl Fn(&str) -> bool,
+) -> Vec<&'a str> {
+    let mut kept = vec![false; lines.len()];
     // Index and indent of the open ancestors, outermost first. Keeping them in
     // a stack lets a kept line mark its ancestors once instead of walking back
     // over every earlier line, which made compact mode quadratic on big tables.
@@ -790,28 +861,21 @@ fn compact_tree(tree: &str, interactive: bool) -> String {
             ancestors.pop();
         }
 
-        if line.contains("ref=") || line.contains(": ") || (!interactive && line.contains(" \"")) {
-            keep[i] = true;
+        if keep(line) {
+            kept[i] = true;
             for &(ancestor, _) in &ancestors {
-                keep[ancestor] = true;
+                kept[ancestor] = true;
             }
         }
 
         ancestors.push((i, indent));
     }
 
-    let result: Vec<&str> = lines
+    lines
         .iter()
-        .enumerate()
-        .filter(|(i, _)| keep[*i])
-        .map(|(_, line)| *line)
-        .collect();
-
-    let output = result.join("\n");
-    if output.trim().is_empty() && interactive {
-        return "(no interactive elements)".to_string();
-    }
-    output
+        .zip(kept)
+        .filter_map(|(line, kept)| kept.then_some(*line))
+        .collect()
 }
 
 fn count_indent(line: &str) -> usize {

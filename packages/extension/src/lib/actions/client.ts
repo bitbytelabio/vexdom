@@ -2,6 +2,7 @@ import { browser } from 'wxt/browser';
 import type { ScriptPublicPath } from 'wxt/utils/inject-script';
 import type { z } from 'zod';
 import { focusedFrame, FRAME_GONE_HINT, TOP_FRAME } from '@/lib/bridge/frame-focus';
+import { PAGE_CHANGERS } from '@/lib/bridge/seen-sites';
 import type { Action } from './core';
 import { ACTION_CHANNEL, failure, type ActionResult } from './protocol';
 
@@ -9,14 +10,16 @@ type InputArgs<I extends z.ZodType> = {} extends z.input<I> ? [input?: z.input<I
 
 const NO_RECEIVER = 'Receiving end does not exist';
 
-const RETRY_AFTER_HEAL = new Set([
-  'page.getPageInfo',
-  'page.snapshot',
-  'page.readHtml',
-  'page.extractText',
-  'page.waitForElement',
-  'page.navigate',
-]);
+/** Input keys that can name an element by a snapshot ref. */
+const REF_KEYS = ['target', 'from', 'to', 'frame', 'container'];
+
+function namesRef(input: unknown): boolean {
+  if (typeof input !== 'object' || input === null) return false;
+  return REF_KEYS.some((key) => {
+    const value = (input as Record<string, unknown>)[key];
+    return typeof value === 'object' && value !== null && 'ref' in value;
+  });
+}
 
 export async function invokeInTab<I extends z.ZodType = z.ZodType, O = unknown>(
   tabId: number,
@@ -34,7 +37,11 @@ export async function invokeInFrame<I extends z.ZodType = z.ZodType, O = unknown
 ): Promise<ActionResult<O>> {
   const name = typeof action === 'string' ? action : action.name;
   const send = async () =>
-    (await browser.tabs.sendMessage(tabId, { channel: ACTION_CHANNEL, action: name, input }, { frameId })) as ActionResult<O>;
+    (await browser.tabs.sendMessage(
+      tabId,
+      { channel: ACTION_CHANNEL, action: name, input },
+      { frameId },
+    )) as ActionResult<O>;
   const unreachable = (detail: string): ActionResult<never> =>
     failure(
       'TAB_UNREACHABLE',
@@ -47,18 +54,30 @@ export async function invokeInFrame<I extends z.ZodType = z.ZodType, O = unknown
     const message = error instanceof Error ? error.message : String(error);
     if (!message.includes(NO_RECEIVER)) return unreachable(message);
     if (!(await injectContentScript(tabId, frameId))) return unreachable(message);
-    if (!RETRY_AFTER_HEAL.has(name)) {
+    // The fresh content script never issued the refs this input names.
+    if (namesRef(input)) {
       return failure(
-        'TAB_UNREACHABLE',
-        'This tab had no content script; one has just been injected and the tab is reachable now. ' +
-          'Take a fresh page.getPageInfo snapshot — the page may have changed — then retry the action.',
+        'STALE_REF',
+        'The page reloaded since your snapshot, so its refs are gone. Take a new snapshot, then retry.',
       );
     }
+    // A missing receiver usually means a new document: one the site checks before this call never
+    // looked at, so an action that changes the page is not run on it unasked.
+    if (PAGE_CHANGERS.has(name)) {
+      return failure(
+        'TAB_UNREACHABLE',
+        'The page had no content script, so the action did not run; one is injected now. Take a new snapshot (the page may have changed), then retry.',
+      );
+    }
+    // No receiver means the action never ran, so sending a read again cannot run it twice.
     try {
       return await send();
     } catch (retryError) {
       const detail = retryError instanceof Error ? retryError.message : String(retryError);
-      return failure('TAB_UNREACHABLE', `${detail} — the content script was injected but the page still did not answer`);
+      return failure(
+        'TAB_UNREACHABLE',
+        `${detail} — the content script was injected but the page still did not answer`,
+      );
     }
   }
 }

@@ -4,16 +4,30 @@
 # --frozen-lockfile. The Bridge is the Rust workspace at the root (ADR-025, ADR-026); the extension
 # (packages/extension) compiles its ext-core crate to wasm with BoltFFI, which needs the wasm32
 # target, the boltffi CLI and binaryen's wasm-opt. vexdom-schema's build.rs runs capnpc.
-# Docs-only changes skip CI.
+# Docs-only changes skip CI; embedded skills (crates/*/assets, SKILL.md included) do not. The
+# release workflow calls this one before it builds anything.
 
 name: CI
 
 on:
   pull_request:
-    paths-ignore: ['docs/**', '**/*.md', 'brand/**', '.github/ISSUE_TEMPLATE/**']
+    paths:
+      - '**'
+      - '!docs/**'
+      - '!**/*.md'
+      - '!brand/**'
+      - '!.github/ISSUE_TEMPLATE/**'
+      - 'crates/*/assets/**'
   push:
     branches: [main]
-    paths-ignore: ['docs/**', '**/*.md', 'brand/**', '.github/ISSUE_TEMPLATE/**']
+    paths:
+      - '**'
+      - '!docs/**'
+      - '!**/*.md'
+      - '!brand/**'
+      - '!.github/ISSUE_TEMPLATE/**'
+      - 'crates/*/assets/**'
+  workflow_call:
   workflow_dispatch:
 
 permissions:
@@ -73,6 +87,25 @@ jobs:
         # Type checks pass on code Vite still refuses to bundle; catch that here, not on a tag.
         # ext-core is already built by `check`, so call WXT directly.
         run: bunx wxt build
+
+      - name: Bundle and lint for Firefox
+        # The release signs this build; a lint failure found on a tag is a release lost.
+        run: bunx wxt build -b firefox && bun run lint:firefox
+
+  # Licenses, advisories, yanked crates and sources of both Cargo workspaces (deny.toml).
+  deny:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check
+
+      - uses: EmbarkStudios/cargo-deny-action@v2
+        with:
+          command: check
+          manifest-path: desktop/Cargo.toml
 
   # The Bridge on macOS, the platform Vexdom ships for first (ADR-026): launchd, the native-messaging
   # manifests under ~/Library and the Mac file system. Also the GPUI desktop app, a workspace of its own.

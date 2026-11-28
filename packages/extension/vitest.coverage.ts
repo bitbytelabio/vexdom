@@ -8,9 +8,9 @@ import type { Reporter, Vitest } from 'vitest/node';
  * get a build through. UI code sits outside every area until UI tests exist.
  */
 export const COVERAGE_AREAS = [
-  { name: 'Shared lib', glob: 'src/lib/{*.ts,actions/*.ts,!(actions|bridge)/**/*.ts}', lines: 37 },
-  { name: 'Extension background', glob: 'src/lib/bridge/!(use-*).ts', lines: 1 },
-  { name: 'Page actions', glob: 'src/lib/actions/page/**', lines: 12 },
+  { name: 'Shared lib', glob: 'src/lib/{*.ts,actions/*.ts,!(actions|bridge)/**/*.ts}', lines: 58 },
+  { name: 'Extension background', glob: 'src/lib/bridge/!(use-*).ts', lines: 33 },
+  { name: 'Page actions', glob: 'src/lib/actions/page/**', lines: 39 },
 ];
 
 interface CoverageMap {
@@ -28,7 +28,9 @@ export class CoverageByArea implements Reporter {
 
   onCoverage(coverage: unknown) {
     const map = coverage as CoverageMap;
-    const files = map.files().map((file) => ({ path: relative(this.root, file), ...map.fileCoverageFor(file).toSummary().lines }));
+    const files = map
+      .files()
+      .map((file) => ({ path: relative(this.root, file), ...map.fileCoverageFor(file).toSummary().lines }));
     const inArea = (glob: string) => files.filter((file) => matchesGlob(file.path, glob));
     const ungated = files.filter((file) => !COVERAGE_AREAS.some(({ glob }) => matchesGlob(file.path, glob)));
 

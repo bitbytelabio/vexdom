@@ -142,9 +142,9 @@ element by locator instead.
 
 | Command | Flags |
 | --- | --- |
-| `vexdom snapshot` | `--all` every element (default: interactive only, `-i`), `-c` compact, `-d <n>` depth, `-s <sel>` subtree, `-u` link targets, `--full` the whole tree rather than the delta, `--json` `{text, refs}` |
-| `vexdom read` | The tab as markdown. `--outline` headings only, `--filter <text>` matching sections, `--target <t>` one element, `--offset <n>` from char `n` (a cut answer names the next one) |
-| `vexdom read <url>` | A page over HTTP, no tab. `--offset <n>`, `--raw`, `--require-md`, `--llms index\|full`, `--timeout <ms>`, `--outline`, `--filter <text>`. Unlike the MCP `snapshot` tool, it may read loopback and local-network addresses; each URL and redirect hop is still checked like a navigation (blocked sites, URL payload) |
+| `vexdom snapshot` | `--all` every element (default: interactive only, `-i`), `-c` compact, `-d <n>` depth, `-s <sel>` subtree, `-u` link targets, `--full` the whole tree rather than the delta, `--json` `{text, refs}`, `--find <text>` only matching lines with their parents (the delta baseline stays), `--viewport` only what is on screen |
+| `vexdom read` | The tab as markdown. `--outline` headings only, `--filter <text>` matching sections, `--target <t>` one element, `--offset <n>` from char `n` (a cut answer names the next one), `-u` links as `[text](url)`. Text the page hides (`display:none`, `visibility:hidden`, `content-visibility:hidden`) is left out, best effort |
+| `vexdom read <url>` | A page over HTTP, no tab. `--offset <n>`, `--raw`, `--require-md`, `--llms index\|full`, `--timeout <ms>`, `--outline`, `--filter <text>`, `-u` links as `[text](url)`. Unlike the MCP `snapshot` tool, it may read loopback and local-network addresses; each URL and redirect hop is still checked like a navigation (blocked sites, URL payload) |
 | `vexdom screenshot` | `-o <file>`, `--screenshot-dir <dir>`, `--screenshot-format png\|jpeg`, `--screenshot-quality <0-100>`, `--full`, `-s <t>`, `--if-changed [--threshold <0-1>]`, `--annotate`. Without `-o` or a directory it writes to the temp folder; prints the result with `savedTo` |
 | `vexdom get text\|html\|value\|attr\|count\|box\|styles <t> [name]` | One fact about an element; `attr` needs the attribute name |
 | `vexdom get title\|url` | The page's title or address |

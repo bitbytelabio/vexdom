@@ -26,6 +26,8 @@ mod session;
 mod webmcp;
 pub mod wire;
 
+pub use page::DELTA_ACTIONS;
+
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
 use std::process::ExitCode;

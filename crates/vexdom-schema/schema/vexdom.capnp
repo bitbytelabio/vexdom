@@ -224,6 +224,10 @@ struct SnapshotOpts {
   runId @7 :Text;
   # The reply as JSON: {"text", "refs": [{"ref", "role", "name"}]}.
   json @8 :Bool;
+  # Only lines containing this text, with their parents; baselines untouched.
+  find @9 :Text;
+  # Only elements on screen, plus a line saying what lies beyond.
+  viewport @10 :Bool;
 }
 
 struct ReadOpts {
@@ -233,6 +237,8 @@ struct ReadOpts {
   target @3 :Json;
   runId @4 :Text;
   offset @5 :UInt32;
+  # Links as [text](absolute url).
+  urls @6 :Bool;
 }
 
 # `control.ts` BridgeStatus, in order.

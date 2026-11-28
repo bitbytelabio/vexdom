@@ -102,7 +102,8 @@ describe('the tree', () => {
   });
 
   test('flattens and caps a value, and never sends a password', () => {
-    document.body.innerHTML = '<textarea aria-label="Note"></textarea><input type="password" aria-label="Password" value="hunter2">';
+    document.body.innerHTML =
+      '<textarea aria-label="Note"></textarea><input type="password" aria-label="Password" value="hunter2">';
     document.querySelector('textarea')!.value = `first\n\n  second\tthird ${'😀'.repeat(300)}`;
     const s = take();
     const note = find(s, 'textbox', 'Note').v as string;
@@ -134,7 +135,7 @@ describe('the tree', () => {
     expect(failure(() => take({ selector: '[' }))).toMatchObject({ code: 'INVALID_TARGET' });
   });
 
-  test('interactive mode still sends every element that can get a ref, and nothing else', () => {
+  test('interactive mode sends every element that can get a ref but table cells, and nothing else', () => {
     vi.spyOn(Element.prototype, 'getBoundingClientRect').mockReturnValue(new DOMRect(0, 0, 100, 20));
     document.body.innerHTML = `
       <main><h2>Cart</h2><h3></h3>
@@ -147,7 +148,10 @@ describe('the tree', () => {
     const interactive = take({ interactive: true });
     const ids = (s: PageSnapshot) => s.nodes.flatMap((node) => (node.id === undefined ? [] : [node.id])).sort();
     expect(ids(full)).toHaveLength(7);
-    expect(ids(interactive)).toEqual(ids(full));
+    const cellRoles = ['cell', 'gridcell', 'columnheader', 'rowheader'];
+    const cells = full.nodes.filter((node) => cellRoles.includes(node.r)).map((node) => node.id);
+    expect(cells).toHaveLength(2);
+    expect(ids(interactive)).toEqual(ids(full).filter((id) => !cells.includes(id)));
     expect(interactive.nodes.filter((node) => node.id === undefined).map((node) => node.r)).toEqual(['RootWebArea']);
   });
 
@@ -157,6 +161,28 @@ describe('the tree', () => {
     expect(s.nodes).toHaveLength(5);
     expect(s.stats).toMatchObject({ nodes: 5, truncated: true });
     expect(s.nodes.flatMap((node) => node.c ?? []).every((child) => child > 0 && child < 5)).toBe(true);
+  });
+
+  test('settleMs waits for the DOM to go quiet, not for the whole cap', async () => {
+    document.body.innerHTML = '<button>First</button>';
+    setTimeout(() => document.body.insertAdjacentHTML('beforeend', '<button>Late</button>'), 20);
+    const started = performance.now();
+    const settled = (await snapshot.execute(snapshot.input.parse({ settleMs: 300 }))) as PageSnapshot;
+    expect(performance.now() - started).toBeLessThan(300);
+    expect(settled.nodes.filter((node) => node.r === 'button').map((node) => node.n)).toEqual(['First', 'Late']);
+  });
+
+  test('viewport mode leaves out what lies wholly off screen and counts it', () => {
+    vi.stubGlobal('innerHeight', 800);
+    document.body.innerHTML = '<button id="near">Near</button><button id="far">Far</button>';
+    const at = (top: number) => () => new DOMRect(0, top, 100, 20);
+    vi.spyOn(document.getElementById('near')!, 'getBoundingClientRect').mockImplementation(at(0));
+    vi.spyOn(document.getElementById('far')!, 'getBoundingClientRect').mockImplementation(at(5000));
+    const s = take({ viewport: true });
+    expect(s.nodes.filter((node) => node.r === 'button').map((node) => node.n)).toEqual(['Near']);
+    expect(s.offscreen).toEqual({ above: 0, below: 1, aside: 0 });
+    expect(take().offscreen).toBeUndefined();
+    vi.unstubAllGlobals();
   });
 });
 
@@ -195,7 +221,8 @@ describe('the vendored role patches', () => {
 describe('element ids', () => {
   test('stay with their element across snapshots, and a new element gets a new one', () => {
     document.body.innerHTML = '<button>One</button><button>Two</button>';
-    const ids = (s: PageSnapshot) => Object.fromEntries(s.nodes.filter((node) => node.id).map((node) => [node.n, node.id!]));
+    const ids = (s: PageSnapshot) =>
+      Object.fromEntries(s.nodes.filter((node) => node.id).map((node) => [node.n, node.id!]));
     const before = ids(take());
     document.body.insertAdjacentHTML('afterbegin', '<button>Zero</button>');
     document.querySelector('button')!.nextElementSibling!.textContent = 'Uno';
@@ -265,12 +292,14 @@ describe('a ref', () => {
     expect(failure(() => resolveTarget(refTo(s, find(s, 'button', 'Save'))))).toEqual(STALE);
   });
 
-  test('to an SVG control is clicked by event, as it has no click()', () => {
+  test('to an SVG control is clicked by event, as it has no click()', async () => {
     document.body.innerHTML = '<svg role="button" aria-label="Zoom"></svg>';
     const s = take();
     const clicks = vi.fn();
     document.querySelector('svg')!.addEventListener('click', clicks);
-    clickElement.execute(clickElement.input.parse({ target: refTo(s, find(s, 'button', 'Zoom')), scrollIntoView: false, force: true }));
+    await clickElement.execute(
+      clickElement.input.parse({ target: refTo(s, find(s, 'button', 'Zoom')), scrollIntoView: false, force: true }),
+    );
     expect(clicks).toHaveBeenCalledOnce();
   });
 
@@ -307,7 +336,13 @@ describe('frames', () => {
     const s = take();
     // No frame id from the page (Chrome): the slot carries the nonce posted into the frame instead.
     expect(s.frames).toEqual([
-      { node: s.nodes.indexOf(find(s, 'Iframe', 'Pay')), probe: expect.any(String), title: 'Pay', name: 'pay', sameOrigin: false },
+      {
+        node: s.nodes.indexOf(find(s, 'Iframe', 'Pay')),
+        probe: expect.any(String),
+        title: 'Pay',
+        name: 'pay',
+        sameOrigin: false,
+      },
     ]);
     expect(take({ includeFrames: false }).frames).toEqual([]);
   });
@@ -320,7 +355,13 @@ describe('controls without a role', () => {
       <div style="cursor:pointer">Quick <span>view</span></div>
       <label style="cursor:pointer"><input type="radio" style="display:none" checked> Express</label>`;
     const s = take();
-    const cursor = { hasCursorPointer: true, hasOnClick: false, hasTabIndex: false, isEditable: false, isNative: false };
+    const cursor = {
+      hasCursorPointer: true,
+      hasOnClick: false,
+      hasTabIndex: false,
+      isEditable: false,
+      isNative: false,
+    };
     expect(s.nodes.filter((node) => node.k).map(({ r, k }) => ({ r, k }))).toEqual([
       { r: 'generic', k: { ...cursor, text: 'Quick view', hiddenInputType: null, hiddenInputChecked: null } },
       { r: 'generic', k: { ...cursor, text: 'Express', hiddenInputType: 'radio', hiddenInputChecked: 'true' } },
@@ -376,7 +417,9 @@ describe('the wire', () => {
     for (const key of ['id', 'r', 'n', 'v', 's', 'c', 'k', 'u', 'h', 'sh']) expect(keysOf(s.nodes)).toContain(key);
     const states = ['level', 'checked', 'expanded', 'selected', 'disabled', 'required', 'focused'];
     expect([...keysOf(s.nodes.flatMap((node) => node.s ?? []))].filter((key) => !states.includes(key))).toEqual([]);
-    expect([...keysOf(s.nodes.flatMap((node) => node.k ?? []))]).toEqual(Object.keys(fixture.nodes.find((node) => node.k)!.k!));
+    expect([...keysOf(s.nodes.flatMap((node) => node.k ?? []))]).toEqual(
+      Object.keys(fixture.nodes.find((node) => node.k)!.k!),
+    );
     expect(Object.keys(s.viewport)).toEqual(Object.keys(fixture.viewport));
     expect(Object.keys(s.stats)).toEqual(Object.keys(fixture.stats));
     const slots = ['node', 'frameId', 'probe', 'title', 'name', 'sameOrigin', 'snapshot'];
@@ -387,6 +430,8 @@ describe('the wire', () => {
     const children = s.nodes.flatMap((node) => node.c ?? []);
     expect(new Set(children).size).toBe(children.length);
     expect(children.every((child) => child > 0 && child < s.nodes.length)).toBe(true);
-    expect(s.nodes.every(({ id, v }) => (id === undefined || id > 0) && (typeof v !== 'number' || Number.isFinite(v)))).toBe(true);
+    expect(
+      s.nodes.every(({ id, v }) => (id === undefined || id > 0) && (typeof v !== 'number' || Number.isFinite(v))),
+    ).toBe(true);
   });
 });

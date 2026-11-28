@@ -57,6 +57,9 @@ How the parts work, for contributors and integrators.
 | [CLI](reference/cli.md) | Every `vexdom` command and flag |
 | [Errors](reference/errors.md) | Error codes, what caused them, what to do |
 
+Research notes behind the design are in [research/](research/); the latest is the
+[improvement roadmap (2026-11)](research/improvement-roadmap-2026-11.md).
+
 ---
 
 To get started: [Install](guide/install.md) → [Pair](guide/pair.md) → [First run](guide/first-run.md).

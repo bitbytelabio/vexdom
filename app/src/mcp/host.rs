@@ -81,16 +81,20 @@ fn coerce_scalars(schema: &Value, input: &mut Map<String, Value>) {
 /// The input key that tags a call with the approver waiting on it (ADR-032).
 pub const APPROVER_KEY: &str = "_approver";
 
+/// The input key that asks the Bridge for no after-action delta (`vexdom_daemon::page`).
+const NO_DELTA_KEY: &str = "_noDelta";
+
 pub fn instructions() -> String {
     format!(
         "Controls the user’s browser through the Vexdom extension, with three tools. \
 snapshot looks at the active tab: by default its accessibility tree, each control with a ref such as e5 (after the first call, only what changed); \
+find: \"text\" keeps matching lines, viewport: true only what is on screen; \
 as: \"markdown\" reads its text (outline: true lists the headings, filter keeps matching sections, offset reads on where a cut answer stopped); as: \"image\" captures it (annotate: true draws each ref on its element, ifChanged: true skips a capture identical to the last). \
 act runs one action — {{\"do\":\"clickElement\",\"target\":\"e5\"}} — or several in order — {{\"batch\":[{{\"do\":…}},…],\"bail\":true}}. \
 guide lists every action by group and the playbooks; guide {{\"topic\":\"<action>\"}} gives one action's input. \
 Target an element by its ref — \"e5\" or {{\"ref\":\"e5\"}} — or by a locator such as {{\"selector\"|\"text\"|\"role\"|\"label\"|\"nth\"}}. \
 Refs stay valid until the next snapshot of that tab; an unknown or stale ref is refused (UNKNOWN_REF, STALE_REF, NO_SNAPSHOT), so take a new snapshot then. \
-Actions on a snapshotted tab (click, fill, type, select, press, submit, navigate) answer with the snapshot delta they caused, so a fresh snapshot is rarely needed. \
+Actions on a snapshotted tab (click, hover, fill, type, select, press, submit, scroll, drag, wait, navigate) answer with the snapshot delta they caused, so a fresh snapshot is rarely needed. \
 Shared arguments: target, from and to name an element; timeoutMs caps the wait; scrollIntoView scrolls to the element first; tabId picks a tab other than the active one. \
 Passwords, keys, tokens and cookies are replaced in every result by a sealed placeholder such as ⟦password:4f2a@example.com⟧; the real value stays in the browser. \
 Pass a placeholder through unchanged as the value of act {{\"do\":\"fillInput\"}} or the text of act {{\"do\":\"typeText\"}} and it becomes the credential at the moment it reaches the field. \
@@ -115,8 +119,10 @@ pub fn tool_definitions() -> Vec<Value> {
                 "compact": {"type": "boolean"},
                 "depth": {"type": "integer"},
                 "selector": {"type": "string", "description": "tree: CSS selector of the subtree to read."},
-                "urls": {"type": "boolean", "description": "tree: show link targets."},
+                "urls": {"type": "boolean", "description": "tree or markdown: show link targets."},
                 "full": {"type": "boolean", "description": "tree: the whole tree, not a delta."},
+                "find": {"type": "string", "description": "tree: only lines containing this text, with their parents; the next delta still compares against the last full view."},
+                "viewport": {"type": "boolean", "description": "tree: only what is on screen, plus a line saying what lies beyond."},
                 "outline": {"type": "boolean", "description": "markdown: headings only, with line numbers."},
                 "filter": {"type": "string", "description": "markdown: keep sections mentioning this text."},
                 "maxChars": {"type": "integer", "description": "markdown: chars per answer, at most the server's limit."},
@@ -139,7 +145,7 @@ pub fn tool_definitions() -> Vec<Value> {
         json!({
             "name": ACT_TOOL,
             "title": "Act in the browser",
-            "description": "Run one browser action — {\"do\":\"<action>\", ...its input} — or several in order — {\"batch\":[{\"do\":...},...], \"bail\":true}. Action names and inputs come from guide. Element inputs take a ref (\"e5\") or a locator.",
+            "description": "Run one browser action — {\"do\":\"<action>\", ...its input} — or several in order — {\"batch\":[{\"do\":...},...], \"bail\":true}. Action names and inputs come from guide. Element inputs take a ref (\"e5\") or a locator. A batch answers with one delta, after its last page-changing step.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -421,7 +427,8 @@ impl Host {
             Err(error) => ToolReply::error(error),
             Ok(Value::String(text)) => ToolReply::text(self.fenced(action, seal_secrets(text))),
             Ok(data) => {
-                let (data, webmcp) = split_webmcp(data);
+                let (mut data, webmcp) = split_webmcp(data);
+                slim_echo(action, &mut data);
                 let data = &data;
                 let body = match (
                     data.get("result"),
@@ -707,6 +714,14 @@ impl Host {
         }
         let mut lines = Vec::new();
         let mut failed = false;
+        // The last step whose reply carries a delta: only it asks for one, as earlier deltas are
+        // superseded by it.
+        let last_delta = steps.iter().rposition(|step| {
+            step.get("do")
+                .and_then(Value::as_str)
+                .and_then(|named| offer.resolve(named).ok())
+                .is_some_and(|action| vexdom_daemon::DELTA_ACTIONS.contains(&action.as_str()))
+        });
         for (at, step) in steps.into_iter().enumerate() {
             let mut input = match step {
                 Value::Object(input) => input,
@@ -727,7 +742,13 @@ impl Host {
                     {
                         coerce_scalars(schema, &mut input);
                     }
-                    let (result, _) = self.invoke(&action, Value::Object(input)).await;
+                    if Some(at) != last_delta {
+                        input.insert(NO_DELTA_KEY.into(), Value::Bool(true));
+                    }
+                    let (mut result, _) = self.invoke(&action, Value::Object(input)).await;
+                    if let Ok(data) = &mut result {
+                        slim_echo(&action, data);
+                    }
                     (tools::short_name(&action).to_owned(), result)
                 }
                 Err(error) => (named, Err(error)),
@@ -928,6 +949,12 @@ impl Host {
             opts.set_selector(args.get("selector").and_then(Value::as_str).unwrap_or(""));
             opts.set_urls(args.get("urls").and_then(Value::as_bool).unwrap_or(false));
             opts.set_full(args.get("full").and_then(Value::as_bool).unwrap_or(false));
+            opts.set_find(args.get("find").and_then(Value::as_str).unwrap_or(""));
+            opts.set_viewport(
+                args.get("viewport")
+                    .and_then(Value::as_bool)
+                    .unwrap_or(false),
+            );
             opts.set_tab_id(args.get("tabId").and_then(Value::as_i64).unwrap_or(-1));
             opts.set_run_id(self.bridge.run_id().unwrap_or(""));
         }
@@ -1007,6 +1034,7 @@ impl Host {
                     .unwrap_or(false),
             );
             opts.set_filter(args.get("filter").and_then(Value::as_str).unwrap_or(""));
+            opts.set_urls(args.get("urls").and_then(Value::as_bool).unwrap_or(false));
             opts.set_offset(
                 args.get("offset")
                     .and_then(Value::as_u64)
@@ -1182,6 +1210,43 @@ fn guide_topic(topic: &str, offer: &Offer) -> Option<String> {
         .iter()
         .find(|(file, _)| file == path)
         .map(|(_, body)| (*body).to_owned())
+}
+
+/// Element actions whose result echoes the element back (`tag`, `selector`, `bounds`).
+const ECHO_ACTIONS: [&str; 7] = [
+    "page.clickElement",
+    "page.hoverElement",
+    "page.setChecked",
+    "page.fillInput",
+    "page.typeText",
+    "page.insertText",
+    "page.selectOption",
+];
+
+/// Drops the echo of the element an action acted on that an agent holding its ref has no use for:
+/// `selector`, `bounds` and `tag`, on the result and on its `element`. The CLI and side panel keep
+/// the full result.
+fn slim_echo(action: &str, data: &mut Value) {
+    if !ECHO_ACTIONS.contains(&action) {
+        return;
+    }
+    let with_delta = data.get("result").is_some() && data.get("snapshot").is_some();
+    let result = if with_delta {
+        &mut data["result"]
+    } else {
+        data
+    };
+    let Some(object) = result.as_object_mut() else {
+        return;
+    };
+    for key in ["selector", "bounds", "tag"] {
+        object.shift_remove(key);
+    }
+    if let Some(element) = object.get_mut("element").and_then(Value::as_object_mut) {
+        for key in ["selector", "bounds", "tag"] {
+            element.shift_remove(key);
+        }
+    }
 }
 
 /// The data without its `webmcp` context, and that context.
@@ -1382,7 +1447,7 @@ pub fn cut_to(text: &str, max: usize, markdown: Option<usize>) -> String {
     let total = body.chars().count();
     let note = match markdown {
         None => format!(
-            "[truncated: {max} of {total} chars. Ask for less: snapshot with a selector or depth, or as markdown with outline, filter or a target.]"
+            "[truncated: {max} of {total} chars. Ask for less: snapshot with find, viewport, a selector or depth, or as markdown with outline, filter or a target.]"
         ),
         Some(offset) => {
             let end = offset + max;

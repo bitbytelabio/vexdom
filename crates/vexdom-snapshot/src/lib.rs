@@ -36,6 +36,7 @@
 mod ax;
 mod delta;
 pub mod diff;
+mod find;
 mod output;
 mod refs;
 mod snapshot;
@@ -43,7 +44,8 @@ pub mod webmcp_text;
 mod wire;
 
 pub use delta::Baselines;
+pub use find::find_lines;
 pub use output::{from_offset, page, truncate};
 pub use refs::{RefEntry, RefKey, RefMap, parse_ref};
 pub use snapshot::{SnapshotOptions, render};
-pub use wire::{CursorInfo, FrameSlot, States, WireNode, WireSnapshot, WireValue};
+pub use wire::{CursorInfo, FrameSlot, Offscreen, States, WireNode, WireSnapshot, WireValue};

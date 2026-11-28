@@ -91,7 +91,15 @@ export interface PageSnapshot {
   viewport: { w: number; h: number; scrollX: number; scrollY: number };
   nodes: WireNode[];
   frames: FrameSlot[];
+  /** With `viewport`: the page regions left out because they lay wholly off screen, by direction. */
+  offscreen?: Offscreen;
   stats: { elements: number; nodes: number; ms: number; truncated: boolean };
+}
+
+export interface Offscreen {
+  above: number;
+  below: number;
+  aside: number;
 }
 
 /** A ref as the Bridge hands it back: the document and id a snapshot gave out, with the role and name it showed. */
@@ -103,45 +111,85 @@ export interface ElementRef {
   nth?: number;
 }
 
+const snapshotInput = z.object({
+  selector: z.string().optional().describe('CSS selector of the subtrees to walk; the whole page when omitted'),
+  interactive: z.boolean().default(false).describe('Only the elements that can get a ref'),
+  maxNodes: z.number().int().positive().default(5000).describe('Stop after this many nodes'),
+  includeFrames: z
+    .boolean()
+    .default(true)
+    .describe('Walk blank same-origin frames inline and list the other frames for the extension to fill in'),
+  viewport: z.boolean().default(false).describe('Only elements on screen; the reply says what lies beyond'),
+  settleMs: z
+    .number()
+    .int()
+    .min(0)
+    .max(2_000)
+    .default(0)
+    .describe('First wait until the page has made no DOM change for 50 ms, at most this long'),
+});
+
 export const snapshot = defineAction({
   name: 'page.snapshot',
-  description: 'The page as an accessibility tree, for the Vexdom Bridge to render as the outline agents act on by ref.',
-  input: z.object({
-    selector: z.string().optional().describe('CSS selector of the subtrees to walk; the whole page when omitted'),
-    interactive: z.boolean().default(false).describe('Only the elements that can get a ref'),
-    maxNodes: z.number().int().positive().default(5000).describe('Stop after this many nodes'),
-    includeFrames: z
-      .boolean()
-      .default(true)
-      .describe('Walk blank same-origin frames inline and list the other frames for the extension to fill in'),
-  }),
+  description:
+    'The page as an accessibility tree, for the Vexdom Bridge to render as the outline agents act on by ref.',
+  input: snapshotInput,
+  // Synchronous without a settle, so callers that walk a static page need not await it.
   execute(input) {
-    const started = performance.now();
-    const docKey = documentKey();
-    const { interactive, maxNodes, includeFrames } = input;
-    const walked = withAriaCaches(() => {
-      const result = walk(rootsFor(input.selector), { interactive, maxNodes, includeFrames, assign: true });
-      addHints(result);
-      return result;
-    });
-    forgetCollected();
-    return {
-      v: 1,
-      docKey,
-      url: location.href.toWellFormed(),
-      title: document.title.toWellFormed(),
-      viewport: { w: innerWidth, h: innerHeight, scrollX: Math.round(scrollX), scrollY: Math.round(scrollY) },
-      nodes: walked.nodes,
-      frames: walked.frames,
-      stats: {
-        elements: walked.elements,
-        nodes: walked.nodes.length,
-        ms: Math.round((performance.now() - started) * 10) / 10,
-        truncated: walked.truncated,
-      },
-    } satisfies PageSnapshot;
+    return input.settleMs > 0 ? domQuiet(input.settleMs).then(() => takeSnapshot(input)) : takeSnapshot(input);
   },
 });
+
+/** How long the DOM must stay unchanged before a settled snapshot is taken. */
+const QUIET_MS = 50;
+
+/** Resolves once the document has gone `QUIET_MS` without a mutation, or after `maxMs`. */
+function domQuiet(maxMs: number): Promise<void> {
+  return new Promise((resolve) => {
+    let quiet: ReturnType<typeof setTimeout> | undefined;
+    const done = () => {
+      observer.disconnect();
+      clearTimeout(quiet);
+      clearTimeout(cap);
+      resolve();
+    };
+    const observer = new MutationObserver(() => {
+      clearTimeout(quiet);
+      quiet = setTimeout(done, QUIET_MS);
+    });
+    observer.observe(document, { subtree: true, childList: true, attributes: true, characterData: true });
+    quiet = setTimeout(done, QUIET_MS);
+    const cap = setTimeout(done, maxMs);
+  });
+}
+
+function takeSnapshot(input: z.output<typeof snapshotInput>): PageSnapshot {
+  const started = performance.now();
+  const docKey = documentKey();
+  const { interactive, maxNodes, includeFrames, viewport } = input;
+  const walked = withAriaCaches(() => {
+    const result = walk(rootsFor(input.selector), { interactive, maxNodes, includeFrames, viewport, assign: true });
+    addHints(result);
+    return result;
+  });
+  forgetCollected();
+  return {
+    v: 1,
+    docKey,
+    url: location.href.toWellFormed(),
+    title: document.title.toWellFormed(),
+    viewport: { w: innerWidth, h: innerHeight, scrollX: Math.round(scrollX), scrollY: Math.round(scrollY) },
+    nodes: walked.nodes,
+    frames: walked.frames,
+    ...(viewport ? { offscreen: walked.offscreen } : {}),
+    stats: {
+      elements: walked.elements,
+      nodes: walked.nodes.length,
+      ms: Math.round((performance.now() - started) * 10) / 10,
+      truncated: walked.truncated,
+    },
+  };
+}
 
 // ---------------------------------------------------------------------------------------------
 // The document's ids. They live as long as this content script, one per document.
@@ -266,7 +314,17 @@ const LEVEL_ROLES = new Set(['heading', 'listitem', 'row', 'treeitem']);
 const RANGE_ROLES = new Set(['slider', 'spinbutton', 'progressbar', 'meter', 'scrollbar']);
 const NATIVE_TAGS = new Set(['A', 'BUTTON', 'INPUT', 'SELECT', 'TEXTAREA', 'DETAILS', 'SUMMARY']);
 /** Inputs whose value is a label or a secret, not text someone typed. */
-const VALUELESS_INPUTS = new Set(['button', 'submit', 'reset', 'image', 'checkbox', 'radio', 'file', 'hidden', 'password']);
+const VALUELESS_INPUTS = new Set([
+  'button',
+  'submit',
+  'reset',
+  'image',
+  'checkbox',
+  'radio',
+  'file',
+  'hidden',
+  'password',
+]);
 const CONTROLS =
   'a[href], button, input:not([type="hidden"]), select, textarea, summary, [role="button"], [role="link"], ' +
   '[role="checkbox"], [role="radio"], [role="tab"], [role="menuitem"], [role="switch"], [role="textbox"], [role="combobox"]';
@@ -282,6 +340,8 @@ interface WalkOptions {
   interactive: boolean;
   maxNodes: number;
   includeFrames: boolean;
+  /** Skip the subtrees of this document that lie wholly off screen, counting them. */
+  viewport?: boolean;
   /** Give the elements that can get a ref their ids; ref recovery only looks. */
   assign: boolean;
 }
@@ -313,6 +373,7 @@ interface Walked {
   refable: { index: number; element: Element }[];
   elements: number;
   truncated: boolean;
+  offscreen: Offscreen;
 }
 
 /**
@@ -328,6 +389,7 @@ function walk(roots: readonly Element[], options: WalkOptions): Walked {
   const stack: Visit[] = [];
   const texts = !options.interactive;
   const focused = activeElement(document);
+  const offscreen: Offscreen = { above: 0, below: 0, aside: 0 };
   let elements = 0;
   let truncated = false;
 
@@ -409,6 +471,14 @@ function walk(roots: readonly Element[], options: WalkOptions): Walked {
     if (!style || excluded(element, tag, style)) return;
     // `visibility: hidden` hides the element and its text, but a child can be visible again.
     const shown = style.visibility !== 'hidden' && style.visibility !== 'collapse';
+    // The body's own box can end above content that overflows it, so only its children are judged.
+    if (options.viewport && from.depth === 0 && tag !== 'BODY' && tag !== 'HTML') {
+      const side = offscreenSide(element, style);
+      if (side) {
+        offscreen[side]++;
+        return;
+      }
+    }
     const block = isBlock(style);
     if (tag === 'BODY' || tag === 'HTML' || tag === 'SLOT' || from.textOnly || !shown) {
       pass(from, shown, block, flatChildren(element, tag));
@@ -421,11 +491,14 @@ function walk(roots: readonly Element[], options: WalkOptions): Walked {
     }
 
     const cursor = INTERACTIVE_ROLES.has(role) ? undefined : cursorOf(element, tag, style);
-    const named =
-      texts || !!cursor || INTERACTIVE_ROLES.has(role) || TABLE_CELL_ROLES.has(role) || CONTENT_ROLES.has(role);
+    const named = texts || !!cursor || INTERACTIVE_ROLES.has(role) || CONTENT_ROLES.has(role);
     const name = named ? flat(getElementAccessibleName(element, false).text) : '';
+    // Interactive mode refs no table cell (the Bridge's rule): the controls inside stand for it.
     const canRef =
-      INTERACTIVE_ROLES.has(role) || TABLE_CELL_ROLES.has(role) || (CONTENT_ROLES.has(role) && !!name) || !!cursor;
+      INTERACTIVE_ROLES.has(role) ||
+      (texts && TABLE_CELL_ROLES.has(role)) ||
+      (CONTENT_ROLES.has(role) && !!name) ||
+      !!cursor;
     const children = flatChildren(element, tag);
     if (!canRef && (!texts || (role === 'generic' && isBare(children, style)))) {
       pass(from, true, block, children);
@@ -465,7 +538,15 @@ function walk(roots: readonly Element[], options: WalkOptions): Walked {
   const title = flat(document.title);
   nodes.push(title ? { r: 'RootWebArea', n: title } : { r: 'RootWebArea' });
   const root: Container = { index: 0, text: [] };
-  stack.push({ children: roots, at: 0, into: root, text: true, textOnly: false, depth: 0, done: () => flush(root, true) });
+  stack.push({
+    children: roots,
+    at: 0,
+    into: root,
+    text: true,
+    textOnly: false,
+    depth: 0,
+    done: () => flush(root, true),
+  });
   while (stack.length && !truncated) {
     const visit = stack[stack.length - 1];
     if (visit.at === visit.children.length) {
@@ -480,7 +561,21 @@ function walk(roots: readonly Element[], options: WalkOptions): Walked {
       enter(child as Element, visit);
     }
   }
-  return { nodes, frames, refable, elements, truncated };
+  return { nodes, frames, refable, elements, truncated, offscreen };
+}
+
+/**
+ * Where an element lies when it is wholly outside the viewport; undefined when any of it shows,
+ * when it is fixed (it moves with the viewport) or has no box of its own.
+ */
+function offscreenSide(element: Element, style: CSSStyleDeclaration): keyof Offscreen | undefined {
+  if (style.position === 'fixed') return undefined;
+  const rect = element.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return undefined;
+  if (rect.bottom <= 0) return 'above';
+  if (rect.top >= innerHeight) return 'below';
+  if (rect.right <= 0 || rect.left >= innerWidth) return 'aside';
+  return undefined;
 }
 
 /**
@@ -495,7 +590,8 @@ function rootsFor(selector: string | undefined): Element[] {
   } catch {
     throw new ActionError(`${JSON.stringify(selector)} is not a valid CSS selector`, 'INVALID_TARGET');
   }
-  if (!matches.length) throw new ActionError(`No element matches the selector ${JSON.stringify(selector)}`, 'TARGET_NOT_FOUND');
+  if (!matches.length)
+    throw new ActionError(`No element matches the selector ${JSON.stringify(selector)}`, 'TARGET_NOT_FOUND');
   let last: Element | undefined;
   const outermost = matches.filter((element) => {
     if (last?.contains(element)) return false;
@@ -720,7 +816,9 @@ function statesOf(element: Element, tag: string, role: string, focused: Element 
   }
   // The <summary> carries the state of its <details>; a collapsed <select> is a closed combobox.
   const expanded =
-    tag === 'DETAILS' ? undefined : (getAriaExpanded(element) ?? (tag === 'SELECT' && role === 'combobox' ? false : undefined));
+    tag === 'DETAILS'
+      ? undefined
+      : (getAriaExpanded(element) ?? (tag === 'SELECT' && role === 'combobox' ? false : undefined));
   if (expanded !== undefined) states.expanded = expanded;
   if (getAriaSelected(element)) states.selected = true;
   if (getAriaDisabled(element)) states.disabled = true;
@@ -730,7 +828,8 @@ function statesOf(element: Element, tag: string, role: string, focused: Element 
 }
 
 function isRequired(element: Element, tag: string): boolean {
-  if ((tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') && (element as HTMLInputElement).required) return true;
+  if ((tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') && (element as HTMLInputElement).required)
+    return true;
   return element.getAttribute('aria-required')?.toLowerCase() === 'true';
 }
 
@@ -793,10 +892,17 @@ function hintFor(element: Element): string {
             .join(' ')
         : '';
   const file = img ? tail((img.getAttribute('src') ?? '').split(/[?#]/)[0], '/').replace(/\.\w+$/, '') : '';
-  const key = ['data-testid', 'name', 'id'].find((name) => /^(?!.*\d{3})[a-z][\w-]*$/i.test(element.getAttribute(name) || ''));
+  const key = ['data-testid', 'name', 'id'].find((name) =>
+    /^(?!.*\d{3})[a-z][\w-]*$/i.test(element.getAttribute(name) || ''),
+  );
   const row = element.closest('tr, li, article, [role=row], [role=listitem]');
   const near = row ? renderedText(row).replace(renderedText(element), '').replace(/\s+/g, ' ').trim() : '';
-  return [icon && `icon:${icon}`, file && `img:${file}`, key && `${key}:${element.getAttribute(key)}`, near && `in:${near}`]
+  return [
+    icon && `icon:${icon}`,
+    file && `img:${file}`,
+    key && `${key}:${element.getAttribute(key)}`,
+    near && `in:${near}`,
+  ]
     .filter(Boolean)
     .map((part) => (part as string).slice(0, 48))
     .join('; ')

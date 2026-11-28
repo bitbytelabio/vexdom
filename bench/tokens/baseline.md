@@ -40,8 +40,8 @@ Snapshots are interactive (`snapshot`, as: tree, default); read is `snapshot` as
 
 | What the model receives | Before (tokens) | After (tokens) | Change |
 | --- | ---: | ---: | ---: |
-| catalog: tools/list | 15268 | 696 | -95% |
-| catalog: server instructions | 483 | 543 | 12% |
+| catalog: tools/list | 15268 | 829 | -95% |
+| catalog: server instructions | 483 | 579 | 20% |
 | firefox_forms: page_getPageInfo → snapshot | 426 | 126 | -70% |
 | firefox_forms: page_extractText → snapshot as:markdown | 100 | 37 | -63% |
 | firefox_forms: snapshot as:markdown outline | — | 20 | |
@@ -58,12 +58,12 @@ Snapshots are interactive (`snapshot`, as: tree, default); read is `snapshot` as
 | snapshot_diff_probe: page_extractText → snapshot as:markdown | 92 | 31 | -66% |
 | snapshot_diff_probe: snapshot as:markdown outline | — | 20 | |
 | snapshot_diff_probe: snapshot after typing (delta) | — | 51 | |
-| wikipedia-rust: page_getPageInfo → snapshot | 3488 | 5054 | 45% |
-| wikipedia-rust: page_extractText → snapshot as:markdown | 5163 | 5053 | -2% |
-| wikipedia-rust: snapshot as:markdown outline | — | 395 | |
-| hacker-news: page_getPageInfo → snapshot | 1577 | 5053 | 220% |
-| hacker-news: page_extractText → snapshot as:markdown | 1151 | 1027 | -11% |
+| wikipedia-rust: page_getPageInfo → snapshot | 3488 | 5058 | 45% |
+| wikipedia-rust: page_extractText → snapshot as:markdown | 5163 | 5052 | -2% |
+| wikipedia-rust: snapshot as:markdown outline | — | 393 | |
+| hacker-news: page_getPageInfo → snapshot | 1577 | 3388 | 115% |
+| hacker-news: page_extractText → snapshot as:markdown | 1151 | 1157 | 1% |
 | hacker-news: snapshot as:markdown outline | — | 20 | |
 | docs-rs-tokio: page_getPageInfo → snapshot | 1986 | 1424 | -28% |
-| docs-rs-tokio: page_extractText → snapshot as:markdown | 4404 | 4763 | 8% |
+| docs-rs-tokio: page_extractText → snapshot as:markdown | 4404 | 4758 | 8% |
 | docs-rs-tokio: snapshot as:markdown outline | — | 215 | |

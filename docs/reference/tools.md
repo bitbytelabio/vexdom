@@ -38,8 +38,10 @@ their description.
 | `compact` | boolean | tree: compact rendering (default false) |
 | `depth` | integer | tree: how deep to go (default: no limit) |
 | `selector` | string | tree: CSS selector of the subtree to read |
-| `urls` | boolean | tree: show link targets |
+| `urls` | boolean | tree or markdown: show link targets (markdown: `[text](absolute url)`) |
 | `full` | boolean | tree: the whole tree, not a delta |
+| `find` | string | tree: only lines containing this text (case-insensitive), with their parents; the next delta still compares against the last full view |
+| `viewport` | boolean | tree: only what is on screen, plus a last line counting the page regions above, below and to the side |
 | `outline` | boolean | markdown: headings only, with line numbers |
 | `filter` | string | markdown: keep sections mentioning this text |
 | `maxChars` | integer | markdown: chars per answer, at most the server's limit |
@@ -58,7 +60,13 @@ their description.
 | `tabId` | integer | A tab other than the active one |
 
 - **tree** returns the tree with a ref per element (`button "Sign in" [ref=e5]`). After the first
-  call on a tab, it returns only what changed, unless `full` is true.
+  call on a tab, it returns only what changed, unless `full` is true: `snapshot r3 (delta from
+  r2):` and one or more hunks, `@ lines a-b replaced by:`, `@ inserted after line n:` or
+  `@ lines a-b removed`, numbered by the previous tree's lines. A change of URL or options, or one
+  that would take 70 % of the tree, returns the whole tree. In interactive mode table cells get no
+  ref (the controls inside them do), and a ref'd name longer than 150 characters is cut with `…`.
+  `find` answers `find "text": n of m lines match` and the matching lines; its refs are valid, and
+  it does not move the delta baseline.
 - **markdown** without `url` reads the tab's text. With `url` it fetches the page over HTTP and
   touches no tab; a failure there keeps its own code, or reads `READ_FAILED`. Agent-supplied
   `headers` are dropped. The URL and each redirect hop are checked like a navigation to them
@@ -125,8 +133,19 @@ lists). Refs stay valid until the next snapshot of that tab:
 | `UNKNOWN_REF` | The ref is not in the tab's latest snapshot |
 | `STALE_REF` | The ref's document unloaded, or its element is gone |
 
-Actions on a snapshotted tab that change it (click, fill, type, select, press, submit, navigate)
-answer with the result followed by the snapshot delta they caused.
+Actions on a snapshotted tab that change it (click, hover, fill, type, select, press, submit,
+scroll, drag, wait, navigate) answer with the result followed by the snapshot delta they caused.
+The snapshot first gives a load the action started up to 500 ms, then waits for 50 ms without a
+DOM change (at most 500 ms); if the navigation replaces the page mid-snapshot, it waits for the new
+page to load and reads that. A batch answers with one delta, after its last page-changing step.
+Over MCP, element actions leave out
+the element's `selector`, `bounds` and `tag` from their result.
+
+`clickElement`, `hoverElement` and `setChecked` wait up to `timeoutMs` (default 2000) for the
+element to be enabled, visible and uncovered before they refuse it with `INVALID_TARGET`.
+`submitForm` returns `submitted: false` and the first `invalid` fields, each with its
+`ValidityState` reason (`valueMissing`, `typeMismatch`, …), when the browser's validation stopped
+the form.
 
 ### What `act` will not run
 

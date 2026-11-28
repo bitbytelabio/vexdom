@@ -17,7 +17,9 @@ use vexdom_core::guardrails::secrets::seal_secrets;
 use vexdom_core::result::{ActionError, failure};
 use vexdom_schema::{read_opts, snapshot_opts};
 use vexdom_snapshot::diff::diff_screenshot;
-use vexdom_snapshot::{Baselines, RefMap, SnapshotOptions, WireSnapshot, page, parse_ref, render};
+use vexdom_snapshot::{
+    Baselines, RefMap, SnapshotOptions, WireSnapshot, find_lines, page, parse_ref, render,
+};
 
 use crate::Daemon;
 use crate::link::{Link, Reply};
@@ -25,11 +27,19 @@ use crate::wire::{optional, parse_json, text};
 
 /// Baselines kept per browser (agent-browser's cap, T8).
 const BASELINES: usize = 32;
-/// The page gets this long to react before the after-action snapshot.
-const SETTLE: Duration = Duration::from_millis(150);
+/// An after-action snapshot first waits for 50 ms without a DOM change, at most this long.
+const SETTLE_CAP_MS: u64 = 500;
+/// How long an action's reply waits for its delta; past it the reply goes without one, well
+/// inside the client's deadline for the action.
+const DELTA_BUDGET: Duration = Duration::from_secs(3);
 /// Actions whose reply carries the delta they caused.
-const DELTA_ACTIONS: &[&str] = &[
+pub const DELTA_ACTIONS: &[&str] = &[
     "page.clickElement",
+    "page.hoverElement",
+    "page.dragElement",
+    "page.scrollTo",
+    "page.waitForElement",
+    "page.waitFor",
     "page.fillInput",
     "page.typeText",
     "page.insertText",
@@ -43,6 +53,17 @@ const DELTA_ACTIONS: &[&str] = &[
     "page.dialog",
 ];
 pub const UNCHANGED_SCREENSHOT: &str = "Screenshot unchanged since the last one.";
+/// The input key a client sets to `true` to skip the after-action delta (a batch step before its
+/// last).
+pub(crate) const NO_DELTA_KEY: &str = "_noDelta";
+
+/// Removes [`NO_DELTA_KEY`] from `input`; true when it asked for no delta.
+pub(crate) fn take_no_delta(input: &mut Value) -> bool {
+    input
+        .as_object_mut()
+        .and_then(|object| object.shift_remove(NO_DELTA_KEY))
+        .is_some_and(|flag| flag == Value::Bool(true))
+}
 
 /// One browser's tabs as the agent last saw them.
 #[derive(Default)]
@@ -74,6 +95,11 @@ pub(crate) struct SnapshotRequest {
     pub run_id: Option<String>,
     /// Answer `{"text", "refs"}` as JSON text, the whole tree (`vexdom snapshot --json`).
     pub json: bool,
+    /// Answer only the lines containing this text; the tab's baseline and options stay as they
+    /// were, so the next delta still compares against the last full view.
+    pub find: Option<String>,
+    /// Let the page settle first (an after-action snapshot): see [`SETTLE_CAP_MS`].
+    pub settle: bool,
 }
 
 impl SnapshotRequest {
@@ -85,11 +111,14 @@ impl SnapshotRequest {
                 depth: usize::try_from(opts.get_depth()).ok(),
                 selector: optional(text(opts.get_selector())),
                 urls: opts.get_urls(),
+                viewport: opts.get_viewport(),
             },
             full: opts.get_full() || opts.get_json(),
             tab_id: Some(opts.get_tab_id()).filter(|tab| *tab >= 0),
             run_id: optional(text(opts.get_run_id())),
             json: opts.get_json(),
+            find: optional(text(opts.get_find())),
+            settle: false,
         })
     }
 }
@@ -103,6 +132,8 @@ pub(crate) struct ReadRequest {
     pub target: Option<Value>,
     pub run_id: Option<String>,
     pub offset: usize,
+    /// Links as `[text](absolute url)`.
+    pub urls: bool,
 }
 
 impl ReadRequest {
@@ -114,6 +145,7 @@ impl ReadRequest {
             target: Some(parse_json(&text(opts.get_target()))).filter(|target| !target.is_null()),
             run_id: optional(text(opts.get_run_id())),
             offset: opts.get_offset() as usize,
+            urls: opts.get_urls(),
         })
     }
 }
@@ -208,6 +240,12 @@ impl Daemon {
         if let Some(selector) = &request.options.selector {
             input["selector"] = json!(selector);
         }
+        if request.options.viewport {
+            input["viewport"] = json!(true);
+        }
+        if request.settle {
+            input["settleMs"] = json!(SETTLE_CAP_MS);
+        }
         let reply = link
             .invoke(
                 "page.snapshot",
@@ -229,6 +267,15 @@ impl Daemon {
         })?;
         let text = self.with_page(&link, |state| {
             let refs = state.refs.entry(tab).or_default();
+            if let Some(needle) = &request.find {
+                // The refs it shows join those of the last full view, which stay valid; the
+                // baseline and options do not move.
+                let mut seen = refs.clone();
+                let tree = render(&snapshot, 0, &request.options, &mut seen);
+                refs.absorb(seen);
+                state.last_tab = Some(tab);
+                return find_lines(&tree, needle);
+            }
             let tree = render(&snapshot, 0, &request.options, refs);
             state.options.insert(tab, request.options.clone());
             state.last_tab = Some(tab);
@@ -271,7 +318,12 @@ impl Daemon {
             .await;
         let data = reply.result?;
         let html = data.get("html").and_then(Value::as_str).unwrap_or("");
-        let markdown = crate::markdown::html_to_markdown(html);
+        let base = data
+            .get("url")
+            .and_then(Value::as_str)
+            .filter(|_| request.urls)
+            .and_then(|url| url::Url::parse(url).ok());
+        let markdown = crate::markdown::html_to_markdown(html, base.as_ref());
         let shaped = if request.outline {
             outline(&markdown)
         } else if let Some(filter) = &request.filter {
@@ -291,13 +343,15 @@ impl Daemon {
     }
 
     /// A page action from a control client: refs rewritten, guardrails, screenshot flags, and
-    /// the delta the action caused when the tab has a baseline.
+    /// the delta the action caused when the tab has a baseline and `delta` is set (a batch asks
+    /// for it on its last step only).
     pub(crate) async fn page_invoke(
         &self,
         target: Option<Rc<Link>>,
         action: &str,
         mut input: Value,
         client: &str,
+        delta: bool,
     ) -> Reply {
         let Some(link) = target.clone().filter(|link| link.is_open()) else {
             return self.invoke_external(target, action, input, client).await;
@@ -312,7 +366,11 @@ impl Daemon {
         let reply = self
             .invoke_external(Some(Rc::clone(&link)), action, input, client)
             .await;
-        let mut reply = self.with_delta(&link, action, tab, reply).await;
+        let mut reply = if delta {
+            self.with_delta(&link, action, tab, reply).await
+        } else {
+            reply
+        };
         if !crate::webmcp::ANNOUNCE_ACTIONS.contains(&action) {
             return reply;
         }
@@ -350,20 +408,20 @@ impl Daemon {
         let Some(tab) = tab else { return reply };
         let options = self.with_page(link, |state| state.options.get(&tab).cloned());
         let Some(options) = options else { return reply };
-        tokio::time::sleep(SETTLE).await;
         let request = SnapshotRequest {
             options,
-            full: false,
             tab_id: Some(tab),
-            run_id: None,
-            json: false,
+            settle: true,
+            ..SnapshotRequest::default()
         };
-        match self.snapshot(Some(Rc::clone(link)), request).await {
-            Ok(delta) => Reply {
+        // The action already ran: a slow page must not turn its result into a client timeout.
+        let snapshot = self.snapshot(Some(Rc::clone(link)), request);
+        match tokio::time::timeout(DELTA_BUDGET, snapshot).await {
+            Ok(Ok(delta)) => Reply {
                 result: Ok(json!({"result": data, "snapshot": delta})),
                 image: None,
             },
-            Err(_) => reply,
+            _ => reply,
         }
     }
 
@@ -403,10 +461,8 @@ impl Daemon {
                     interactive: true,
                     ..SnapshotOptions::default()
                 }),
-                full: false,
                 tab_id: tab,
-                run_id: None,
-                json: false,
+                ..SnapshotRequest::default()
             };
             if self.snapshot(Some(Rc::clone(&link)), request).await.is_ok() {
                 let labels: Vec<Value> = self.with_page(&link, |state| {
@@ -510,5 +566,17 @@ mod tests {
         assert_eq!(ref_in(&json!({"ref": "ref=e3"})).as_deref(), Some("e3"));
         assert_eq!(ref_in(&json!("#email")), None);
         assert_eq!(ref_in(&json!({"selector": "#a"})), None);
+    }
+
+    #[test]
+    fn no_delta_flag_is_taken_out_of_the_input() {
+        let mut input = json!({"target": "e1", "_noDelta": true});
+        assert!(take_no_delta(&mut input));
+        assert_eq!(input, json!({"target": "e1"}));
+        assert!(!take_no_delta(&mut input));
+        let mut off = json!({"_noDelta": false});
+        assert!(!take_no_delta(&mut off));
+        assert_eq!(off, json!({}));
+        assert!(!take_no_delta(&mut json!("not an object")));
     }
 }

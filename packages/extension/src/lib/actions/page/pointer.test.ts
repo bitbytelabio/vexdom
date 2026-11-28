@@ -38,4 +38,16 @@ describe('elementAt', () => {
     stacked(banner, footer, document.body);
     expect(() => assertUncovered(footer, { x: 400, y: 700 })).toThrow(/covers \(400, 700\)/);
   });
+
+  it('looks into an open shadow root, where the document reports only the host', () => {
+    const host = document.createElement('x-pay');
+    document.body.append(host);
+    const root = host.attachShadow({ mode: 'open' });
+    const button = document.createElement('button');
+    root.append(button);
+    stacked(host, document.body);
+    root.elementsFromPoint = () => [button, host];
+    expect(elementAt({ x: 10, y: 10 })).toBe(button);
+    expect(() => assertUncovered(button, { x: 10, y: 10 })).not.toThrow();
+  });
 });

@@ -30,11 +30,19 @@
         },
         "urls": {
           "type": "boolean",
-          "description": "tree: show link targets."
+          "description": "tree or markdown: show link targets."
         },
         "full": {
           "type": "boolean",
           "description": "tree: the whole tree, not a delta."
+        },
+        "find": {
+          "type": "string",
+          "description": "tree: only lines containing this text, with their parents; the next delta still compares against the last full view."
+        },
+        "viewport": {
+          "type": "boolean",
+          "description": "tree: only what is on screen, plus a line saying what lies beyond."
         },
         "outline": {
           "type": "boolean",
@@ -115,7 +123,7 @@
   {
     "name": "act",
     "title": "Act in the browser",
-    "description": "Run one browser action — {\"do\":\"<action>\", ...its input} — or several in order — {\"batch\":[{\"do\":...},...], \"bail\":true}. Action names and inputs come from guide. Element inputs take a ref (\"e5\") or a locator.",
+    "description": "Run one browser action — {\"do\":\"<action>\", ...its input} — or several in order — {\"batch\":[{\"do\":...},...], \"bail\":true}. Action names and inputs come from guide. Element inputs take a ref (\"e5\") or a locator. A batch answers with one delta, after its last page-changing step.",
     "inputSchema": {
       "type": "object",
       "properties": {
