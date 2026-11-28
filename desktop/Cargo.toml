@@ -45,5 +45,5 @@ tray-icon = "0.27"
 [target.'cfg(not(target_os = "macos"))'.dependencies]
 # Held, not used: gpui 0.2.2 → zed-async-tar → xattr 0.2.3 reads `libc::ENOATTR`, which libc
 # 0.2.190 removed on Linux. Drop this once gpui no longer brings xattr 0.2.
-libc = "=0.2.189"
+libc = "=0.2.191"
 tray-icon = { version = "0.27", default-features = false, features = ["ksni"] }
