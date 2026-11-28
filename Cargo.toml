@@ -36,7 +36,7 @@ unwrap_used = "warn"
 # axum 0.8.9 pins tokio-tungstenite 0.29; both are pinned so the control client shares axum's
 # tungstenite (ADR-020, docs/research/http-ws-upgrade-proxy.md trap 17).
 axum = { version = "=0.8.9", default-features = false, features = ["http1", "tokio", "ws"] }
-tokio-tungstenite = { version = "=0.29.0", default-features = false, features = ["handshake"] }
+tokio-tungstenite = { version = "=0.30.0", default-features = false, features = ["handshake"] }
 base64 = "0.23"
 capnp = "0.28.2"
 capnp-rpc = "0.28.1"
