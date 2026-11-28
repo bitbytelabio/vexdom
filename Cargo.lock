@@ -547,7 +547,7 @@ dependencies = [
 
 [[package]]
 name = "ext-core"
-version = "0.11.2"
+version = "0.11.3"
 dependencies = [
  "boltffi",
  "capnp",
@@ -2291,7 +2291,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "vexdom"
-version = "0.11.2"
+version = "0.11.3"
 dependencies = [
  "base64 0.23.1",
  "capnp",
@@ -2319,7 +2319,7 @@ dependencies = [
 
 [[package]]
 name = "vexdom-client"
-version = "0.11.2"
+version = "0.11.3"
 dependencies = [
  "capnp",
  "capnp-rpc",
@@ -2333,7 +2333,7 @@ dependencies = [
 
 [[package]]
 name = "vexdom-core"
-version = "0.11.2"
+version = "0.11.3"
 dependencies = [
  "base64 0.23.1",
  "getrandom 0.4.3",
@@ -2349,7 +2349,7 @@ dependencies = [
 
 [[package]]
 name = "vexdom-daemon"
-version = "0.11.2"
+version = "0.11.3"
 dependencies = [
  "aes-gcm",
  "axum",
@@ -2382,7 +2382,7 @@ dependencies = [
 
 [[package]]
 name = "vexdom-link"
-version = "0.11.2"
+version = "0.11.3"
 dependencies = [
  "bytes",
  "capnp",
@@ -2395,7 +2395,7 @@ dependencies = [
 
 [[package]]
 name = "vexdom-pure"
-version = "0.11.2"
+version = "0.11.3"
 dependencies = [
  "base64 0.23.1",
  "fancy-regex",
@@ -2412,7 +2412,7 @@ dependencies = [
 
 [[package]]
 name = "vexdom-schema"
-version = "0.11.2"
+version = "0.11.3"
 dependencies = [
  "capnp",
  "capnpc",
@@ -2420,7 +2420,7 @@ dependencies = [
 
 [[package]]
 name = "vexdom-snapshot"
-version = "0.11.2"
+version = "0.11.3"
 dependencies = [
  "image",
  "serde",
@@ -2430,7 +2430,7 @@ dependencies = [
 
 [[package]]
 name = "vexdom-update"
-version = "0.11.2"
+version = "0.11.3"
 dependencies = [
  "flate2",
  "minisign-verify",
