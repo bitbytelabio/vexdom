@@ -111,12 +111,13 @@ fn snapshot_refs_and_deltas() {
         assert!(first.starts_with("snapshot r1\n"), "{first}");
         assert!(first.contains("[ref=e1]"), "{first}");
         // A later page comes from the stored tree: nothing is rendered, the baseline stays.
+        // A sealed credential gets a fresh handle of the same width, so the page lines up with the
+        // first answer char for char; only handle ids may differ.
         let page = snapshot(&control, false, 12).await.unwrap();
+        let rest: String = first.chars().skip(12).collect();
         let before_handle = |text: &str| text.split('⟦').next().unwrap_or("").to_owned();
-        assert_eq!(
-            before_handle(&page),
-            before_handle(&first.chars().skip(12).collect::<String>())
-        );
+        assert_eq!(before_handle(&page), before_handle(&rest));
+        assert_eq!(page.chars().count(), rest.chars().count());
         let again = snapshot(&control, false, 0).await.unwrap();
         assert_eq!(again, "snapshot r2: unchanged");
 

@@ -39,6 +39,21 @@ describe('elementAt', () => {
     expect(() => assertUncovered(footer, { x: 400, y: 700 })).toThrow(/covers \(400, 700\)/);
   });
 
+  it('lets a click through a button that takes no pointer events to the chip around it', () => {
+    const chip = document.createElement('div');
+    const button = document.createElement('button');
+    button.textContent = 'Comedy';
+    chip.append(button);
+    document.body.append(chip);
+    stacked(chip, document.body);
+    expect(() => assertUncovered(button, { x: 10, y: 10 })).toThrow(/covers \(10, 10\)/);
+    button.style.pointerEvents = 'none';
+    expect(() => assertUncovered(button, { x: 10, y: 10 })).not.toThrow();
+    // A blocked form: the button inherits `none` and waits until the form lets go.
+    chip.style.pointerEvents = 'none';
+    expect(() => assertUncovered(button, { x: 10, y: 10 })).toThrow(/covers \(10, 10\)/);
+  });
+
   it('looks into an open shadow root, where the document reports only the host', () => {
     const host = document.createElement('x-pay');
     document.body.append(host);

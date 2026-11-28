@@ -877,7 +877,11 @@ pub fn uninstall(argv: &[String]) -> ExitCode {
                 if unregistered.len() == 1 { "" } else { "s" }
             );
         }
-        let stopped = vexdom_daemon::ensure::stop_daemons(Duration::from_secs(5)).await;
+        let stopped = vexdom_daemon::ensure::stop_daemons(
+            Duration::from_secs(5),
+            vexdom_daemon::ensure::StopScope::Every,
+        )
+        .await;
         if !stopped.stopped.is_empty() {
             let pids: Vec<String> = stopped
                 .stopped

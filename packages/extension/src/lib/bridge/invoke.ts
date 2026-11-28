@@ -107,6 +107,7 @@ import { initScriptInTab } from '@/lib/bridge/init-scripts';
 import { pdfInTab, startRecording, startTrace, stopRecording, stopTrace } from '@/lib/bridge/capture';
 import { a11yInTab, reactInTab, vitalsInTab } from '@/lib/bridge/devtools';
 import { tabKeepInTab, thawIfFrozen } from '@/lib/bridge/tab-keep';
+import { keepWatching, watchRequests } from '@/lib/bridge/request-watch';
 import { closeOpenTab, openNewTab, switchToTab, watchForLoad, type TabRef } from '@/lib/bridge/tabs';
 import { adoptSubtab, sessionForRun, sessionForTab, setCurrentTab, type TabSession } from '@/lib/bridge/tab-sessions';
 import { adoptMcpTab } from '@/lib/bridge/mcp-tabs';
@@ -358,7 +359,9 @@ async function dispatch(
       : failure('MAPPING_TAB_CHANGED', 'The tab this run started in has been closed.');
   }
   const { id, windowId, url } = tab;
-  return cued(id, cue, () => routeInTab({ id, windowId, url }, action, input, runId, owner));
+  return cued(id, cue, () => routeInTab({ id, windowId, url }, action, input, runId, owner)).finally(() =>
+    keepWatching(id),
+  );
 }
 
 async function routeInTab(
@@ -370,6 +373,8 @@ async function routeInTab(
 ): Promise<ActionResult> {
   if (action === tabKeep.name) return tabKeepInTab(tab.id, input);
   await thawIfFrozen(tab.id);
+  // What the action fetches, its after-action snapshot waits for.
+  if (action !== snapshot.name && action !== screenshot.name) watchRequests(tab.id);
   if (action === navigate.name)
     return isWebPage(tab.url) ? navigateTab(tab.id, input) : navigateViaTabsApi(tab.id, input);
   if (action === searchSite.name) return searchTab(tab.id, input);

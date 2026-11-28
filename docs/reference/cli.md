@@ -327,7 +327,7 @@ See [Agents](../guide/agents.md), [Skills](../guide/features/skills.md),
 | --- | --- |
 | `vexdom status` | The Bridge, which browsers can start it, the agent, each paired browser (version, source, connected, an unpacked copy that needs ↻), whether the tool lists match, and the pairing mode |
 | `vexdom start` | Bring the Bridge up in the background, if it is not already |
-| `vexdom stop` | Stop the Bridge |
+| `vexdom stop` | Stop the Bridge of this `VEXDOM_HOME` |
 | `vexdom restart` | Stop it and bring up a fresh one |
 | `vexdom logs` | Print the Bridge's log |
 | `vexdom token` | Print the control token, for MCP clients, not the browser |

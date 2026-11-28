@@ -11,6 +11,7 @@ import { snapshot, type FrameSlot, type PageSnapshot } from '@/lib/actions/page/
 import type { RefLabel } from '@/lib/frames/ref-labels';
 import { CLAIM_GAP_MS, claimOf, clearLabels, describeFrame, drawLabels, TOP_FRAME } from './frame-focus';
 import { screenshotTab } from './screenshot';
+import { REQUESTS_CAP_MS, requestsSettled } from './request-watch';
 import { awaitLoad } from './tabs';
 import { sealForPage } from './secret-vault';
 
@@ -26,7 +27,10 @@ interface SnapshotInput {
   includeFrames?: boolean;
   /** The top document only: a child frame is walked whole. */
   viewport?: boolean;
-  /** The top document only: wait for the page to load and its DOM to go quiet, at most this long. */
+  /**
+   * The top document only: wait for the page to load and its DOM to go quiet, at most this long
+   * each; and for the requests the last action started, at most `REQUESTS_CAP_MS`.
+   */
   settleMs?: number;
 }
 
@@ -53,6 +57,8 @@ export async function snapshotTab(tabId: number, input: unknown): Promise<Action
   // An after-action snapshot: give a load the action started up to the settle cap to finish.
   if (asked.settleMs) {
     await Promise.race([awaitLoad(tabId), new Promise((resolve) => setTimeout(resolve, asked.settleMs))]);
+    // And the data it asked the server for, which the page renders when it lands.
+    await requestsSettled(tabId, REQUESTS_CAP_MS);
   }
   const stitching = asked.includeFrames !== false;
   let children = stitching ? await childFrames(tabId) : [];

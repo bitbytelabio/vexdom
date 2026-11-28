@@ -170,6 +170,18 @@ const sites = {
     };
     const ok = (reply) => assert.ok(!reply.isError, reply.text);
 
+    // On the fresh chart: once a shape has been used, the group button picks it instead.
+    await check('fireant icon-only menu buttons carry a hint', async () => {
+      const { text } = await snapshot({ find: 'Các dạng hình học' });
+      const menu = await act({ do: 'clickElement', target: refOf(text, 'button', 'Các dạng hình học') });
+      ok(menu);
+      const bare = [...menu.text.matchAll(/^\s*- button \[ref=e\d+\][^\n]*$/gm)].map((line) => line[0]);
+      assert.ok(bare.length >= 5, `the shapes menu shows ${bare.length} unnamed buttons:\n${menu.text}`);
+      const unhinted = bare.filter((line) => !/hint="[^"]*(tip|in):/.test(line));
+      assert.deepEqual(unhinted, [], 'an unnamed button with nothing to tell it by');
+      ok(await act({ do: 'pressKey', key: 'Escape' }));
+    });
+
     await check('fireant brush stroke', () =>
       adds(async () => {
         await tool('Cọ vẽ');
@@ -351,8 +363,8 @@ const sites = {
     if (!tree) return page.close();
 
     await check('tiktok category', async () => {
-      // The chip's button sits under an overlay of the chip: the clickable chip is the target.
-      const reply = await act({ do: 'clickElement', target: refOf(tree.text, 'generic', 'Comedy') });
+      // The chip's button takes no pointer events: a click on it lands on the chip around it.
+      const reply = await act({ do: 'clickElement', target: refOf(tree.text, 'button', 'Comedy') });
       assert.ok(!reply.isError, reply.text);
     });
 

@@ -13,6 +13,17 @@ pub fn state_dir() -> PathBuf {
     }
 }
 
+/// Which state dir a Bridge serves, as `/health` reports it: a hash, so the path itself is not
+/// handed to whoever asks on loopback. `vexdom stop` stops only the Bridges of its own state dir.
+pub fn home_key() -> String {
+    use sha2::{Digest, Sha256};
+    Sha256::digest(state_dir().as_os_str().as_encoded_bytes())
+        .iter()
+        .take(8)
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
 /// The visible half: skills, recordings, screenshots, the unpacked extension. Not relocatable.
 pub fn user_dir() -> PathBuf {
     home_dir().join("vexdom")

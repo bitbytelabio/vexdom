@@ -31,6 +31,8 @@ pub(crate) enum Role {
 struct Shared {
     token: Arc<str>,
     pid: u32,
+    /// `paths::home_key()`: which state dir this Bridge serves.
+    home: Arc<str>,
     connected: Arc<AtomicBool>,
     accepted: mpsc::UnboundedSender<(Role, WebSocket, String)>,
 }
@@ -60,6 +62,7 @@ pub(crate) fn serve(daemon: Daemon, listener: TcpListener) {
     let shared = Shared {
         token: Arc::from(daemon.token()),
         pid: std::process::id(),
+        home: Arc::from(vexdom_core::paths::home_key()),
         connected: daemon.health_connected(),
         accepted,
     };
@@ -92,9 +95,10 @@ async fn entry(State(shared): State<Shared>, req: Request) -> Response {
         let target = req.uri().path_and_query().map_or("", |pq| pq.as_str());
         if req.uri().scheme().is_none() && target.starts_with("/health") {
             let body = format!(
-                "{{\"ok\":true,\"pid\":{},\"version\":\"{}\",\"connected\":{}}}",
+                "{{\"ok\":true,\"pid\":{},\"version\":\"{}\",\"home\":\"{}\",\"connected\":{}}}",
                 shared.pid,
                 crate::VERSION,
+                shared.home,
                 shared.connected.load(Ordering::SeqCst)
             );
             return (

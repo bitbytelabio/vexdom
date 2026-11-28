@@ -92,6 +92,19 @@ export function assertUncovered(el: HTMLElement, at: Point): void {
   if (hit === el || composedContains(el, hit)) return;
   // `el` is in a shadow tree under `hit` that `elementAt` could not open (a closed root).
   if (hit && composedContains(hit, el) && !hit.contains(el)) return;
+  // `el` itself lets the pointer through (`pointer-events: none`) to the element around it that
+  // handles the click, as a chip does with the button inside it. Not when it inherits `none`: a
+  // form blocked while it submits sets it on itself, and its buttons wait until it lets go.
+  const parent = el.parentElement;
+  if (
+    hit &&
+    composedContains(hit, el) &&
+    getComputedStyle(el).pointerEvents === 'none' &&
+    parent &&
+    getComputedStyle(parent).pointerEvents !== 'none'
+  ) {
+    return;
+  }
   throw new ActionError(
     hit
       ? `${cssPath(hit)} covers (${at.x}, ${at.y}) — dismiss whatever is over the element, then retry`

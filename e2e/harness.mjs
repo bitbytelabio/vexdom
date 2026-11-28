@@ -142,8 +142,9 @@ export async function start({ config } = {}) {
     return out.stdout;
   };
 
-  // `vexdom stop` stops every Bridge answering on the default ports, the user's own included, so
-  // only the one this run started (its pid in this home's lockfile) is stopped.
+  // `vexdom stop` takes a Bridge too old to report its home on `/health` (the user's installed
+  // one, say) for its own, so only the one this run started (its pid in this home's lockfile) is
+  // stopped.
   const stopOwnBridge = async () => {
     const { pid } = JSON.parse(readFileSync(join(home, 'daemon.json'), 'utf8'));
     const alive = () => {

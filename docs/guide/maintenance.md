@@ -96,7 +96,9 @@ The command prints what it will remove and asks first:
 It names, but does not remove, the `vexdom` binary itself, `Vexdom.app`, the entry in your MCP
 client (`claude mcp remove vexdom`), and any folder you moved elsewhere with `screenshotDir`,
 `downloadDir` or `skillsDir`. Deleting `~/.vexdom` by hand leaves a running Bridge holding its port;
-`vexdom stop` probes the ports rather than trusting the lockfile, so it still finds it.
+`vexdom stop` probes the ports rather than trusting the lockfile, so it still finds it. It stops
+only the Bridges serving its own `VEXDOM_HOME` (each reports a hash of its state folder on
+`/health`), so a test run with its own home leaves yours alone; `vexdom uninstall` stops every one.
 
 ---
 

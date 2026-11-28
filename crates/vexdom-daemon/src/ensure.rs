@@ -74,6 +74,12 @@ fn is_zombie(_pid: i32) -> bool {
 
 /// The pid `/health` on that port reports, within a second.
 pub async fn healthy_pid(port: u16) -> Option<u32> {
+    health(port).await.map(|(pid, _)| pid)
+}
+
+/// The pid and state dir key (`paths::home_key`) `/health` on that port reports, within a second;
+/// no key from a Bridge older than the key.
+async fn health(port: u16) -> Option<(u32, Option<String>)> {
     let probe = async {
         let mut stream = tokio::net::TcpStream::connect(("127.0.0.1", port))
             .await
@@ -89,10 +95,15 @@ pub async fn healthy_pid(port: u16) -> Option<u32> {
             return None;
         }
         let health: serde_json::Value = serde_json::from_str(body.trim()).ok()?;
-        health
+        let pid: u32 = health
             .get("pid")?
             .as_u64()
-            .and_then(|pid| u32::try_from(pid).ok())
+            .and_then(|pid| u32::try_from(pid).ok())?;
+        let home: Option<String> = health
+            .get("home")
+            .and_then(serde_json::Value::as_str)
+            .map(str::to_owned);
+        Some((pid, home))
     };
     tokio::time::timeout(HEALTH_TIMEOUT, probe)
         .await
@@ -263,19 +274,32 @@ async fn came_up() -> Result<Lockfile, String> {
 pub struct RunningDaemon {
     pub pid: u32,
     pub port: u16,
+    /// It serves this process's state dir (`VEXDOM_HOME`), or is too old to say which it serves.
+    pub ours: bool,
 }
 
 /// Every Bridge actually answering on a Vexdom port.
 pub async fn running_daemons() -> Vec<RunningDaemon> {
+    let key: String = paths::home_key();
     let mut found: Vec<RunningDaemon> = Vec::new();
     for port in paths::daemon_ports().unwrap_or_default() {
-        if let Some(pid) = healthy_pid(port).await
+        if let Some((pid, home)) = health(port).await
             && !found.iter().any(|daemon| daemon.pid == pid)
         {
-            found.push(RunningDaemon { pid, port });
+            let ours: bool = home.is_none_or(|home| home == key);
+            found.push(RunningDaemon { pid, port, ours });
         }
     }
     found
+}
+
+/// Which Bridges `stop_daemons` stops.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum StopScope {
+    /// Those of this process's state dir: another `VEXDOM_HOME` (a test's, say) keeps its own.
+    Ours,
+    /// Every one on a Vexdom port, whatever state dir it serves (uninstall).
+    Every,
 }
 
 pub struct StopResult {
@@ -308,11 +332,16 @@ async fn wait_for_exit(daemons: &[RunningDaemon], timeout: Duration) -> Vec<Runn
     alive
 }
 
-/// Asks every Bridge to stop (the caller may first have sent `Control.stop`), then SIGTERM,
-/// then SIGKILL after `grace`; holds the browser wake-up so a paired browser does not restart it.
-pub async fn stop_daemons(grace: Duration) -> StopResult {
+/// Asks the Bridges in `scope` to stop (the caller may first have sent `Control.stop`), then
+/// SIGTERM, then SIGKILL after `grace`; holds the browser wake-up so a paired browser does not
+/// restart it.
+pub async fn stop_daemons(grace: Duration, scope: StopScope) -> StopResult {
     let _ = lockfile::hold_wake();
-    let daemons = running_daemons().await;
+    let daemons: Vec<RunningDaemon> = running_daemons()
+        .await
+        .into_iter()
+        .filter(|daemon| scope == StopScope::Every || daemon.ours)
+        .collect();
     for daemon in &daemons {
         kill(daemon.pid, false);
     }

@@ -412,6 +412,19 @@ describe('controls without a role', () => {
       ['Save', undefined],
     ]);
   });
+
+  test('an icon-only control is told by its tooltip and the words or label beside it', () => {
+    document.body.innerHTML = `
+      <div><div tabindex="0"><span>Brush</span><button><span title="Add to favorites" style="visibility:hidden"><svg></svg></span></button></div></div>
+      <div><div tabindex="0"><span>Highlighter</span><button><span title="Add to favorites" style="visibility:hidden"><svg></svg></span></button></div></div>
+      <div><div><button aria-label="Magnet mode"><svg></svg></button><button class="arrow"><svg></svg></button></div></div>`;
+    const s = take();
+    expect(s.nodes.filter((node) => node.r === 'button' && !node.n).map(({ h }) => h)).toEqual([
+      'tip:Add to favorites; in:Brush',
+      'tip:Add to favorites; in:Highlighter',
+      'in:Magnet mode',
+    ]);
+  });
 });
 
 describe('the wire', () => {

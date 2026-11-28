@@ -27,7 +27,9 @@ use crate::wire::{optional, parse_json, text};
 
 /// Baselines kept per browser (agent-browser's cap, T8).
 const BASELINES: usize = 32;
-/// An after-action snapshot first waits for 50 ms without a DOM change, at most this long.
+/// An after-action snapshot first waits for a load the action started and for 50 ms without a DOM
+/// change, at most this long each; the extension also waits up to 1.5 s for the data requests the
+/// action started, all well inside `DELTA_BUDGET`.
 const SETTLE_CAP_MS: u64 = 500;
 /// How long an action's reply waits for its delta; past it the reply goes without one, well
 /// inside the client's deadline for the action.

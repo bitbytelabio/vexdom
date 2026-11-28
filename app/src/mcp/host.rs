@@ -118,7 +118,7 @@ pub fn tool_definitions() -> Vec<Value> {
             "description": "See the active tab: its accessibility tree with a ref (e5) per element (as: tree, default; only what changed after the first call), its text as markdown (as: markdown; with url, fetched over HTTP without touching any tab), or a screenshot (as: image).",
             "inputSchema": object_schema(json!({
                 "as": {"type": "string", "enum": ["tree", "markdown", "image"]},
-                "interactive": {"type": "boolean", "description": "tree: only elements to act on (default true)."},
+                "interactive": {"type": "boolean", "description": "tree: only elements to act on (default true). Rows clickable only by script are missed: false shows them; act on {text}."},
                 "compact": {"type": "boolean"},
                 "depth": {"type": "integer"},
                 "selector": {"type": "string", "description": "tree: CSS selector of the subtree to read."},

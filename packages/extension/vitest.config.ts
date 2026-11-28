@@ -11,7 +11,7 @@ export default defineConfig({
         test: {
           name: 'lib',
           include: ['src/lib/**/*.test.ts'],
-          setupFiles: ['src/lib/test/load-core.ts'],
+          setupFiles: ['src/lib/test/load-core.ts', 'src/lib/test/fake-web-request.ts'],
           exclude: [
             ...configDefaults.exclude,
             'src/lib/**/*.integration.test.ts',
@@ -27,7 +27,7 @@ export default defineConfig({
         test: {
           name: 'link',
           include: ['src/lib/**/*.integration.test.ts'],
-          setupFiles: ['src/lib/test/load-core.ts'],
+          setupFiles: ['src/lib/test/load-core.ts', 'src/lib/test/fake-web-request.ts'],
           testTimeout: 20_000,
         },
       },
@@ -39,7 +39,7 @@ export default defineConfig({
           // Happy DOM 21 stopped creating iframe documents by default (SSRF hardening); the
           // snapshot frame tests need same-origin frames, and the fixtures are our own markup.
           environmentOptions: { happyDOM: { settings: { enableIframePageLoading: true } } },
-          setupFiles: ['src/lib/test/load-core.ts'],
+          setupFiles: ['src/lib/test/load-core.ts', 'src/lib/test/fake-web-request.ts'],
           include: ['src/lib/actions/page/**/*.test.ts', 'src/lib/handsfree/host.test.ts', 'src/lib/cues/host.test.ts'],
         },
       },
@@ -47,7 +47,15 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/**/*.test.ts', 'src/**/*.test-d.ts', 'src/**/*.d.ts', 'src/**/fixtures/**', 'src/lib/bridge/ext-core/**', 'src/lib/bridge/test/**', 'src/lib/test/**'],
+      exclude: [
+        'src/**/*.test.ts',
+        'src/**/*.test-d.ts',
+        'src/**/*.d.ts',
+        'src/**/fixtures/**',
+        'src/lib/bridge/ext-core/**',
+        'src/lib/bridge/test/**',
+        'src/lib/test/**',
+      ],
       reporter: ['json-summary', 'html'],
       thresholds: Object.fromEntries(COVERAGE_AREAS.map(({ glob, lines }) => [glob, { lines }])),
     },

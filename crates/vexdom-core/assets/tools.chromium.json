@@ -1,5 +1,5 @@
 {
-  "hash": "81f7b3e7",
+  "hash": "c70713ff",
   "tools": [
     {
       "name": "page.getPageInfo",
@@ -77,7 +77,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -142,7 +142,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -233,7 +233,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -306,7 +306,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -423,7 +423,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -637,7 +637,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -723,7 +723,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -802,7 +802,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -930,7 +930,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -1008,7 +1008,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -1092,7 +1092,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -1204,7 +1204,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -1292,7 +1292,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -1378,7 +1378,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -1453,7 +1453,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -1539,7 +1539,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -1674,7 +1674,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -1757,7 +1757,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -1821,7 +1821,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -1951,7 +1951,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -2542,7 +2542,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -3331,7 +3331,7 @@
                     "type": "string"
                   },
                   "text": {
-                    "description": "Case-insensitive visible text the element should contain",
+                    "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                     "type": "string"
                   },
                   "role": {
@@ -3558,7 +3558,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -3654,7 +3654,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -3883,7 +3883,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -3978,7 +3978,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -4104,7 +4104,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {
@@ -4185,7 +4185,7 @@
                 "type": "string"
               },
               "text": {
-                "description": "Case-insensitive visible text the element should contain",
+                "description": "Case-insensitive visible text the element should contain; when it is the whole text of some, only those match",
                 "type": "string"
               },
               "role": {

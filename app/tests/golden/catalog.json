@@ -16,7 +16,7 @@
         },
         "interactive": {
           "type": "boolean",
-          "description": "tree: only elements to act on (default true)."
+          "description": "tree: only elements to act on (default true). Rows clickable only by script are missed: false shows them; act on {text}."
         },
         "compact": {
           "type": "boolean"

@@ -1295,7 +1295,11 @@ async fn graceful_stop() -> vexdom_daemon::ensure::StopResult {
         )
         .await;
     }
-    vexdom_daemon::ensure::stop_daemons(Duration::from_secs(5)).await
+    vexdom_daemon::ensure::stop_daemons(
+        Duration::from_secs(5),
+        vexdom_daemon::ensure::StopScope::Ours,
+    )
+    .await
 }
 
 async fn stop() -> ExitCode {

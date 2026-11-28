@@ -18,6 +18,30 @@ const BUTTON_BIT: Record<string, number> = { left: 1, right: 2, middle: 4 };
 
 const MOVE_INTERVAL_MS = 12;
 
+/** How long Chrome may take to hand one input event to the page before the gesture is given up. */
+export const INPUT_ACK_MS = 5_000;
+
+/**
+ * One `Input.*` command. Chrome answers it once the page has taken the event, and queues the
+ * tab's later input behind it: a page whose main thread is stuck would stall this action past
+ * the Bridge's timeout, and every trusted action after it. Failing here lets the lease go.
+ */
+function sendInput(session: DebuggerSession, method: string, params: Record<string, unknown>): Promise<unknown> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const stalled = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () =>
+        reject(
+          new Error(
+            `The page did not take the ${String(params.type ?? method)} event within ${INPUT_ACK_MS / 1000} s — it may be busy or showing a dialog; take a snapshot, then retry`,
+          ),
+        ),
+      INPUT_ACK_MS,
+    );
+  });
+  return Promise.race([send(session, method, params), stalled]).finally(() => clearTimeout(timer));
+}
+
 export interface ClickPlan {
   point: Point;
   from: Point;
@@ -98,7 +122,8 @@ async function markOverlaysInert(tabId: number, inert: boolean): Promise<void> {
     .executeScript({
       target: { tabId },
       func: (attribute: string, untouched: string, on: boolean) => {
-        for (const host of document.querySelectorAll(`[${attribute}]:not(#${untouched})`)) host.toggleAttribute('inert', on);
+        for (const host of document.querySelectorAll(`[${attribute}]:not(#${untouched})`))
+          host.toggleAttribute('inert', on);
       },
       args: [OVERLAY_ATTRIBUTE, CUE_HOST_ID, inert],
     })
@@ -109,7 +134,7 @@ export async function dispatchClick(session: DebuggerSession, plan: ClickPlan): 
   const { point, from, button, clickCount, modifiers, moveSteps, hoverMs, holdMs } = plan;
   const held = modifiers.reduce((mask, name) => mask | (MODIFIER_BIT[name] ?? 0), 0);
   const base = { modifiers: held, pointerType: 'mouse' };
-  const dispatch = (params: Record<string, unknown>) => send(session, 'Input.dispatchMouseEvent', params);
+  const dispatch = (params: Record<string, unknown>) => sendInput(session, 'Input.dispatchMouseEvent', params);
   const moveTo = (at: Point) => dispatch({ ...base, ...at, type: 'mouseMoved', button: 'none', buttons: 0 });
 
   await moveTo(from);
@@ -120,16 +145,44 @@ export async function dispatchClick(session: DebuggerSession, plan: ClickPlan): 
   await settle(hoverMs);
 
   for (let count = 1; count <= clickCount; count += 1) {
-    await dispatch({ ...base, ...point, type: 'mousePressed', button, buttons: BUTTON_BIT[button], clickCount: count });
-    await settle(holdMs);
-    await dispatch({ ...base, ...point, type: 'mouseReleased', button, buttons: 0, clickCount: count });
+    const press = { ...base, ...point, type: 'mousePressed', button, buttons: BUTTON_BIT[button], clickCount: count };
+    const release = { ...base, ...point, type: 'mouseReleased', button, buttons: 0, clickCount: count };
+    await pressed(dispatch, press, release, async (up) => {
+      await settle(holdMs);
+      await up();
+    });
+  }
+}
+
+/**
+ * Presses, runs what follows, which lets go through `up`. When any of it fails, the press
+ * included (Chrome may still deliver it), the button is let go once before the failure is
+ * thrown, so no button stays held; never twice.
+ */
+async function pressed(
+  dispatch: (params: Record<string, unknown>) => Promise<unknown>,
+  press: Record<string, unknown>,
+  release: Record<string, unknown>,
+  run: (up: () => Promise<unknown>) => Promise<void>,
+): Promise<void> {
+  let released = false;
+  const up = () => {
+    released = true;
+    return dispatch(release);
+  };
+  try {
+    await dispatch(press);
+    await run(up);
+  } catch (error) {
+    if (!released) await dispatch(release).catch(() => undefined);
+    throw error;
   }
 }
 
 export async function dispatchDrag(session: DebuggerSession, plan: DragPlan): Promise<void> {
   const { approach, grip, drop, steps, holdMs, settleMs } = plan;
   const base = { modifiers: 0, pointerType: 'mouse' };
-  const dispatch = (params: Record<string, unknown>) => send(session, 'Input.dispatchMouseEvent', params);
+  const dispatch = (params: Record<string, unknown>) => sendInput(session, 'Input.dispatchMouseEvent', params);
   const moveTo = (at: Point, buttons: number) =>
     dispatch({ ...base, ...at, type: 'mouseMoved', button: buttons ? 'left' : 'none', buttons });
 
@@ -137,15 +190,17 @@ export async function dispatchDrag(session: DebuggerSession, plan: DragPlan): Pr
     await settle(MOVE_INTERVAL_MS);
     await moveTo(at, 0);
   }
-  await dispatch({ ...base, ...grip, type: 'mousePressed', button: 'left', buttons: 1, clickCount: 1 });
-  await settle(holdMs);
-
-  for (const at of pathBetween(grip, drop, steps)) {
-    await settle(MOVE_INTERVAL_MS);
-    await moveTo(at, 1);
-  }
-  await settle(settleMs);
-  await dispatch({ ...base, ...drop, type: 'mouseReleased', button: 'left', buttons: 0, clickCount: 1 });
+  const press = { ...base, ...grip, type: 'mousePressed', button: 'left', buttons: 1, clickCount: 1 };
+  const release = { ...base, ...drop, type: 'mouseReleased', button: 'left', buttons: 0, clickCount: 1 };
+  await pressed(dispatch, press, release, async (up) => {
+    await settle(holdMs);
+    for (const at of pathBetween(grip, drop, steps)) {
+      await settle(MOVE_INTERVAL_MS);
+      await moveTo(at, 1);
+    }
+    await settle(settleMs);
+    await up();
+  });
 }
 
 interface MouseState {
@@ -160,7 +215,8 @@ const FIREFOX_MOUSE_HINT = 'Real mouse and key events need Chrome’s debugger, 
 const mice = new Map<number, MouseState>();
 const BUTTON_MASK: Record<string, number> = { left: 1, right: 2, middle: 4 };
 
-const primaryButton = (buttons: number) => (buttons & 1 ? 'left' : buttons & 2 ? 'right' : buttons & 4 ? 'middle' : 'none');
+const primaryButton = (buttons: number) =>
+  buttons & 1 ? 'left' : buttons & 2 ? 'right' : buttons & 4 ? 'middle' : 'none';
 
 /** agent-browser's `interpolated_mouse_*`: an eased path, bent by a seeded amount when `human`. */
 export function planPointerMove(
@@ -172,7 +228,8 @@ export function planPointerMove(
   const dy = to.y - from.y;
   const distance = Math.hypot(dx, dy);
   const asked = options.durationMs ?? 0;
-  const duration = asked === 0 && options.human ? Math.trunc(Math.min(Math.max(80 + distance * 0.35, 100), 700)) : asked;
+  const duration =
+    asked === 0 && options.human ? Math.trunc(Math.min(Math.max(80 + distance * 0.35, 100), 700)) : asked;
   let steps = options.steps;
   if (steps === undefined) {
     const spatial = Math.min(Math.max(Math.ceil(distance / 12), 1), 60);
@@ -222,7 +279,7 @@ export async function mouseInTab(tabId: number, input: MouseInput): Promise<Acti
   if (!acquired.ok) return failure(acquired.code, acquired.message);
   const session = acquired.lease.session;
   const event = (type: string, extra: Record<string, unknown> = {}) =>
-    send(session, 'Input.dispatchMouseEvent', {
+    sendInput(session, 'Input.dispatchMouseEvent', {
       type,
       x: state.x,
       y: state.y,
@@ -277,7 +334,11 @@ export async function mouseInTab(tabId: number, input: MouseInput): Promise<Acti
 }
 
 /** `page.pressKey` and `page.typeText` with `trusted: true`: real key events from the debugger. */
-export async function trustedKeysInTab(tabId: number, action: string, input: Record<string, unknown>): Promise<ActionResult> {
+export async function trustedKeysInTab(
+  tabId: number,
+  action: string,
+  input: Record<string, unknown>,
+): Promise<ActionResult> {
   const target = input.target;
   if (target) {
     const clear = action === typeText.name && input.clear !== false;
@@ -286,10 +347,13 @@ export async function trustedKeysInTab(tabId: number, action: string, input: Rec
   }
   return withDebugger(tabId, FIREFOX_MOUSE_HINT, async (session) => {
     const state = mice.get(tabId) ?? { x: 0, y: 0, buttons: 0, modifiers: 0 };
-    const dispatch = (params: Record<string, unknown>) => send(session, 'Input.dispatchKeyEvent', params);
+    const dispatch = (params: Record<string, unknown>) => sendInput(session, 'Input.dispatchKeyEvent', params);
     if (action === pressKey.name) {
       const key = String(input.key ?? '');
-      const chord = ((input.modifiers as string[] | undefined) ?? []).reduce((bits, name) => bits | (MODIFIER_BITS[name] ?? 0), 0);
+      const chord = ((input.modifiers as string[] | undefined) ?? []).reduce(
+        (bits, name) => bits | (MODIFIER_BITS[name] ?? 0),
+        0,
+      );
       const phase = input.phase ?? 'press';
       if (phase === 'down') {
         state.modifiers |= keyModifierBit(key) ?? 0;
@@ -304,15 +368,25 @@ export async function trustedKeysInTab(tabId: number, action: string, input: Rec
       return success({ key, modifiers: input.modifiers ?? [], phase, trusted: true });
     }
     const text = String(input.text ?? '');
-    const delay = typeof input.charDelayMs === 'number' ? input.charDelayMs : SPEEDS[(input.speed as keyof typeof SPEEDS) ?? 'natural'];
+    const delay =
+      typeof input.charDelayMs === 'number'
+        ? input.charDelayMs
+        : SPEEDS[(input.speed as keyof typeof SPEEDS) ?? 'natural'];
     for (const ch of text) {
       if (ch === '\n' || ch === '\r' || ch === '\t') {
         const [key, code, keyCode] = charToKeyInfo(ch);
         const typed = key === 'Enter' ? '\r' : '\t';
-        await dispatch({ type: 'keyDown', key, code, windowsVirtualKeyCode: keyCode, text: typed, unmodifiedText: typed });
+        await dispatch({
+          type: 'keyDown',
+          key,
+          code,
+          windowsVirtualKeyCode: keyCode,
+          text: typed,
+          unmodifiedText: typed,
+        });
         await dispatch({ type: 'keyUp', key, code, windowsVirtualKeyCode: keyCode });
       } else {
-        await send(session, 'Input.insertText', { text: ch });
+        await sendInput(session, 'Input.insertText', { text: ch });
       }
       if (delay) await settle(delay);
     }

@@ -24,9 +24,17 @@ export type TargetRef = z.output<typeof refSchema>;
 
 export const targetSchema = z.object({
   selector: z.string().optional().describe('CSS selector for the element'),
-  text: z.string().optional().describe('Case-insensitive visible text the element should contain'),
+  text: z
+    .string()
+    .optional()
+    .describe(
+      'Case-insensitive visible text the element should contain; when it is the whole text of some, only those match',
+    ),
   role: z.string().optional().describe('Tag name or ARIA role to narrow matches, e.g. "button" or "link"'),
-  label: z.string().optional().describe('Case-insensitive text of the element’s <label>, aria-label or aria-labelledby'),
+  label: z
+    .string()
+    .optional()
+    .describe('Case-insensitive text of the element’s <label>, aria-label or aria-labelledby'),
   placeholder: z.string().optional().describe('Case-insensitive text the placeholder contains'),
   alt: z.string().optional().describe('Case-insensitive text the alt attribute contains'),
   title: z.string().optional().describe('Case-insensitive text the title attribute contains'),
@@ -143,14 +151,18 @@ export function resolveAll(target: Target, options: { includeHidden?: boolean } 
   // A ref can name any element, an SVG icon say: callers that need more than Element check for it.
   if (target.ref) return [resolveRef(target.ref) as HTMLElement];
   if (!hasLocator(target)) {
-    throw new ActionError('A target needs a "selector", "text", "role", "label", "placeholder", "alt", "title" or "testId"', 'INVALID_TARGET');
+    throw new ActionError(
+      'A target needs a "selector", "text", "role", "label", "placeholder", "alt", "title" or "testId"',
+      'INVALID_TARGET',
+    );
   }
   const { selector, text, role, label, placeholder, alt, title, testId, name, exact } = target;
   let pool = [...document.querySelectorAll<HTMLElement>(selector ?? LOCATABLE)];
   if (testId !== undefined) pool = pool.filter((el) => el.getAttribute('data-testid') === testId);
   if (role) pool = pool.filter((el) => matchesRole(el, role));
   if (label !== undefined) pool = pool.filter((el) => contains(labelText(el), label, exact));
-  if (placeholder !== undefined) pool = pool.filter((el) => contains(el.getAttribute('placeholder'), placeholder, exact));
+  if (placeholder !== undefined)
+    pool = pool.filter((el) => contains(el.getAttribute('placeholder'), placeholder, exact));
   if (alt !== undefined) pool = pool.filter((el) => contains(el.getAttribute('alt'), alt, exact));
   if (title !== undefined) pool = pool.filter((el) => contains(el.getAttribute('title'), title, exact));
   if (name !== undefined) {
@@ -162,13 +174,16 @@ export function resolveAll(target: Target, options: { includeHidden?: boolean } 
     pool = pool.filter((el) => contains(accessibleText(el), text, exact));
     pool = pool.filter((el) => !pool.some((other) => other !== el && el.contains(other)));
   }
-  return options.includeHidden ? pool : pool.filter(isVisible);
+  if (!options.includeHidden) pool = pool.filter(isVisible);
+  if (text && !exact) {
+    // "Technicals" means the button that says so, not "More technicals" beside it.
+    const whole = pool.filter((el) => collapsed(accessibleText(el)) === collapsed(text));
+    if (whole.length) pool = whole;
+  }
+  return pool;
 }
 
-export function resolveTarget(
-  target: Target,
-  options: { includeHidden?: boolean } = {},
-): HTMLElement {
+export function resolveTarget(target: Target, options: { includeHidden?: boolean } = {}): HTMLElement {
   const pool = resolveAll(target, options);
   const element = target.last ? pool.at(-1) : pool[target.nth];
   if (!element) {

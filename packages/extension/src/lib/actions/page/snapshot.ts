@@ -997,12 +997,13 @@ function hintFor(element: Element): string {
   const key = ['data-testid', 'name', 'id'].find((name) =>
     /^(?!.*\d{3})[a-z][\w-]*$/i.test(element.getAttribute(name) || ''),
   );
-  const row = element.closest('tr, li, article, [role=row], [role=listitem]');
-  const near = row ? renderedText(row).replace(renderedText(element), '').replace(/\s+/g, ' ').trim() : '';
+  const tip = tooltipOf(element);
+  const near = nearText(element);
   return [
     icon && `icon:${icon}`,
     file && `img:${file}`,
     key && `${key}:${element.getAttribute(key)}`,
+    tip && `tip:${tip}`,
     near && `in:${near}`,
   ]
     .filter(Boolean)
@@ -1012,6 +1013,47 @@ function hintFor(element: Element): string {
 }
 
 const renderedText = (element: Element): string => (element as HTMLElement).innerText ?? element.textContent ?? '';
+
+const TOOLTIP = '[title], [data-tooltip]';
+const ROW = 'tr, li, article, [role=row], [role=listitem], [role=option], [role=menuitem], [role=treeitem]';
+/** Outside any row, this many ancestors are looked through for the words that go with a control. */
+const NEAR_LEVELS = 3;
+/** Words around a control longer than this belong to a container, not to the control's own group. */
+const MAX_NEAR = 80;
+
+/** What the control would say on hover: its own tooltip, else one inside it a hidden icon carries. */
+function tooltipOf(element: Element): string {
+  const holder = element.matches(TOOLTIP) ? element : element.querySelector(TOOLTIP);
+  return flat(holder?.getAttribute('title') || holder?.getAttribute('data-tooltip') || '');
+}
+
+/**
+ * The words beside a control in its row, or else in the nearest of its few ancestors that has any:
+ * the text there, or another control's label (the menu arrow beside a labelled tool button).
+ */
+function nearText(element: Element): string {
+  const row = element.closest(ROW);
+  if (row) return textBesides(row, element);
+  let at = element.parentElement;
+  for (let level = 0; at && at !== document.body && level < NEAR_LEVELS; level++, at = at.parentElement) {
+    const near = textBesides(at, element) || labelBesides(at, element);
+    if (near) return near.length <= MAX_NEAR ? near : '';
+  }
+  return '';
+}
+
+function textBesides(container: Element, element: Element): string {
+  return flat(renderedText(container).replace(renderedText(element), ''));
+}
+
+function labelBesides(container: Element, element: Element): string {
+  for (const other of container.querySelectorAll('[aria-label]')) {
+    if (element.contains(other) || other.contains(element)) continue;
+    const label = flat(other.getAttribute('aria-label') ?? '');
+    if (label) return label;
+  }
+  return '';
+}
 
 // ---------------------------------------------------------------------------------------------
 

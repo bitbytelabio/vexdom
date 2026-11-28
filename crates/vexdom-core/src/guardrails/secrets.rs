@@ -25,6 +25,8 @@ pub fn sealed_handles(value: &Value) -> Vec<Handle> {
 /// Per daemon process: a page cannot author a handle with a tag it never sees.
 static TAG: LazyLock<String> = LazyLock::new(|| crate::rand::hex(8));
 static SEQ: AtomicU64 = AtomicU64::new(0);
+/// Handle ids are this many base36 digits, zero-padded, so every handle has the same length.
+const ID_DIGITS: usize = 8;
 
 fn to_base36(mut n: u64) -> String {
     const DIGITS: &[u8] = b"0123456789abcdefghijklmnopqrstuvwxyz";
@@ -40,9 +42,12 @@ fn to_base36(mut n: u64) -> String {
     String::from_utf8(out).expect("base36 digits are ascii")
 }
 
+/// A fresh id per handle, so two handles never tell that they hide the same value; every id has
+/// the same width, so text sealed twice keeps its char positions (a tree read on with `offset`).
 fn mint(_value: &str, kind: &str, _shape: &str) -> String {
-    let id = to_base36(SEQ.fetch_add(1, Ordering::Relaxed) + 1);
-    seal::handle_for(kind, &id, None, &TAG)
+    let id: String = to_base36(SEQ.fetch_add(1, Ordering::Relaxed) + 1);
+    let padded: String = format!("{id:0>ID_DIGITS$}");
+    seal::handle_for(kind, &padded, None, &TAG)
 }
 
 /// Seal a string on its way to a model, a client, or the user. Handles already in the text
@@ -176,6 +181,26 @@ mod tests {
             "{sealed}"
         );
         assert_eq!(seal_secrets("1234 5678 9012 3456"), "1234 5678 9012 3456");
+    }
+
+    #[test]
+    fn text_sealed_twice_keeps_its_length_and_never_repeats_a_handle() {
+        let text = "password: hunter2! and token sk-ant-abcdefghijklmnopqrstuvwxyz0123";
+        let first = seal_secrets(text);
+        // Past a base36 digit boundary of the counter: the width must not change.
+        for _ in 0..40 {
+            seal_secrets("password: hunter2!");
+        }
+        let again = seal_secrets(text);
+        assert_eq!(
+            again.chars().count(),
+            first.chars().count(),
+            "offsets into text sealed twice line up"
+        );
+        assert_ne!(
+            again, first,
+            "the same credential sealed twice gets a fresh handle"
+        );
     }
 
     #[test]
