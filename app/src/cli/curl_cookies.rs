@@ -35,10 +35,11 @@ pub fn parse_curl_cookies(raw: &str) -> Result<Vec<Value>, String> {
     // Heuristic: cURL commands start with `curl` followed by space/quote.
     let looks_like_curl = {
         let head: String = trimmed.chars().take(5).collect::<String>().to_lowercase();
-        head.starts_with("curl") && head.len() > 4 && {
-            let c = head.chars().nth(4).unwrap();
-            c.is_whitespace() || c == '\'' || c == '"'
-        }
+        head.starts_with("curl")
+            && head
+                .chars()
+                .nth(4)
+                .is_some_and(|c| c.is_whitespace() || c == '\'' || c == '"')
     };
 
     let header = if looks_like_curl {

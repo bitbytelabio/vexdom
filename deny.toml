@@ -29,6 +29,8 @@ allow = [
 
 [bans]
 multiple-versions = "warn"
+# One TLS backend: rustls on ring (desktop's gpui forces ring; the root follows).
+deny = [{ crate = "aws-lc-rs" }, { crate = "aws-lc-sys" }]
 
 [sources]
 unknown-registry = "deny"

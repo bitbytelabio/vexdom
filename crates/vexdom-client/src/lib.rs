@@ -138,12 +138,14 @@ impl Bridge {
         }
     }
 
-    /// `Control.describe`: the tools, the reserved names and the on-demand groups.
-    pub async fn describe(&self) -> Result<Described, capnp::Error> {
+    /// `Control.describe`: the tools, the reserved names and the on-demand groups. `known` is the
+    /// stamp of the caller's last answer (0 for none); when the offer still has it, `tools` is
+    /// `None`.
+    pub async fn describe(&self, known: u64) -> Result<Described, capnp::Error> {
         let mut request = self.control.describe_request();
-        request
-            .get()
-            .set_run_id(self.run_id.as_deref().unwrap_or(""));
+        let mut params = request.get();
+        params.set_run_id(self.run_id.as_deref().unwrap_or(""));
+        params.set_known(known);
         let reply = request.send().promise.await?;
         let reply = reply.get()?;
         let list = |reader: capnp::Result<capnp::text_list::Reader<'_>>| -> Vec<String> {
@@ -151,11 +153,13 @@ impl Bridge {
                 .map(|list| list.iter().map(text).collect())
                 .unwrap_or_default()
         };
+        let stamp = reply.get_stamp();
+        let tools = (known == 0 || stamp != known).then(|| {
+            serde_json::from_str::<Vec<Value>>(&text(reply.get_tools())).unwrap_or_default()
+        });
         Ok(Described {
-            tools: serde_json::from_str::<Value>(&text(reply.get_tools()))
-                .ok()
-                .and_then(|tools| tools.as_array().cloned())
-                .unwrap_or_default(),
+            stamp,
+            tools,
             reserved: list(reply.get_reserved()),
             withheld: list(reply.get_withheld()),
         })
@@ -236,7 +240,10 @@ impl Bridge {
 }
 
 pub struct Described {
-    pub tools: Vec<Value>,
+    /// The offer's stamp, 0 from a Bridge that does not stamp it.
+    pub stamp: u64,
+    /// `None` when the offer still has the stamp the caller sent.
+    pub tools: Option<Vec<Value>>,
     pub reserved: Vec<String>,
     pub withheld: Vec<String>,
 }

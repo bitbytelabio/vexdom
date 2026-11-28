@@ -269,6 +269,7 @@ async fn resolve_once(url: &Url) -> Result<IpAddr, String> {
 /// One client per run: its host pinned to the address resolved for it (`pinnedLookup`), no
 /// redirects followed for it, no proxy in between, nothing decompressed behind its back.
 fn client_for(seed: &Seed) -> reqwest::Result<reqwest::Client> {
+    vexdom_core::install_tls_provider();
     reqwest::Client::builder()
         .redirect(reqwest::redirect::Policy::none())
         .no_proxy()

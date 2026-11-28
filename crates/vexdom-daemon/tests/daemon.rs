@@ -1,4 +1,5 @@
 //! The Bridge end to end with a fake extension and a real control client.
+#![allow(clippy::unwrap_used)]
 
 mod support;
 
@@ -208,6 +209,39 @@ fn a_run_cannot_loosen_its_guardrails() {
         let reply = set.send().promise.await.unwrap();
         let prefs = result_json(reply.get().unwrap().get_result().unwrap()).unwrap();
         assert_eq!(prefs["theme"], "midnight");
+        daemon.stop();
+    });
+}
+
+#[test]
+fn an_unchanged_offer_travels_as_its_stamp() {
+    let _scratch = support::scratch("describe-stamp");
+    support::local(async {
+        let daemon = Daemon::start(false).await.unwrap();
+        let control = control(&daemon).await;
+        let describe = |known: u64| {
+            let mut request = control.describe_request();
+            request.get().set_known(known);
+            async move {
+                let reply = request.send().promise.await.unwrap();
+                let reply = reply.get().unwrap();
+                (
+                    reply.get_stamp(),
+                    reply.get_tools().unwrap().to_str().unwrap().to_owned(),
+                )
+            }
+        };
+        let (stamp, tools) = describe(0).await;
+        assert_ne!(stamp, 0);
+        assert!(
+            tools.starts_with("[{"),
+            "the first answer carries the tools"
+        );
+        let (again, tools) = describe(stamp).await;
+        assert_eq!(again, stamp);
+        assert_eq!(tools, "", "an unchanged offer is not sent again");
+        let (_, tools) = describe(stamp + 1).await;
+        assert!(tools.starts_with("[{"), "a stale stamp gets the tools");
         daemon.stop();
     });
 }

@@ -75,10 +75,12 @@ impl page::Server for FakePage {
                 .borrow_mut()
                 .calls
                 .push(("page.screenshot".into(), input));
-            results
-                .get()
-                .init_result()
-                .set_ok(r#"{"format":"png","width":2,"height":2}"#);
+            let answer = self.0.borrow().answers.get("page.screenshot").cloned();
+            let answer = answer.map_or_else(
+                || r#"{"format":"png","width":2,"height":2}"#.to_owned(),
+                |data| serde_json::to_string(&data).unwrap(),
+            );
+            results.get().init_result().set_ok(answer);
             results.get().set_image(b"\x89PNG fake");
             Ok(())
         })())

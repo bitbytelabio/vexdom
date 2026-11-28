@@ -1,5 +1,5 @@
 {
-  "hash": "a214aeb2",
+  "hash": "81f7b3e7",
   "tools": [
     {
       "name": "page.getPageInfo",
@@ -481,6 +481,11 @@
               "y": {
                 "type": "number",
                 "description": "Pixels from the top edge of the viewport"
+              },
+              "source": {
+                "description": "Set when you read this point off the tab’s last viewport screenshot: Vexdom scales it back to page pixels. Left out, the point is in CSS pixels.",
+                "type": "string",
+                "const": "screenshot"
               }
             },
             "required": [
@@ -776,6 +781,11 @@
               "y": {
                 "type": "number",
                 "description": "Pixels from the top edge of the viewport"
+              },
+              "source": {
+                "description": "Set when you read this point off the tab’s last viewport screenshot: Vexdom scales it back to page pixels. Left out, the point is in CSS pixels.",
+                "type": "string",
+                "const": "screenshot"
               }
             },
             "required": [
@@ -850,6 +860,11 @@
               "y": {
                 "type": "number",
                 "description": "Pixels from the top edge of the viewport"
+              },
+              "source": {
+                "description": "Set when you read this point off the tab’s last viewport screenshot: Vexdom scales it back to page pixels. Left out, the point is in CSS pixels.",
+                "type": "string",
+                "const": "screenshot"
               }
             },
             "required": [
@@ -2011,6 +2026,11 @@
           },
           "y": {
             "type": "number"
+          },
+          "source": {
+            "description": "Set when you read x and y off the tab’s last viewport screenshot: Vexdom scales them back to page pixels. Left out, they are CSS pixels.",
+            "type": "string",
+            "const": "screenshot"
           },
           "button": {
             "default": "left",
@@ -4026,7 +4046,7 @@
             "maximum": 100
           },
           "maxLongSide": {
-            "description": "Downscale the result so its longest side is at most this many pixels. Left out, a viewport capture you take to look at comes back at the page’s own CSS-pixel size — one image pixel per page pixel, so a position in the picture is a usable \"point\" — and anything else, a saved capture included, is capped at 1600. That is sized for reading a page, not for pixel-level inspection: raise it when fine detail matters.",
+            "description": "Downscale the result so its longest side is at most this many pixels. Left out, a viewport capture you take to look at is at most 1024 pixels on its long side, so it may be smaller than the page: pass a point you read off it with source: \"screenshot\" and Vexdom scales it back to page pixels; anything else, a saved capture included, is capped at 1600. Raise it when fine detail matters.",
             "type": "integer",
             "exclusiveMinimum": 0
           },

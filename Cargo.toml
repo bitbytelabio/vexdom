@@ -30,6 +30,7 @@ unsafe_code = "deny"
 
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
+unwrap_used = "warn"
 
 [workspace.dependencies]
 # axum 0.8.9 pins tokio-tungstenite 0.29; both are pinned so the control client shares axum's
@@ -38,16 +39,19 @@ axum = { version = "=0.8.9", default-features = false, features = ["http1", "tok
 tokio-tungstenite = { version = "=0.29.0", default-features = false, features = ["handshake"] }
 base64 = "0.23"
 capnp = "0.28.2"
-capnp-rpc = "0.28.0"
-capnpc = "0.28.1"
+capnp-rpc = "0.28.1"
+capnpc = "0.28.2"
 fancy-regex = "0.20.2"
 flate2 = { version = "1.1", default-features = false, features = ["rust_backend"] }
 futures = "0.3.34"
 hmac = "0.13.0"
 regex = "1.13"
-reqwest = { version = "0.13.5", default-features = false, features = ["rustls"] }
+# No crypto provider of its own: rustls runs on ring, installed by `vexdom_core::install_tls_provider`
+# (desktop's gpui already brings ring, so both workspaces build one TLS backend).
+reqwest = { version = "0.13.5", default-features = false, features = ["rustls-no-provider"] }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 pbkdf2 = { version = "0.13.0", default-features = false, features = ["hmac"] }
-sha2 = "0.11.1"
+sha2 = "0.11.2"
 getrandom = "0.4"
 jiff = "1"
 libc = "0.2"
@@ -66,7 +70,7 @@ minisign-verify = "0.3"
 aes-gcm = "0.11"
 psl = "2"
 image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }
-rmcp = { version = "3.11", default-features = false, features = ["server", "transport-io", "local", "elicitation"] }
+rmcp = { version = "3.12", default-features = false, features = ["server", "transport-io", "local", "elicitation"] }
 
 # The workspace's own crates: every member names them `{ workspace = true }`.
 vexdom-client = { path = "crates/vexdom-client" }

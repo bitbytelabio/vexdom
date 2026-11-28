@@ -30,11 +30,12 @@ pub use page::DELTA_ACTIONS;
 
 use std::cell::{Cell, RefCell};
 use std::collections::HashMap;
+use std::hash::{DefaultHasher, Hash, Hasher};
 use std::process::ExitCode;
 use std::rc::{Rc, Weak};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use serde_json::{Value, json};
 use tokio::sync::Notify;
@@ -114,9 +115,20 @@ pub(crate) struct Watcher {
 
 /// `Control.describe`'s answer.
 pub(crate) struct Described {
-    pub tools: Vec<Value>,
+    /// Changes whenever the offer may have: never 0.
+    pub stamp: u64,
+    /// `None` when the caller already holds the offer with this stamp.
+    pub tools: Option<Vec<Value>>,
     pub reserved: Vec<String>,
-    pub withheld: Vec<Value>,
+    /// Names of the tools the run is not offered.
+    pub withheld: Vec<String>,
+}
+
+/// A non-zero `describe` stamp for `parts`.
+fn stamp_of(parts: impl Hash) -> u64 {
+    let mut hasher = DefaultHasher::new();
+    parts.hash(&mut hasher);
+    hasher.finish().max(1)
 }
 
 pub(crate) struct Inner {
@@ -128,6 +140,8 @@ pub(crate) struct Inner {
     pub analyses: Rc<FileAnalyses>,
     pub controls: Cell<usize>,
     serial: Cell<u64>,
+    /// When this daemon started, in ns: in every `describe` stamp, so a restart never matches.
+    boot: u64,
     activity: Cell<u64>,
     pub desk: RefCell<PairingDesk<DeskBridge>>,
     pub notices: RefCell<NoticeDesk>,
@@ -215,6 +229,9 @@ impl Daemon {
             analyses: Rc::new(FileAnalyses::default()),
             controls: Cell::new(0),
             serial: Cell::new(0),
+            boot: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map_or(1, |since| since.as_nanos() as u64),
             activity: Cell::new(0),
             desk: RefCell::new(PairingDesk::new(DeskBridge(weak.clone()))),
             notices: RefCell::new(NoticeDesk::default()),
@@ -672,38 +689,49 @@ impl Daemon {
         &self,
         run_id: Option<&str>,
         binding: &RefCell<Binding>,
+        known: u64,
     ) -> Described {
+        fn name(tool: &Value) -> &str {
+            tool.get("name").and_then(Value::as_str).unwrap_or("")
+        }
+        let withheld_by = |withheld: &[String], tool: &Value| {
+            let name = name(tool);
+            withheld.iter().any(|kept| kept == name)
+        };
         if let Some(run_id) = run_id
             && let Some((serial, session)) = self.session_running(run_id)
             && let Some(offer) = session.offer_for(run_id)
             && let Some(link) = self.link_by_serial(serial)
         {
-            let mut tools: Vec<Value> = link.tools.borrow().iter().cloned().collect();
-            tools.extend(tools::bridge().tools.iter().cloned());
-            let name = |tool: &Value| {
-                tool.get("name")
-                    .and_then(Value::as_str)
-                    .unwrap_or("")
-                    .to_owned()
-            };
+            let stamp = stamp_of((
+                self.0.boot,
+                1u8,
+                run_id,
+                link.serial,
+                link.tools_serial.get(),
+                &offer.withheld,
+                &offer.reserved,
+            ));
+            let link_tools = Rc::clone(&link.tools.borrow());
+            let all = || link_tools.iter().chain(tools::bridge().tools.iter());
+            let withheld = all()
+                .filter(|tool| withheld_by(&offer.withheld, tool))
+                .map(|tool| name(tool).to_owned())
+                .collect();
+            let tools = (known != stamp).then(|| {
+                all()
+                    .filter(|tool| !withheld_by(&offer.withheld, tool))
+                    .cloned()
+                    .collect()
+            });
             return Described {
-                tools: tools
-                    .iter()
-                    .filter(|tool| !offer.withheld.contains(&name(tool)))
-                    .cloned()
-                    .collect(),
+                stamp,
+                tools,
                 reserved: offer.reserved,
-                withheld: tools
-                    .iter()
-                    .filter(|tool| offer.withheld.contains(&name(tool)))
-                    .cloned()
-                    .collect(),
+                withheld,
             };
         }
-        let tools = self.route_for(binding).map_or_else(
-            || Rc::clone(&self.0.bundled),
-            |link| Rc::clone(&link.tools.borrow()),
-        );
+        let route = self.route_for(binding);
         let config = read_agent_config();
         let policy = policy_from(&config.guardrails, &config.require_approval);
         let scope = anywhere();
@@ -720,17 +748,36 @@ impl Daemon {
             .effect
                 == Effect::Deny
         };
-        Described {
-            tools: tools
+        let deny_inject = denied(INJECT_ACTION);
+        let deny_run = denied(RUN_CODE_ACTION);
+        let stamp = stamp_of((
+            self.0.boot,
+            2u8,
+            route.as_ref().map_or(0, |link| link.serial),
+            route.as_ref().map_or(0, |link| link.tools_serial.get()),
+            deny_inject,
+            deny_run,
+        ));
+        let tools = (known != stamp).then(|| {
+            let tools = route.as_ref().map_or_else(
+                || Rc::clone(&self.0.bundled),
+                |link| Rc::clone(&link.tools.borrow()),
+            );
+            tools
                 .iter()
                 .chain(tools::bridge().tools.iter())
                 .filter(|tool| {
-                    let name = tool.get("name").and_then(Value::as_str).unwrap_or("");
-                    !((name == INJECT_ACTION || name == RUN_CODE_ACTION) && denied(name))
+                    let name = name(tool);
+                    !(name == INJECT_ACTION && deny_inject)
+                        && !(name == RUN_CODE_ACTION && deny_run)
                         && !tools::DAEMON_INTERNAL_ACTIONS.contains(&name)
                 })
                 .cloned()
-                .collect(),
+                .collect()
+        });
+        Described {
+            stamp,
+            tools,
             reserved: Vec::new(),
             withheld: Vec::new(),
         }
@@ -746,6 +793,7 @@ impl Daemon {
             Some(manifest) if manifest.hash == tools::firefox().hash => Rc::clone(&self.0.firefox),
             _ => Rc::clone(&self.0.bundled),
         };
+        link.tools_serial.set(self.next_serial());
         let daemon = self.clone();
         link.set_on_close(move |closing| {
             let serial = closing.serial;
@@ -801,6 +849,7 @@ impl Daemon {
                             daemon.0.bundled.len()
                         ));
                         *link.tools.borrow_mut() = Rc::new(reported);
+                        link.tools_serial.set(daemon.next_serial());
                         daemon.settle_offer();
                     }
                     None => log::log(&format!(

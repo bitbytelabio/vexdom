@@ -62,7 +62,7 @@ fn usage() -> String {
   vexdom snapshot         the active tab's elements, each with a ref (e5); then only what changed
                               -i interactive only (default), --all every element, -c compact, -d N depth, -s SEL subtree,
                               -u link targets, --full, --json {{text, refs}}, --find TEXT matching lines,
-                              --viewport on-screen only
+                              --viewport on-screen only, --offset N from char N of the last tree
   <t> is a ref (@e5) or a CSS selector; each element command prints the result, then the snapshot delta it caused
   vexdom click <t>        [--button left|right|middle] [--modifiers ctrl,shift] [--new-tab]
   vexdom dblclick <t>     [--modifiers …]

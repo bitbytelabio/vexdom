@@ -201,7 +201,7 @@ describe('the vendored role patches', () => {
     ]);
   });
 
-  test('a closed shadow root is walked, its elements are marked, and a ref into it is never guessed', () => {
+  test('a closed shadow root is walked, its elements are marked, and a ref into it is found again only inside its host', () => {
     document.body.innerHTML = '<div id="host"><b>light</b></div>';
     const host = document.getElementById('host')!;
     const root = host.attachShadow({ mode: 'closed' });
@@ -214,6 +214,8 @@ describe('the vendored role patches', () => {
     expect(outline(s)).toContain('    StaticText "light"');
     expect(resolveTarget(refTo(s, buy))).toBe(root.querySelector('button'));
     root.innerHTML = '<button>Buy</button>';
+    expect(resolveTarget(refTo(s, buy))).toBe(root.querySelector('button'));
+    host.remove();
     expect(failure(() => resolveTarget(refTo(s, buy)))).toEqual(STALE);
   });
 });
@@ -290,6 +292,32 @@ describe('a ref', () => {
     expect(failure(() => resolveTarget(refTo(s, find(s, 'button', 'Save'), { nth: 0 })))).toEqual(STALE);
     item.insertAdjacentHTML('beforeend', '<button>Save</button>');
     expect(failure(() => resolveTarget(refTo(s, find(s, 'button', 'Save'))))).toEqual(STALE);
+  });
+
+  test('that needed nth is found again in its keyed row after a re-render', () => {
+    const row = (key: string) => `<li id="row-${key}">${key.toUpperCase()} <button>Save</button></li>`;
+    document.body.innerHTML = `<ul>${row('a')}${row('b')}</ul>`;
+    const s = take();
+    const second = s.nodes.filter((node) => node.r === 'button' && node.n === 'Save')[1];
+    document.querySelector('ul')!.innerHTML = row('b') + row('a');
+    expect(resolveTarget(refTo(s, second, { nth: 1 }))).toBe(document.querySelector('#row-b button'));
+  });
+
+  test('that needed nth is not guessed when its row is gone or now holds two', () => {
+    const markup = '<ul><li>A <button>Save</button></li><li>B <button>Save</button></li></ul>';
+    document.body.innerHTML = markup;
+    let s = take();
+    let second = s.nodes.filter((node) => node.r === 'button' && node.n === 'Save')[1];
+    document.querySelectorAll('li')[1].remove();
+    expect(failure(() => resolveTarget(refTo(s, second, { nth: 1 })))).toEqual(STALE);
+
+    document.body.innerHTML = markup;
+    s = take();
+    second = s.nodes.filter((node) => node.r === 'button' && node.n === 'Save')[1];
+    const item = document.querySelectorAll('li')[1];
+    item.insertAdjacentHTML('beforeend', '<button>Save</button>');
+    item.querySelector('button')!.replaceWith(Object.assign(document.createElement('button'), { textContent: 'Save' }));
+    expect(failure(() => resolveTarget(refTo(s, second, { nth: 1 })))).toEqual(STALE);
   });
 
   test('to an SVG control is clicked by event, as it has no click()', async () => {

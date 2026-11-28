@@ -2,6 +2,9 @@
 //! `act` runs any action the extension or the Bridge offers, `guide` lists them and the
 //! playbooks. Results are sealed, fenced and turned into images where they hold one.
 
+use std::cell::RefCell;
+use std::rc::Rc;
+
 use base64::Engine as _;
 use base64::engine::general_purpose::STANDARD;
 use serde_json::{Map, Value, json};
@@ -88,8 +91,8 @@ pub fn instructions() -> String {
     format!(
         "Controls the user’s browser through the Vexdom extension, with three tools. \
 snapshot looks at the active tab: by default its accessibility tree, each control with a ref such as e5 (after the first call, only what changed); \
-find: \"text\" keeps matching lines, viewport: true only what is on screen; \
-as: \"markdown\" reads its text (outline: true lists the headings, filter keeps matching sections, offset reads on where a cut answer stopped); as: \"image\" captures it (annotate: true draws each ref on its element, ifChanged: true skips a capture identical to the last). \
+find: \"text\" keeps matching lines, viewport: true only what is on screen, offset reads on where a cut answer stopped; \
+as: \"markdown\" reads its text (outline: true lists the headings, filter keeps matching sections); as: \"image\" captures it (annotate: true draws each ref on its element, ifChanged: true skips a capture identical to the last). \
 act runs one action — {{\"do\":\"clickElement\",\"target\":\"e5\"}} — or several in order — {{\"batch\":[{{\"do\":…}},…],\"bail\":true}}. \
 guide lists every action by group and the playbooks; guide {{\"topic\":\"<action>\"}} gives one action's input. \
 Target an element by its ref — \"e5\" or {{\"ref\":\"e5\"}} — or by a locator such as {{\"selector\"|\"text\"|\"role\"|\"label\"|\"nth\"}}. \
@@ -126,7 +129,7 @@ pub fn tool_definitions() -> Vec<Value> {
                 "outline": {"type": "boolean", "description": "markdown: headings only, with line numbers."},
                 "filter": {"type": "string", "description": "markdown: keep sections mentioning this text."},
                 "maxChars": {"type": "integer", "description": "markdown: chars per answer, at most the server's limit."},
-                "offset": {"type": "integer", "description": "markdown: start at this char; a cut answer names the next offset."},
+                "offset": {"type": "integer", "description": "markdown or tree: start at this char; a cut answer names the next offset."},
                 "url": {"type": "string", "description": "markdown: fetch this page over HTTP instead of reading the tab."},
                 "raw": {"type": "boolean", "description": "markdown with url: the body as served."},
                 "requireMd": {"type": "boolean", "description": "markdown with url: fail unless the site serves markdown."},
@@ -399,6 +402,8 @@ pub struct Host {
     tag: String,
     max_output: Option<usize>,
     result_bytes: Option<usize>,
+    /// The last offer and the Bridge's stamp for it: an unchanged offer is not sent again.
+    offered: RefCell<Option<(u64, Rc<Offer>)>>,
 }
 
 impl Host {
@@ -410,6 +415,7 @@ impl Host {
             tag: fence_tag(),
             max_output,
             result_bytes,
+            offered: RefCell::new(None),
         }
     }
 
@@ -540,12 +546,30 @@ impl Host {
     }
 
     /// What `act` may run for this caller.
-    pub async fn offer(&self) -> Result<Offer, ActionError> {
-        let described = self
+    pub async fn offer(&self) -> Result<Rc<Offer>, ActionError> {
+        let known = self
+            .offered
+            .borrow()
+            .as_ref()
+            .map_or(0, |(stamp, _)| *stamp);
+        let mut described = self
             .bridge
-            .describe()
+            .describe(known)
             .await
             .map_err(|_| vexdom_client::unreachable())?;
+        if described.tools.is_none() {
+            if let Some((stamp, offer)) = self.offered.borrow().as_ref()
+                && *stamp == described.stamp
+            {
+                return Ok(Rc::clone(offer));
+            }
+            // A concurrent call replaced the cached offer while this one was in flight.
+            described = self
+                .bridge
+                .describe(0)
+                .await
+                .map_err(|_| vexdom_client::unreachable())?;
+        }
         let reserved: Vec<String> =
             if self.bridge.run_id().is_some() && described.reserved.is_empty() {
                 vec![
@@ -558,6 +582,7 @@ impl Host {
             };
         let mut offered: Vec<Value> = described
             .tools
+            .unwrap_or_default()
             .into_iter()
             .filter(|tool| {
                 let name = tool.get("name").and_then(Value::as_str).unwrap_or("");
@@ -569,7 +594,11 @@ impl Host {
                 .iter()
                 .filter_map(|action| reserved_descriptor(action)),
         );
-        Ok(Offer { tools: offered })
+        let offer = Rc::new(Offer { tools: offered });
+        if described.stamp != 0 {
+            *self.offered.borrow_mut() = Some((described.stamp, Rc::clone(&offer)));
+        }
+        Ok(offer)
     }
 
     fn with_schema(&self, action: &str, result: ActionResult, offer: &Offer) -> ActionResult {
@@ -593,23 +622,30 @@ impl Host {
     }
 
     pub async fn call(&self, name: &str, args: Value) -> ToolReply {
-        let markdown = (name == SNAPSHOT_TOOL
-            && args.get("as").and_then(Value::as_str) == Some("markdown"))
-        .then(|| args.get("offset").and_then(Value::as_u64).unwrap_or(0) as usize);
+        let offset = args.get("offset").and_then(Value::as_u64).unwrap_or(0) as usize;
+        let paging = if name == SNAPSHOT_TOOL {
+            match args.get("as").and_then(Value::as_str).unwrap_or("tree") {
+                "markdown" => Some(Paging::Markdown(offset)),
+                "tree" => Some(Paging::Tree(offset)),
+                _ => None,
+            }
+        } else {
+            None
+        };
         let max = match (
-            markdown,
+            paging,
             args.get("maxChars")
                 .and_then(Value::as_u64)
                 .filter(|n| *n > 0),
         ) {
-            (Some(_), Some(asked)) => Some(
+            (Some(Paging::Markdown(_)), Some(asked)) => Some(
                 self.max_output
                     .map_or(asked as usize, |cap| cap.min(asked as usize)),
             ),
             _ => self.max_output,
         };
         let reply = self.answer(name, args).await;
-        let reply = Self::limit(reply, max, markdown);
+        let reply = Self::limit(reply, max, paging);
         match self.result_bytes {
             Some(bytes) => within_limit(reply, bytes),
             None => reply,
@@ -863,12 +899,12 @@ impl Host {
         (invoked.result, invoked.image)
     }
 
-    /// Cuts every text block to `max` chars; `markdown` is the offset a markdown read started at.
-    fn limit(mut reply: ToolReply, max: Option<usize>, markdown: Option<usize>) -> ToolReply {
+    /// Cuts every text block to `max` chars; `paging` says what a cut answer can be read on in.
+    fn limit(mut reply: ToolReply, max: Option<usize>, paging: Option<Paging>) -> ToolReply {
         if let Some(max) = max {
             for block in &mut reply.content {
                 if let Some(text) = block.get("text").and_then(Value::as_str) {
-                    let cut = cut_to(text, max, markdown);
+                    let cut = cut_to(text, max, paging);
                     block["text"] = json!(cut);
                 }
             }
@@ -956,6 +992,11 @@ impl Host {
                     .unwrap_or(false),
             );
             opts.set_tab_id(args.get("tabId").and_then(Value::as_i64).unwrap_or(-1));
+            opts.set_offset(
+                args.get("offset")
+                    .and_then(Value::as_u64)
+                    .map_or(0, |n| n.min(u64::from(u32::MAX)) as u32),
+            );
             opts.set_run_id(self.bridge.run_id().unwrap_or(""));
         }
         match request.send().promise.await {
@@ -1431,10 +1472,25 @@ mod tests {
     }
 }
 
+/// What a cut answer can be read on in: the char it started at.
+#[derive(Clone, Copy, Debug)]
+pub enum Paging {
+    /// A markdown read.
+    Markdown(usize),
+    /// A snapshot tree: the Bridge serves later pages from the tab's last full tree.
+    Tree(usize),
+}
+
+/// Whether `line` is a full tree's header, `snapshot r{rev}`, rather than a delta's.
+fn is_full_tree_header(line: &str) -> bool {
+    line.strip_prefix("snapshot r")
+        .is_some_and(|rev| !rev.is_empty() && rev.bytes().all(|b| b.is_ascii_digit()))
+}
+
 /// Cuts a result to `max` chars of its body, keeping an untrusted-data fence whole, and says how to
-/// ask for less: an agent cannot raise the server's limit. A markdown read (`markdown` is the
-/// offset it started at) also names the offset to read on from.
-pub fn cut_to(text: &str, max: usize, markdown: Option<usize>) -> String {
+/// ask for less: an agent cannot raise the server's limit. A markdown read or a full tree
+/// (`paging`, with the offset it started at) also names the offset to read on from.
+pub fn cut_to(text: &str, max: usize, paging: Option<Paging>) -> String {
     let (open, body, close) = match (text.find(">>>\n"), text.rfind("\n<<</")) {
         (Some(head), Some(tail)) if text.starts_with("<<<") && head < tail => {
             (&text[..head + 4], &text[head + 4..tail], &text[tail..])
@@ -1445,19 +1501,45 @@ pub fn cut_to(text: &str, max: usize, markdown: Option<usize>) -> String {
         return text.to_owned();
     };
     let total = body.chars().count();
-    let note = match markdown {
-        None => format!(
-            "[truncated: {max} of {total} chars. Ask for less: snapshot with find, viewport, a selector or depth, or as markdown with outline, filter or a target.]"
+    // A delta or "unchanged" answer has no stored tree to page through.
+    let paging = match paging {
+        Some(Paging::Tree(0)) if !is_full_tree_header(body.lines().next().unwrap_or("")) => None,
+        paging => paging,
+    };
+    let (shown, note) = match paging {
+        None => (
+            &body[..at],
+            format!(
+                "[truncated: {max} of {total} chars. Ask for less: snapshot with find, viewport, a selector or depth, or as markdown with outline, filter or a target.]"
+            ),
         ),
-        Some(offset) => {
+        Some(Paging::Markdown(offset)) => {
             let end = offset + max;
             let total = offset + total;
-            format!(
-                "[truncated: chars {offset}–{end} of {total}. Read on with the same call and offset:{end}, or ask for less: outline, filter or a target.]"
+            (
+                &body[..at],
+                format!(
+                    "[truncated: chars {offset}–{end} of {total}. Read on with the same call and offset:{end}, or ask for less: outline, filter or a target.]"
+                ),
+            )
+        }
+        Some(Paging::Tree(offset)) => {
+            // Back to the last line break, so no ref line is split; the break is not printed.
+            let (shown, snapped) = match body[..at].rfind('\n') {
+                Some(line_end) => (&body[..line_end], 1),
+                None => (&body[..at], 0),
+            };
+            let end = offset + shown.chars().count() + snapped;
+            let total = offset + total;
+            (
+                shown,
+                format!(
+                    "[truncated: chars {offset}–{end} of {total}. Read on with snapshot offset:{end}, or ask for less: find, viewport, a selector or depth.]"
+                ),
             )
         }
     };
-    format!("{open}{}\n{note}{close}", &body[..at])
+    format!("{open}{shown}\n{note}{close}")
 }
 
 #[cfg(test)]
@@ -1485,7 +1567,7 @@ mod limit_tests {
     #[test]
     fn a_cut_markdown_read_names_the_next_offset() {
         let fenced = "<<<untrusted-page-data:abc>>>\nhéllo world\n<<</untrusted-page-data:abc>>>";
-        let cut = cut_to(fenced, 5, Some(20));
+        let cut = cut_to(fenced, 5, Some(Paging::Markdown(20)));
         assert!(
             cut.starts_with(
                 "<<<untrusted-page-data:abc>>>\nhéllo\n[truncated: chars 20–25 of 31. Read on with the same call and offset:25,"
@@ -1495,6 +1577,29 @@ mod limit_tests {
         assert!(
             cut.ends_with("\n<<</untrusted-page-data:abc>>>"),
             "the closing marker survives: {cut}"
+        );
+    }
+
+    #[test]
+    fn a_cut_full_tree_names_the_next_offset_on_a_line_boundary() {
+        let fenced =
+            "<<<untrusted-page-data:abc>>>\nsnapshot r1\n- a\n- b\n<<</untrusted-page-data:abc>>>";
+        let cut = cut_to(fenced, 16, Some(Paging::Tree(0)));
+        assert!(
+            cut.starts_with(
+                "<<<untrusted-page-data:abc>>>\nsnapshot r1\n- a\n[truncated: chars 0–16 of 19. Read on with snapshot offset:16,"
+            ),
+            "{cut}"
+        );
+        assert!(
+            cut.ends_with("\n<<</untrusted-page-data:abc>>>"),
+            "the closing marker survives: {cut}"
+        );
+        let delta = "snapshot r2 (delta from r1):\n@ lines 1-2 replaced by:\n- c\n- d";
+        let cut = cut_to(delta, 16, Some(Paging::Tree(0)));
+        assert!(
+            cut.contains("Ask for less"),
+            "a delta has no tree to read on in: {cut}"
         );
     }
 }

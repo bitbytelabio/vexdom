@@ -1,6 +1,6 @@
 //! The Bridge wire (ADR-025): `schema/vexdom.capnp` and its generated module. Wasm-safe.
 
-#[allow(clippy::all, unused_qualifications, unsafe_code)]
+#[allow(clippy::all, clippy::unwrap_used, unused_qualifications, unsafe_code)]
 pub mod vexdom_capnp {
     include!(concat!(env!("OUT_DIR"), "/vexdom_capnp.rs"));
 }

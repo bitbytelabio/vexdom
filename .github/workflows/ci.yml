@@ -88,6 +88,24 @@ jobs:
         # ext-core is already built by `check`, so call WXT directly.
         run: bunx wxt build
 
+      - name: Build the Bridge for e2e
+        working-directory: .
+        run: cargo build --locked -p vexdom
+
+      - name: e2e dependencies and Chrome for Testing
+        working-directory: e2e
+        run: |
+          bun install --frozen-lockfile
+          bun --bun node_modules/.bin/puppeteer browsers install chrome
+          sudo apt-get install -y --no-install-recommends xvfb
+
+      - name: e2e on Chromium
+        working-directory: e2e
+        timeout-minutes: 10
+        env:
+          VEXDOM_BIN: ${{ github.workspace }}/target/debug/vexdom
+        run: xvfb-run -a bun run.mjs
+
       - name: Bundle and lint for Firefox
         # The release signs this build; a lint failure found on a tag is a release lost.
         run: bunx wxt build -b firefox && bun run lint:firefox

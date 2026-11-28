@@ -11,6 +11,12 @@ export const mouse = defineAction({
     op: z.enum(['move', 'down', 'up', 'wheel']).describe('What the mouse does'),
     x: z.number().optional().describe('Where to (move, wheel); the current position when omitted'),
     y: z.number().optional(),
+    source: z
+      .literal('screenshot')
+      .optional()
+      .describe(
+        'Set when you read x and y off the tab’s last viewport screenshot: Vexdom scales them back to page pixels. Left out, they are CSS pixels.',
+      ),
     button: z.enum(['left', 'middle', 'right']).default('left'),
     deltaX: z.number().default(0).describe('wheel: sideways scroll in pixels'),
     deltaY: z.number().default(0).describe('wheel: downward scroll in pixels'),

@@ -68,6 +68,7 @@ impl Release {
 }
 
 fn client(timeout: Duration) -> Result<reqwest::Client, String> {
+    vexdom_core::install_tls_provider();
     reqwest::Client::builder()
         .user_agent(concat!("vexdom/", env!("CARGO_PKG_VERSION"), " update"))
         .timeout(timeout)

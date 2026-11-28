@@ -583,6 +583,7 @@ fn recording(checks: &mut Vec<Check>) {
 async fn network(checks: &mut Vec<Check>) {
     let category = "Network";
     let url = format!("https://github.com/{}/releases/latest", vexdom_update::REPO);
+    vexdom_core::install_tls_provider();
     let client = reqwest::Client::builder()
         .user_agent(concat!("vexdom/", env!("CARGO_PKG_VERSION"), " doctor"))
         .timeout(Duration::from_secs(3))

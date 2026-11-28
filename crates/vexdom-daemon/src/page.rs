@@ -75,6 +75,9 @@ pub(crate) struct PageState {
     shots: HashMap<i64, [u8; 32]>,
     /// The last image per tab, kept only for `ifChanged` with a `threshold`.
     images: HashMap<i64, Vec<u8>>,
+    /// Image px per CSS px of the last viewport screenshot per tab, when not 1: points marked
+    /// `"source": "screenshot"` are read off it.
+    look_scale: HashMap<i64, f64>,
     /// The WebMCP tools the agent was last told about.
     pub(crate) advertised: crate::webmcp::Advertised,
 }
@@ -100,6 +103,8 @@ pub(crate) struct SnapshotRequest {
     pub find: Option<String>,
     /// Let the page settle first (an after-action snapshot): see [`SETTLE_CAP_MS`].
     pub settle: bool,
+    /// Read on in the tab's last tree from this char: nothing is rendered, nothing moves.
+    pub offset: usize,
 }
 
 impl SnapshotRequest {
@@ -119,6 +124,7 @@ impl SnapshotRequest {
             json: opts.get_json(),
             find: optional(text(opts.get_find())),
             settle: false,
+            offset: opts.get_offset() as usize,
         })
     }
 }
@@ -164,6 +170,37 @@ fn tab_of(input: &Value, state: &PageState) -> Option<i64> {
         .and_then(Value::as_f64)
         .map(|tab| tab as i64)
         .or(state.last_tab)
+}
+
+/// Point inputs marked `"source": "screenshot"` (read off the last viewport screenshot), scaled
+/// back to CSS px; unmarked points are CSS px already.
+fn rescale_points(action: &str, input: &mut Value, scale: f64) {
+    let scale_xy = |point: &mut Value| {
+        if point.get("source").and_then(Value::as_str) != Some("screenshot") {
+            return;
+        }
+        for axis in ["x", "y"] {
+            if let Some(at) = point.get(axis).and_then(Value::as_f64) {
+                point[axis] = json!(at / scale);
+            }
+        }
+    };
+    match action {
+        "page.trustedClick" => {
+            if let Some(point) = input.get_mut("point") {
+                scale_xy(point);
+            }
+        }
+        "page.dragElement" => {
+            for key in ["fromPoint", "toPoint"] {
+                if let Some(point) = input.get_mut(key) {
+                    scale_xy(point);
+                }
+            }
+        }
+        "page.mouse" => scale_xy(input),
+        _ => {}
+    }
 }
 
 /// A `target`-like value that names a ref, as its `eN` id.
@@ -236,6 +273,26 @@ impl Daemon {
         request: SnapshotRequest,
     ) -> Result<String, ActionError> {
         let link = target.filter(|link| link.is_open()).ok_or_else(offline)?;
+        if request.offset > 0 && !request.json {
+            // Served from the baseline: the refs of the first page stay valid, nothing moves.
+            let shown = self.with_page(&link, |state| {
+                let tab = request.tab_id.or(state.last_tab)?;
+                state.baselines.as_ref()?.shown(tab)
+            });
+            let Some(shown) = shown else {
+                return failure(
+                    "NO_SNAPSHOT",
+                    "There is no tree to read on in. Take a snapshot first.",
+                );
+            };
+            let sealed = seal_secrets(&shown);
+            return Ok(
+                match vexdom_snapshot::from_offset(&sealed, request.offset) {
+                    Ok(rest) => rest.to_owned(),
+                    Err(note) => note,
+                },
+            );
+        }
         let mut input = json!({"interactive": request.options.interactive, "includeFrames": true});
         if let Some(selector) = &request.options.selector {
             input["selector"] = json!(selector);
@@ -362,7 +419,13 @@ impl Daemon {
         if action == "page.screenshot" {
             return self.screenshot(link, input, client).await;
         }
-        let tab = self.with_page(&link, |state| tab_of(&input, state));
+        let (tab, scale) = self.with_page(&link, |state| {
+            let tab = tab_of(&input, state);
+            (tab, state.look_scale.get(&tab.unwrap_or(-1)).copied())
+        });
+        if let Some(scale) = scale {
+            rescale_points(action, &mut input, scale);
+        }
         let reply = self
             .invoke_external(Some(Rc::clone(&link)), action, input, client)
             .await;
@@ -481,15 +544,28 @@ impl Daemon {
                 input["labels"] = Value::Array(labels);
             }
         }
+        let viewport =
+            input.get("target").is_none() && input.get("fullPage") != Some(&Value::Bool(true));
         let reply = self
             .invoke_external(Some(Rc::clone(&link)), "page.screenshot", input, client)
             .await;
+        let key = tab.unwrap_or(-1);
+        // Points are read off the last viewport capture; an element or full-page one leaves it.
+        if viewport && let Ok(data) = &reply.result {
+            let scale = data
+                .get("scale")
+                .and_then(Value::as_f64)
+                .filter(|scale| scale.is_finite() && *scale > 0.0 && (scale - 1.0).abs() > 1e-3);
+            self.with_page(&link, |state| match scale {
+                Some(scale) => state.look_scale.insert(key, scale),
+                None => state.look_scale.remove(&key),
+            });
+        }
         // Every capture is remembered, so `ifChanged` compares with the last one whoever asked.
         let (Ok(_), Some(image)) = (&reply.result, &reply.image) else {
             return reply;
         };
         let digest: [u8; 32] = Sha256::digest(image).into();
-        let key = tab.unwrap_or(-1);
         let mut unchanged = self.with_page(&link, |state| {
             state.shots.insert(key, digest) == Some(digest)
         });

@@ -65,6 +65,8 @@ pub struct Link {
     ui: extension_ui::Client,
     /// What this browser offers: a Firefox build lists fewer tools, a drifted build its own.
     pub tools: RefCell<Rc<Vec<Value>>>,
+    /// A daemon serial taken each time `tools` is set: part of `describe`'s stamp.
+    pub tools_serial: Cell<u64>,
     pub last_active: Cell<u64>,
     pub last_ping: Cell<Instant>,
     closed: RefCell<Option<String>>,
@@ -101,6 +103,7 @@ impl Link {
             page,
             ui,
             tools: RefCell::new(Rc::new(Vec::new())),
+            tools_serial: Cell::new(0),
             last_active: Cell::new(last_active),
             last_ping: Cell::new(Instant::now()),
             closed: RefCell::new(None),

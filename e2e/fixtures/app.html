@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Vexdom e2e</title>
+    <style>
+      body {
+        margin: 0;
+        font: 16px sans-serif;
+      }
+      #pad {
+        position: fixed;
+        right: 40px;
+        bottom: 40px;
+        width: 240px;
+        height: 160px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Vexdom e2e</h1>
+    <button id="late">Load</button>
+    <button id="toggle">Off</button>
+    <div id="host"></div>
+    <ul id="rows"></ul>
+    <button id="rerender">Rerender rows</button>
+    <button id="pad">Pad</button>
+    <script>
+      let loads = 0;
+      // A load that keeps the DOM busy for ~120 ms: each change comes well inside the settle's 50 ms
+      // quiet window (QUIET_MS in snapshot.ts), so the after-action snapshot must wait for the last.
+      late.onclick = () => {
+        let ticks = 0;
+        late.textContent = 'Loading';
+        const timer = setInterval(() => {
+          if (++ticks < 6) late.textContent = `Loading${'.'.repeat(ticks)}`;
+          else {
+            clearInterval(timer);
+            late.textContent = `Loaded ${++loads}`;
+          }
+        }, 20);
+      };
+      toggle.onclick = () => {
+        toggle.textContent = toggle.textContent === 'Off' ? 'On' : 'Off';
+      };
+      const shadow = host.attachShadow({ mode: 'open' });
+      shadow.innerHTML = '<button style="padding:12px">Shadow buy</button>';
+      shadow.querySelector('button').onclick = (e) => {
+        e.target.textContent = 'Bought';
+      };
+      function rows() {
+        document.getElementById('rows').innerHTML = ['Alpha', 'Beta']
+          .map((name) => `<li id="row-${name}">${name} <button>Save</button></li>`)
+          .join('');
+        for (const b of document.querySelectorAll('#rows button'))
+          b.onclick = () => {
+            b.textContent = `Saved ${b.parentElement.id.slice(4)}`;
+          };
+      }
+      rows();
+      rerender.onclick = rows;
+      pad.onclick = (e) => {
+        pad.textContent = `Pad ${e.clientX},${e.clientY}`;
+      };
+    </script>
+  </body>
+</html>

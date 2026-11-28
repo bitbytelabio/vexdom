@@ -197,6 +197,7 @@ pub async fn axe_source() -> Result<String, ActionError> {
     if let Ok(source) = std::fs::read_to_string(&cache) {
         return Ok(source);
     }
+    vexdom_core::install_tls_provider();
     let client = reqwest::Client::builder()
         .timeout(REGISTRY_TIMEOUT)
         .build()

@@ -33,11 +33,17 @@ struct Converter<'base> {
 }
 
 fn html_to_markdownish(html: &str, links: Option<&Url>) -> String {
-    let stripped = strip_ignored_html_blocks(html);
+    let mut stripped = html.to_string();
+    for tag in ["script", "style", "noscript", "svg"] {
+        stripped = strip_tag_block(&stripped, tag);
+    }
+    // Read before `head` goes, where `<base>` lives; a `<base>` inside a script is already gone.
+    let base = links.map(|page| document_base(&stripped, page));
+    let stripped = strip_tag_block(&stripped, "head");
     let mut converter = Converter {
         out: String::new(),
         in_pre: false,
-        links,
+        links: base.as_ref(),
         anchors: Vec::new(),
         cell_depth: 0,
         tables: Vec::new(),
@@ -70,12 +76,25 @@ fn html_to_markdownish(html: &str, links: Option<&Url>) -> String {
     normalize_markdownish(&converter.out)
 }
 
-fn strip_ignored_html_blocks(html: &str) -> String {
-    let mut remaining = html.to_string();
-    for tag in ["script", "style", "noscript", "svg", "head"] {
-        remaining = strip_tag_block(&remaining, tag);
+/// The first `<base href>`'s target resolved against `page`, as browsers do, else `page`.
+fn document_base(html: &str, page: &Url) -> Url {
+    // ASCII lowercasing keeps byte offsets, so positions in `lower` index `html`.
+    let lower = html.to_ascii_lowercase();
+    let mut cursor = 0;
+    while let Some(start) = find_open_tag(&lower, "base", cursor) {
+        let end = lower[start..]
+            .find('>')
+            .map_or(html.len(), |idx| start + idx);
+        match parse_attr(&html[start + 1..end], "href") {
+            Some(href) => {
+                return page
+                    .join(decode_html_entities(&href).trim())
+                    .unwrap_or_else(|_| page.clone());
+            }
+            None => cursor = end,
+        }
     }
-    remaining
+    page.clone()
 }
 
 fn strip_tag_block(input: &str, tag: &str) -> String {
@@ -443,6 +462,28 @@ mod tests {
         let linked = html_to_markdownish(html, Some(&base));
         assert_eq!(linked, "[Go](https://s.test/x?a=1&b=2) Top JS");
         assert_eq!(html_to_markdownish(html, None), "Go Top JS");
+    }
+
+    #[test]
+    fn a_base_element_sets_where_links_resolve() {
+        let html =
+            r#"<html><head><base href="/docs/"></head><body><a href="intro">I</a></body></html>"#;
+        let page = Url::parse("https://s.test/p/x").expect("a page URL");
+        assert_eq!(
+            html_to_markdownish(html, Some(&page)),
+            "[I](https://s.test/docs/intro)"
+        );
+    }
+
+    #[test]
+    fn a_base_in_a_script_or_without_href_is_ignored() {
+        let html =
+            r#"<script>"<base href='/evil/'>"</script><base target=_blank><a href="a">A</a>"#;
+        let page = Url::parse("https://s.test/p/x").expect("a page URL");
+        assert_eq!(
+            html_to_markdownish(html, Some(&page)),
+            "[A](https://s.test/p/a)"
+        );
     }
 
     #[test]

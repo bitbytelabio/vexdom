@@ -1,0 +1,12 @@
+{
+  "name": "vexdom-e2e",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "bun run.mjs",
+    "live": "bun live.mjs"
+  },
+  "dependencies": {
+    "puppeteer": "25.18.1"
+  }
+}

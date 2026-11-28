@@ -157,6 +157,7 @@ pub fn signed_addon_url(version: &str) -> String {
 /// signs after the release exists, so for a few minutes after a tag the link is right but the file
 /// is not there.
 pub async fn signed_addon_attached(version: &str) -> Option<bool> {
+    vexdom_core::install_tls_provider();
     let client = reqwest::Client::builder()
         .timeout(Duration::from_secs(4))
         .build()

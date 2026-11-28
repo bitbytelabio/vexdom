@@ -263,6 +263,7 @@ pub async fn run_read(
     options: ReadOptions,
 ) -> Result<Value, String> {
     let target = normalize_url(raw_url)?;
+    vexdom_core::install_tls_provider();
     let client = Fetcher {
         client: Client::builder()
             .timeout(Duration::from_millis(options.timeout_ms))

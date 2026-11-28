@@ -102,6 +102,14 @@ impl Baselines {
     pub fn forget(&mut self, tab: i64) {
         self.tabs.remove(&tab);
     }
+
+    /// The tab's last tree as a full reply (`snapshot r{rev}\n{tree}`), whatever form was sent.
+    #[must_use]
+    pub fn shown(&self, tab: i64) -> Option<String> {
+        self.tabs
+            .get(&tab)
+            .map(|entry| full_response(entry.revision, &entry.tree))
+    }
 }
 
 fn full_response(revision: u64, tree: &str) -> String {
@@ -390,5 +398,14 @@ mod tests {
             baselines.reply(10, "u", &opts, tree, false),
             format!("snapshot r1\n{tree}")
         );
+    }
+
+    #[test]
+    fn shown_is_the_last_tree_in_full() {
+        let mut baselines = Baselines::new(2);
+        let opts = SnapshotOptions::default();
+        let _ = baselines.reply(1, "u", &opts, "a\nb", false);
+        assert_eq!(baselines.shown(1).as_deref(), Some("snapshot r1\na\nb"));
+        assert_eq!(baselines.shown(2), None);
     }
 }

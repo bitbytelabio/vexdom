@@ -3,6 +3,7 @@
 //! bench/tokens/golden-after/mcp/*.jsonl for `count.mjs --after`.
 //!
 //! `cargo test -p vexdom --test mcp_bench -- --ignored`
+#![allow(clippy::unwrap_used)]
 
 mod support;
 

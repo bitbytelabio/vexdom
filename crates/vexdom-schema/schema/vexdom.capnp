@@ -167,7 +167,8 @@ struct RunEvent {
 
 interface Control {
   status @0 () -> (status :BridgeStatus);
-  describe @1 (runId :Text) -> (tools :Json, reserved :List(Text), withheld :List(Text));
+  describe @1 (runId :Text, known :UInt64) -> (tools :Json, reserved :List(Text), withheld :List(Text), stamp :UInt64);
+  # known: the stamp of the caller's last answer; when the offer still has that stamp, tools is left empty.
   # Cancel = drop the call (capnp Finish).
   invoke @2 (action :Text, input :Json, runId :Text) -> (result :ActionResult, image :Data);
   pair @3 () -> (code :Text, expiresAt :Int64);
@@ -228,6 +229,8 @@ struct SnapshotOpts {
   find @9 :Text;
   # Only elements on screen, plus a line saying what lies beyond.
   viewport @10 :Bool;
+  # Read on in the tab's last tree from this char (a cut answer names it); nothing is rendered.
+  offset @11 :UInt32;
 }
 
 struct ReadOpts {

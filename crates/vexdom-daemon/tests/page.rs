@@ -1,4 +1,5 @@
 //! Snapshot, refs, deltas, read and screenshot flags through the control socket (plan step 8).
+#![allow(clippy::unwrap_used)]
 
 mod support;
 
@@ -43,7 +44,7 @@ async fn invoke(
     )
 }
 
-async fn snapshot(control: &control::Client, full: bool) -> Result<String, String> {
+async fn snapshot(control: &control::Client, full: bool, offset: u32) -> Result<String, String> {
     let mut request = control.snapshot_request();
     {
         let mut opts = request.get().init_opts();
@@ -51,6 +52,7 @@ async fn snapshot(control: &control::Client, full: bool) -> Result<String, Strin
         opts.set_depth(-1);
         opts.set_tab_id(-1);
         opts.set_full(full);
+        opts.set_offset(offset);
     }
     match request.send().promise.await {
         Ok(reply) => Ok(reply
@@ -105,10 +107,17 @@ fn snapshot_refs_and_deltas() {
             ("NO_SNAPSHOT".into(), "Take a snapshot first.".into())
         );
 
-        let first = snapshot(&control, false).await.unwrap();
+        let first = snapshot(&control, false, 0).await.unwrap();
         assert!(first.starts_with("snapshot r1\n"), "{first}");
         assert!(first.contains("[ref=e1]"), "{first}");
-        let again = snapshot(&control, false).await.unwrap();
+        // A later page comes from the stored tree: nothing is rendered, the baseline stays.
+        let page = snapshot(&control, false, 12).await.unwrap();
+        let before_handle = |text: &str| text.split('⟦').next().unwrap_or("").to_owned();
+        assert_eq!(
+            before_handle(&page),
+            before_handle(&first.chars().skip(12).collect::<String>())
+        );
+        let again = snapshot(&control, false, 0).await.unwrap();
         assert_eq!(again, "snapshot r2: unchanged");
 
         // A ref is rewritten to the element it names; the reply carries the delta.
@@ -203,6 +212,104 @@ fn snapshot_refs_and_deltas() {
         assert!(
             sent.1.get("ifChanged").is_none(),
             "daemon-side flags are stripped"
+        );
+        daemon.stop();
+    });
+}
+
+#[test]
+fn points_are_read_off_the_last_viewport_screenshot() {
+    let _scratch = support::scratch("look-scale");
+    support::local(async {
+        let daemon = Daemon::start(false).await.unwrap();
+        let control = vexdom_link::connect_control(daemon.port(), daemon.token())
+            .await
+            .unwrap()
+            .0;
+        let canned: fake_extension::Shared = Rc::new(RefCell::new(Canned::default()));
+        let mut page: Value = serde_json::from_str(CHECKOUT).unwrap();
+        page["tabId"] = json!(7);
+        {
+            let mut canned = canned.borrow_mut();
+            canned.answers.insert("page.snapshot".into(), page);
+            canned.answers.insert(
+                "page.screenshot".into(),
+                json!({"format": "jpeg", "width": 1024, "height": 640, "scale": 0.8}),
+            );
+            for action in ["page.trustedClick", "page.mouse", "page.dragElement"] {
+                canned.answers.insert(action.into(), json!({"ok": true}));
+            }
+        }
+        let pair = control.pair_request().send().promise.await.unwrap();
+        let code = pair.get().unwrap().get_code().unwrap().to_string().unwrap();
+        let Outcome::Welcome { .. } =
+            fake_extension::connect(daemon.port(), Credential::Code(&code), Rc::clone(&canned))
+                .await
+                .unwrap()
+        else {
+            panic!("pairing failed");
+        };
+        tokio::time::sleep(std::time::Duration::from_millis(30)).await;
+        snapshot(&control, false, 0).await.unwrap();
+
+        let sent = |action: &str| {
+            canned
+                .borrow()
+                .calls
+                .iter()
+                .rfind(|(called, _)| called == action)
+                .map(|(_, input)| input.clone())
+                .unwrap()
+        };
+        let xy = |point: &Value| (point["x"].as_f64(), point["y"].as_f64());
+        let click = json!({"point": {"x": 400, "y": 200, "source": "screenshot"}});
+
+        let _ = invoke(&control, "page.screenshot", json!({})).await;
+        let _ = invoke(&control, "page.trustedClick", click.clone()).await;
+        assert_eq!(
+            xy(&sent("page.trustedClick")["point"]),
+            (Some(500.0), Some(250.0))
+        );
+        let _ = invoke(
+            &control,
+            "page.mouse",
+            json!({"op": "move", "x": 80, "y": 40, "source": "screenshot"}),
+        )
+        .await;
+        assert_eq!(xy(&sent("page.mouse")), (Some(100.0), Some(50.0)));
+        // An unmarked point is CSS px (page.findCaptcha, bounds): it passes through.
+        let _ = invoke(
+            &control,
+            "page.dragElement",
+            json!({"fromPoint": {"x": 10, "y": 20}, "toPoint": {"x": 40, "y": 80, "source": "screenshot"}}),
+        )
+        .await;
+        let drag = sent("page.dragElement");
+        assert_eq!(xy(&drag["fromPoint"]), (Some(10.0), Some(20.0)));
+        assert_eq!(xy(&drag["toPoint"]), (Some(50.0), Some(100.0)));
+
+        // An element capture does not change what points are read off.
+        canned.borrow_mut().answers.insert(
+            "page.screenshot".into(),
+            json!({"format": "jpeg", "width": 50, "height": 20, "scale": 0.5}),
+        );
+        let _ = invoke(&control, "page.screenshot", json!({"target": "e1"})).await;
+        let _ = invoke(&control, "page.trustedClick", click.clone()).await;
+        assert_eq!(
+            xy(&sent("page.trustedClick")["point"]),
+            (Some(500.0), Some(250.0))
+        );
+
+        // A viewport capture at scale 1: points pass through.
+        canned.borrow_mut().answers.insert(
+            "page.screenshot".into(),
+            json!({"format": "jpeg", "width": 800, "height": 600, "scale": 1}),
+        );
+        let _ = invoke(&control, "page.screenshot", json!({})).await;
+        let _ = invoke(&control, "page.trustedClick", click).await;
+        assert_eq!(
+            xy(&sent("page.trustedClick")["point"]),
+            (Some(400.0), Some(200.0))
         );
         daemon.stop();
     });

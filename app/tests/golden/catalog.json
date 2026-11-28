@@ -58,7 +58,7 @@
         },
         "offset": {
           "type": "integer",
-          "description": "markdown: start at this char; a cut answer names the next offset."
+          "description": "markdown or tree: start at this char; a cut answer names the next offset."
         },
         "url": {
           "type": "string",

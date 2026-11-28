@@ -1101,6 +1101,11 @@ async fn snapshot_reply(
         opts.set_full(full);
         opts.set_find(args.value("--find").unwrap_or(""));
         opts.set_viewport(args.flag("--viewport"));
+        opts.set_offset(
+            args.value("--offset")
+                .and_then(|n| n.parse().ok())
+                .unwrap_or(0),
+        );
         opts.set_tab_id(
             args.value("--tab")
                 .and_then(|tab| tab.parse().ok())
@@ -1123,6 +1128,12 @@ async fn snapshot_reply(
 }
 
 async fn snapshot(bridge: &Bridge, args: &Args) -> ExitCode {
+    if let Some(Err(_)) = args.value("--offset").map(str::parse::<u32>) {
+        return fail(&format!(
+            "Invalid snapshot offset: {}",
+            args.value("--offset").unwrap_or("")
+        ));
+    }
     match snapshot_reply(bridge, args, args.flag("--full")).await {
         Ok((text, webmcp)) if args.json() => {
             let mut data = serde_json::from_str(&text).unwrap_or(Value::String(text));

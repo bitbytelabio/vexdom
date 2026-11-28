@@ -1,5 +1,6 @@
 //! A side-panel instruction end to end: the fake extension pairs and sends `instruct`, a stand-in
 //! Claude Code replays a recorded stream, and the run's events reach the extension's side panel.
+#![allow(clippy::unwrap_used)]
 
 mod support;
 

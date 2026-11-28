@@ -126,26 +126,29 @@ impl control::Server for ControlConn {
         mut results: control::DescribeResults,
     ) -> impl Future<Output = Result<(), capnp::Error>> + 'static {
         std::future::ready((|| {
-            let run_id = optional(text(params.get()?.get_run_id()));
+            let params = params.get()?;
+            let run_id = optional(text(params.get_run_id()));
+            let known = params.get_known();
             if run_id.is_some() {
                 self.speaks_for_run.set(true);
             }
-            let described = self.daemon.describe_for(run_id.as_deref(), &self.binding);
+            let described = self
+                .daemon
+                .describe_for(run_id.as_deref(), &self.binding, known);
             let mut out = results.get();
-            out.set_tools(json_text(&Value::Array(described.tools)));
+            out.set_stamp(described.stamp);
+            if let Some(tools) = described.tools {
+                out.set_tools(json_text(&Value::Array(tools)));
+            }
             fill(
                 out.reborrow()
                     .init_reserved(described.reserved.len() as u32),
                 &described.reserved,
             );
-            let withheld: Vec<String> = described
-                .withheld
-                .iter()
-                .filter_map(|tool| tool.get("name").and_then(Value::as_str).map(str::to_owned))
-                .collect();
             fill(
-                out.reborrow().init_withheld(withheld.len() as u32),
-                &withheld,
+                out.reborrow()
+                    .init_withheld(described.withheld.len() as u32),
+                &described.withheld,
             );
             Ok(())
         })())

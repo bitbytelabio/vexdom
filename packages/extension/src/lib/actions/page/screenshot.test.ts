@@ -9,10 +9,15 @@ beforeEach(() => {
 });
 
 describe('how large a capture comes back when nobody says', () => {
-  test('a viewport capture to look at is one image pixel per page pixel; a kept, full-page or oversized one is capped at 1600', () => {
-    expect([longSide(), longSide({ save: true }), longSide({ fullPage: true })]).toEqual([1084, 1600, 1600]);
+  test('a viewport capture to look at is at most 1024 on its long side; a kept, full-page or oversized one is capped at 1600', () => {
+    expect([longSide(), longSide({ save: true }), longSide({ fullPage: true })]).toEqual([1024, 1600, 1600]);
     Object.assign(window, { innerWidth: 2560, innerHeight: 1300 });
-    expect(longSide()).toBe(1600);
+    expect(longSide()).toBe(1024);
+  });
+
+  test('a small viewport is not upscaled', () => {
+    Object.assign(window, { innerWidth: 800, innerHeight: 600 });
+    expect(longSide()).toBe(800);
   });
 
   test('an explicit size wins', () => {

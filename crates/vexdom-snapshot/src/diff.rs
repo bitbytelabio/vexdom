@@ -338,8 +338,8 @@ pub fn snapshot_comparison_text(tree: &str) -> String {
         if !quoted && ch == '[' && output.ends_with(' ') {
             let mut candidate = chars.clone();
             let mut attributes = String::new();
-            while candidate.peek().is_some_and(|ch| !matches!(ch, ']' | '\n')) {
-                attributes.push(candidate.next().unwrap());
+            while let Some(ch) = candidate.next_if(|ch| !matches!(ch, ']' | '\n')) {
+                attributes.push(ch);
             }
             if candidate.next() == Some(']') {
                 let fields: Vec<&str> = attributes.split(", ").collect();

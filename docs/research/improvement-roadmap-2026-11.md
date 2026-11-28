@@ -117,7 +117,20 @@ Từ `bench/tokens/baseline.md` sau `cargo test -p vexdom --test mcp_bench -- --
 | catalog: server instructions | 543 | 579 | +7% |
 
 Độ trễ: giấc ngủ cố định 150 ms mỗi action đổi trang đã bỏ. Trên trang tĩnh, snapshot sau action
-trả sau ~50 ms im lặng DOM; batch N bước bớt N−1 lần snapshot. Chưa đo trên Chrome thật.
+trả sau ~50 ms im lặng DOM; batch N bước bớt N−1 lần snapshot.
+
+Đo trên Chrome thật (`e2e/run.mjs`, bản release, Chrome for Testing 157.0.8103.78, Apple M2 Max,
+macOS; thời gian một vòng JSON-RPC của `vexdom mcp`, trang `e2e/fixtures/app.html`):
+
+| Chuỗi | n | p50 ms | p95 ms |
+| --- | ---: | ---: | ---: |
+| `act clickElement` + delta (nút đổi nhãn ngay) | 20 | 59 | 61 |
+| `snapshot {}` (trang nhỏ, trả `unchanged`) | 20 | 4 | 5 |
+| `act clickElement` + delta, DOM bận ~120 ms sau click | 1 | 183 | 183 |
+
+Click có delta tốn ~60 ms: ~50 ms là cửa sổ im lặng DOM, phần còn lại là click và render cây. Khi
+trang còn đổi DOM liên tục, delta chờ tới thay đổi cuối rồi thêm 50 ms (dòng cuối). CI chạy cùng
+kịch bản bằng bản debug, nên số đo trên CI không so được với bảng này.
 
 ### 3.2 Lệch so với kế hoạch
 
@@ -148,7 +161,6 @@ trả sau ~50 ms im lặng DOM; batch N bước bớt N−1 lần snapshot. Chư
   tài liệu cũ vẫn còn, delta có thể vẫn là của trang cũ, như trước đây.
 - Bỏ phần tử ẩn khỏi markdown cần `getComputedStyle` cho mọi phần tử; trang rất lớn tốn thêm vài
   chục ms mỗi lần đọc. `opacity:0`, `font-size:0` và chữ đẩy ra ngoài màn hình vẫn lọt qua.
-- `read <url>` qua HTTP resolve link theo URL trang, bỏ qua `<base href>`.
 - Delta sau action có hạn 3 s (`DELTA_BUDGET`); quá hạn thì câu trả lời không kèm delta, để
   client không báo lỗi timeout cho một action đã chạy.
 - `waitActionable` làm phần tử thực sự bị ẩn/che thất bại sau 2 s thay vì ngay lập tức.
@@ -159,21 +171,14 @@ trả sau ~50 ms im lặng DOM; batch N bước bớt N−1 lần snapshot. Chư
 
 | Mục | Lý do |
 | --- | --- |
-| Cache `describe`/`offer` theo manifest serial (B3) | Ước tính chỉ ~1–3 ms mỗi `act` |
 | Bỏ `childFrames` khi trang không có iframe (B4) | Cần quyền `webNavigation` (cảnh báo cài đặt mới) hoặc một lượt duyệt top frame thứ hai |
 | Cache blocked sites / vault trong background | Danh sách blocked sites được đọc mỗi lần kiểm tra có chủ đích (chú thích trong `site-guard.ts`); chưa đo chi phí, phải đo trước |
 | Cache `read_agent_config` (B5) | Chỉ vài micro giây |
-| Neo cho ref `nth` và ref trong shadow khi ref cũ | Cần thiết kế khoá ổn định; đoán sai sẽ bấm nhầm hàng |
-| Phân trang cây (`offset` cho tree) | `find` và `viewport` giải quyết phần lớn; phân trang cây cần ổn định ranh giới dòng với delta |
-| CI e2e trên Chromium thật | Cần runner có trình duyệt và fixture; puppeteer đã có trong `bench/tokens` |
-| `clippy::unwrap_used` | Nhiều chỗ cần sửa; tách đợt riêng |
-| Crate trùng, `ring` + `aws-lc-rs` | Phụ thuộc gián tiếp (reqwest/rustls); cần chọn một backend TLS |
 | Chạy lại bench `claude -p` trực tiếp | Tốn lượt chạy trả phí |
 | Chú thích WebMCP (`consequentialHint`, `untrustedContentHint`, `readOnlyHint`) và dạng `getTools` của Chrome 160 | Spec còn đang thay đổi |
 | `structuredContent` / `outputSchema` | Chỉ có lợi cho client lập trình, không bớt token |
 | MCP Tasks | Client hỗ trợ còn mỏng |
 | Runner agy/omp | `.omp/plans/NEXT_STEPS_PLAN.md` Phần 1; `crates/vexdom-core/src/agents.rs:8` vẫn là `["claude"]` |
-| Thu nhỏ screenshot (cạnh dài ≤1.024 px) | Phải ánh xạ lại toạ độ cho click theo điểm |
 
 ---
 

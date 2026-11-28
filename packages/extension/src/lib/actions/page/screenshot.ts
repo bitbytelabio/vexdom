@@ -3,6 +3,8 @@ import { ActionError, defineAction } from '../core';
 import { documentBounds, resolveTarget, targetSchema } from './dom';
 
 const DEFAULT_LONG_SIDE = 1600;
+/** A viewport capture taken to look at: small enough to read cheaply, points remapped by the Bridge. */
+const LOOK_LONG_SIDE = 1024;
 
 export const screenshot = defineAction({
   name: 'page.screenshot',
@@ -37,7 +39,7 @@ export const screenshot = defineAction({
       .positive()
       .optional()
       .describe(
-        'Downscale the result so its longest side is at most this many pixels. Left out, a viewport capture you take to look at comes back at the page’s own CSS-pixel size — one image pixel per page pixel, so a position in the picture is a usable "point" — and anything else, a saved capture included, is capped at 1600. That is sized for reading a page, not for pixel-level inspection: raise it when fine detail matters.',
+        'Downscale the result so its longest side is at most this many pixels. Left out, a viewport capture you take to look at is at most 1024 pixels on its long side, so it may be smaller than the page: pass a point you read off it with source: "screenshot" and Vexdom scales it back to page pixels; anything else, a saved capture included, is capped at 1600. Raise it when fine detail matters.',
       ),
     save: z
       .boolean()
@@ -80,7 +82,8 @@ export const screenshot = defineAction({
     const scroll = { x: Math.round(window.scrollX), y: Math.round(window.scrollY) };
 
     const longSide =
-      maxLongSide ?? (mode === 'viewport' && !save ? Math.min(DEFAULT_LONG_SIDE, Math.max(viewport.w, viewport.h)) : DEFAULT_LONG_SIDE);
+      maxLongSide ??
+      (mode === 'viewport' && !save ? Math.min(LOOK_LONG_SIDE, Math.max(viewport.w, viewport.h)) : DEFAULT_LONG_SIDE);
 
     return { mode, dpr, viewport, page, region, scroll, format, quality, maxLongSide: longSide };
   },

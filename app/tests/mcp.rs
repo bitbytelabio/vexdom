@@ -1,5 +1,6 @@
 //! `vexdom mcp` over stdio against an in-process Bridge and a Rust fake extension: the three tools,
 //! the playbooks over MCP, and both protocol eras (ADR-029).
+#![allow(clippy::unwrap_used)]
 
 mod support;
 

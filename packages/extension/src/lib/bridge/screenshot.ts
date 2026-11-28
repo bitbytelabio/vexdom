@@ -132,8 +132,12 @@ interface Shot {
   width: number;
   height: number;
   dataUrl: string;
+  /** Image pixels per CSS pixel: the Bridge scales a point read off the image back by it. */
+  scale: number;
   truncated?: boolean;
 }
+
+const roundScale = (scale: number) => Math.round(scale * 1e4) / 1e4;
 
 async function publishCapture(shot: Shot, runId?: string): Promise<void> {
   try {
@@ -192,13 +196,17 @@ async function capture(tabId: number, plan: CapturePlan, snap: Snap): Promise<Sh
         if (singleTile && outScale === 1) {
           const { width, height } = bitmap;
           bitmap.close();
-          return { format, width, height, dataUrl: shot.dataUrl, ...(truncated ? { truncated } : {}) };
+          return {
+            format,
+            width,
+            height,
+            dataUrl: shot.dataUrl,
+            scale: roundScale(capScale),
+            ...(truncated ? { truncated } : {}),
+          };
         }
 
-        out = new OffscreenCanvas(
-          Math.max(1, Math.round(region.w * scale)),
-          Math.max(1, Math.round(region.h * scale)),
-        );
+        out = new OffscreenCanvas(Math.max(1, Math.round(region.w * scale)), Math.max(1, Math.round(region.h * scale)));
         ctx = out.getContext('2d');
         if (!ctx) {
           bitmap.close();
@@ -218,7 +226,7 @@ async function capture(tabId: number, plan: CapturePlan, snap: Snap): Promise<Sh
   }
 
   if (!out) throw new ActionError('Nothing was captured', 'CAPTURE_FAILED');
-  return encode(out, format, quality, truncated);
+  return encode(out, format, quality, truncated, out.width / region.w);
 }
 
 const THUMB_MAX_SIDE = 640;
@@ -248,13 +256,21 @@ async function encode(
   format: 'png' | 'jpeg',
   quality: number | undefined,
   truncated: boolean,
+  scale: number,
 ): Promise<Shot> {
   const mime = format === 'jpeg' ? 'image/jpeg' : 'image/png';
   const blob = await canvas.convertToBlob(
     format === 'jpeg' ? { type: mime, quality: (quality ?? DEFAULT_JPEG_QUALITY) / 100 } : { type: mime },
   );
   const dataUrl = await blobToDataUrl(blob, mime);
-  return { format, width: canvas.width, height: canvas.height, dataUrl, ...(truncated ? { truncated } : {}) };
+  return {
+    format,
+    width: canvas.width,
+    height: canvas.height,
+    dataUrl,
+    scale: roundScale(scale),
+    ...(truncated ? { truncated } : {}),
+  };
 }
 
 function fitScale(deviceW: number, deviceH: number, maxLongSide: number): number {

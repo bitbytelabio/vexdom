@@ -170,6 +170,7 @@ function takeSnapshot(input: z.output<typeof snapshotInput>): PageSnapshot {
   const walked = withAriaCaches(() => {
     const result = walk(rootsFor(input.selector), { interactive, maxNodes, includeFrames, viewport, assign: true });
     addHints(result);
+    rememberAnchors(result);
     return result;
   });
   forgetCollected();
@@ -197,8 +198,17 @@ function takeSnapshot(input: z.output<typeof snapshotInput>): PageSnapshot {
 let docKey: string | undefined;
 const idOfElement = new WeakMap<Element, number>();
 const elementOfId = new Map<number, WeakRef<Element>>();
-/** Ids of elements seen in a shadow tree: role+name recovery is refused for them. */
+/** Ids of elements seen in a shadow tree: recovered only within their anchor. */
 const shadowIds = new Set<number>();
+
+/** Where a ref that needed nth, or lived in a shadow tree, can be looked for again. */
+interface Anchor {
+  /** The nearest ancestor (crossing shadow roots to their hosts) holding no other element with this role and name. */
+  scope: WeakRef<Element>;
+  /** The nearest such ancestor with a key unique in its root: found again when it is re-rendered. */
+  keyed?: { attr: 'id' | 'data-testid'; value: string; root: WeakRef<Document | ShadowRoot> };
+}
+const anchorOfId = new Map<number, Anchor>();
 let nextId = 1;
 
 /** The key of this document's refs; a ref under any other key was issued for a document that is gone. */
@@ -226,6 +236,71 @@ function idOf(element: Element, inShadow: boolean): number {
 
 function forgetCollected(): void {
   for (const [id, element] of elementOfId) if (!element.deref()) elementOfId.delete(id);
+  for (const id of anchorOfId.keys()) if (!elementOfId.has(id)) anchorOfId.delete(id);
+}
+
+/** The parent in the composed tree: a shadow root's child goes up to its host. */
+function composedParent(element: Element): Element | null {
+  if (element.parentElement) return element.parentElement;
+  const parent = element.parentNode;
+  return parent?.nodeType === Node.DOCUMENT_FRAGMENT_NODE ? ((parent as ShadowRoot).host ?? null) : null;
+}
+
+/** The elements of `root` whose `attr` is `value`. */
+function keyedIn(root: Document | ShadowRoot, attr: string, value: string): NodeListOf<Element> {
+  return root.querySelectorAll(`[${attr}="${value.replace(/["\\]/g, '\\$&')}"]`);
+}
+
+/** `ancestor`'s `id`, else its `data-testid`, when no other element in its root has it. */
+function uniqueKey(ancestor: Element): Anchor['keyed'] {
+  const root = ancestor.getRootNode() as Document | ShadowRoot;
+  if (typeof root.querySelectorAll !== 'function') return undefined;
+  for (const attr of ['id', 'data-testid'] as const) {
+    const value = ancestor.getAttribute(attr);
+    if (value && keyedIn(root, attr, value).length === 1) return { attr, value, root: new WeakRef(root) };
+  }
+  return undefined;
+}
+
+/**
+ * Remembers an anchor for each ref that shares its role and name or lives in a shadow tree: the
+ * nearest ancestor holding no other element like it, and the nearest such one with a unique key.
+ */
+function rememberAnchors({ nodes, refable }: Walked): void {
+  const groups = new Map<string, { id: number; element: Element }[]>();
+  for (const { index, element } of refable) {
+    const id = nodes[index].id;
+    if (id === undefined) continue;
+    const { role, name } = asRendered(nodes[index]);
+    const key = `${role}\n${name}`;
+    const group = groups.get(key);
+    if (group) group.push({ id, element });
+    else groups.set(key, [{ id, element }]);
+  }
+  for (const members of groups.values()) {
+    const needsAnchor = (id: number) => members.length > 1 || shadowIds.has(id);
+    // A ref that stopped being shared drops its old anchor.
+    for (const { id } of members) if (!needsAnchor(id)) anchorOfId.delete(id);
+    if (!members.some(({ id }) => needsAnchor(id))) continue;
+    const chains = members.map(({ element }) => {
+      const chain: Element[] = [];
+      for (let at = composedParent(element); at; at = composedParent(at)) chain.push(at);
+      return chain;
+    });
+    const held = new Map<Element, number>();
+    for (const chain of chains) for (const ancestor of chain) held.set(ancestor, (held.get(ancestor) ?? 0) + 1);
+    members.forEach(({ id }, at) => {
+      if (!needsAnchor(id)) return;
+      const own = chains[at].filter((ancestor) => held.get(ancestor) === 1);
+      if (own.length === 0) {
+        anchorOfId.delete(id);
+        return;
+      }
+      let keyed: Anchor['keyed'];
+      for (const ancestor of own) if ((keyed = uniqueKey(ancestor))) break;
+      anchorOfId.set(id, { scope: new WeakRef(own[0]), ...(keyed ? { keyed } : {}) });
+    });
+  }
 }
 
 const DOCUMENT_GONE =
@@ -235,9 +310,9 @@ const STALE = 'Element ref is stale. Take a new snapshot.';
 
 /**
  * The element a ref names. A live element is itself — `isConnected`, since a `WeakRef` can still
- * hand back a detached one. A replaced element is found again only by a role and name no other
- * element shares, and never for a ref that needed `nth` or lived in a shadow tree, where a guess
- * could land on the wrong row.
+ * hand back a detached one. A replaced element is found again by its role and name: within the
+ * ancestor that held only it when the ref was given (for a ref that needed nth or lived in a
+ * shadow tree), else in the whole document; never when two match.
  */
 export function resolveRef(ref: ElementRef): Element {
   if (ref.doc !== documentKey()) throw new ActionError(DOCUMENT_GONE, 'STALE_REF');
@@ -249,20 +324,47 @@ export function resolveRef(ref: ElementRef): Element {
 }
 
 function recover(ref: ElementRef): Element | null {
-  if (ref.nth !== undefined || shadowIds.has(ref.id) || ref.role === undefined || ref.name === undefined) return null;
+  if (ref.role === undefined || ref.name === undefined) return null;
+  const anchor = anchorOfId.get(ref.id);
+  if (anchor) return recoverIn(anchor, ref);
+  if (ref.nth !== undefined || shadowIds.has(ref.id)) return null;
+  const matches = matchesIn(document.body ?? document.documentElement, ref);
+  return matches.length === 1 ? matches[0] : null;
+}
+
+/** The anchor's scope, else its keyed ancestor found again: the first with a match decides. */
+function recoverIn(anchor: Anchor, ref: ElementRef): Element | null {
+  const scopes: Element[] = [];
+  const scope = anchor.scope.deref();
+  if (scope?.isConnected) scopes.push(scope);
+  const root = anchor.keyed?.root.deref();
+  if (
+    anchor.keyed &&
+    root &&
+    (root === document || (root.nodeType === Node.DOCUMENT_FRAGMENT_NODE && (root as ShadowRoot).host?.isConnected))
+  ) {
+    const keyed = keyedIn(root, anchor.keyed.attr, anchor.keyed.value);
+    if (keyed.length === 1 && !scopes.includes(keyed[0])) scopes.push(keyed[0]);
+  }
+  for (const within of scopes) {
+    const matches = matchesIn(within, ref);
+    if (matches.length === 1) return matches[0];
+    if (matches.length > 1) return null;
+  }
+  return null;
+}
+
+/** The elements under `root` the Bridge would render with the ref's role and name. */
+function matchesIn(root: Element, ref: ElementRef): Element[] {
   const { nodes, refable } = withAriaCaches(() =>
-    walk([document.body ?? document.documentElement], {
-      interactive: true,
-      maxNodes: Infinity,
-      includeFrames: true,
-      assign: false,
-    }),
+    walk([root], { interactive: true, maxNodes: Infinity, includeFrames: true, assign: false }),
   );
-  const matches = refable.filter(({ index }) => {
-    const { role, name } = asRendered(nodes[index]);
-    return role === ref.role && name === ref.name;
-  });
-  return matches.length === 1 ? matches[0].element : null;
+  return refable
+    .filter(({ index }) => {
+      const { role, name } = asRendered(nodes[index]);
+      return role === ref.role && name === ref.name;
+    })
+    .map(({ element }) => element);
 }
 
 // ---------------------------------------------------------------------------------------------

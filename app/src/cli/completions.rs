@@ -477,6 +477,7 @@ const TOP: &[Node] = &[
             flag("--full", "the whole tree, not a delta"),
             opt("--find", "only lines containing this text", Free),
             flag("--viewport", "only what is on screen"),
+            opt("--offset", "read on in the last tree from this char", Free),
         ],
         ..page("snapshot", "the tab's elements, each with a ref")
     },

@@ -9,6 +9,9 @@ description = "Vexdom's desktop app (P10, ADR-013): the Bridge on and off, brows
 # A workspace of its own, so GPUI never enters the root Cargo.lock (ADR-026). CI builds and tests it on macOS and Linux.
 [workspace]
 
+[lints.clippy]
+unwrap_used = "warn"
+
 [[bin]]
 name = "vexdom-desktop"
 path = "src/main.rs"

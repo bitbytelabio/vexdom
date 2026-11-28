@@ -16,6 +16,12 @@ export interface Point {
 export const pointSchema = z.object({
   x: z.number().describe('Pixels from the left edge of the viewport'),
   y: z.number().describe('Pixels from the top edge of the viewport'),
+  source: z
+    .literal('screenshot')
+    .optional()
+    .describe(
+      'Set when you read this point off the tab’s last viewport screenshot: Vexdom scales it back to page pixels. Left out, the point is in CSS pixels.',
+    ),
 });
 
 function viewport(): { w: number; h: number } {
